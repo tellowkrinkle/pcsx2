@@ -223,6 +223,7 @@ CRC::Game CRC::m_games[] =
 	{0x78F1136A, Onimusha3, RU, 0}, // Unofficial RU-version
 	{0x71320CA8, Onimusha3, JP, 0},
 	{0xDAFFFB0D, Onimusha3, KO, 0},
+	{0xC0AC5781, MagnaCartaToB, JP, 0},
 	{0xF442260C, MajokkoALaMode2, JP, 0},
 	{0xA616A6C2, TalesOfAbyss, US, 0},
 	{0x14FE77F7, TalesOfAbyss, US, 0},

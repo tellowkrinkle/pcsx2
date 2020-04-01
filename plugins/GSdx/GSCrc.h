@@ -91,6 +91,7 @@ public:
 		Lamune,
 		LegacyOfKainDefiance,
 		LordOfTheRingsThirdAge,
+		MagnaCartaToB,
 		MajokkoALaMode2,
 		Manhunt2,
 		MetalSlug6,
