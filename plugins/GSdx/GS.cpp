@@ -44,9 +44,12 @@ static HRESULT s_hr = E_FAIL;
 
 #include "Window/GSWndOGL.h"
 #include "Window/GSWndEGL.h"
+#include "Window/GSWndCGLShim.h"
 
 #include <gtk/gtk.h>
+#ifndef __APPLE__
 #include <gdk/gdkx.h>
+#endif
 
 extern bool RunLinuxDialog();
 
@@ -259,6 +262,8 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 #endif
 #if defined(__unix__)
 					wnds.push_back(std::make_shared<GSWndOGL>());
+#elif defined(__APPLE__)
+					wnds.push_back(makeGSWndCGL());
 #else
 					wnds.push_back(std::make_shared<GSWndWGL>());
 #endif
@@ -266,6 +271,8 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 				default:
 #ifdef _WIN32
 					wnds.push_back(std::make_shared<GSWndDX>());
+#elif defined(__APPLE__)
+					wnds.push_back(makeGSWndCGL());
 #else
 					wnds.push_back(std::make_shared<GSWndOGL>());
 #endif
@@ -274,7 +281,7 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 
 			int w = theApp.GetConfigI("ModeWidth");
 			int h = theApp.GetConfigI("ModeHeight");
-#if defined(__unix__)
+#if defined(__unix__) || defined(__APPLE__)
 			void *win_handle = (void*)((uptr*)(dsp)+1);
 #else
 			void *win_handle = *dsp;
@@ -483,7 +490,7 @@ EXPORT_C_(int) GSopen2(void** dsp, uint32 flags)
 		}
 
 #endif
-#if defined(__unix__)
+#if defined(__unix__) || defined(__APPLE__)
 		switch(renderer) {
 			// Use alternative renderer (SW if currently using HW renderer, and vice versa)
 		case GSRendererType::OGL_SW: renderer = GSRendererType::OGL_HW; break;
@@ -850,7 +857,7 @@ EXPORT_C_(int) GSsetupRecording(int start, void* data)
 		printf("GSdx: no s_gs for recording\n");
 		return 0;
 	}
-#if defined(__unix__)
+#if defined(__unix__) || defined(__APPLE__)
 	if (!theApp.GetConfigB("capture_enabled")) {
 		printf("GSdx: Recording is disabled\n");
 		return 0;
@@ -1347,7 +1354,7 @@ EXPORT_C GSBenchmark(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow
 
 #endif
 
-#if defined(__unix__)
+#if defined(__unix__) || defined(__APPLE__)
 
 inline unsigned long timeGetTime()
 {
@@ -1361,7 +1368,9 @@ EXPORT_C GSReplay(char* lpszCmdLine, int renderer)
 {
 	GLLoader::in_replayer = true;
 	// Required by multithread driver
+#ifndef __APPLE__
 	XInitThreads();
+#endif
 
 	GSinit();
 
