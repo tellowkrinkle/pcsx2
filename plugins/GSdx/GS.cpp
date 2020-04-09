@@ -43,6 +43,12 @@ static HRESULT s_hr = E_FAIL;
 #else
 
 #include "Window/GSWndEGL.h"
+#include "Window/GSWndCGLShim.h"
+
+#ifdef __APPLE__
+#include <gtk/gtk.h>
+#include <CoreFoundation/CoreFoundation.h>
+#endif
 
 extern bool RunLinuxDialog();
 
@@ -252,6 +258,8 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 						default:
 							break;
 					}
+#elif defined(__APPLE__)
+					wnds.push_back(makeGSWndCGL());
 #else
 					wnds.push_back(std::make_shared<GSWndWGL>());
 #endif
@@ -259,6 +267,8 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 				default:
 #ifdef _WIN32
 					wnds.push_back(std::make_shared<GSWndDX>());
+#elif defined(__APPLE__)
+					wnds.push_back(makeGSWndCGL());
 #else
 					wnds.push_back(std::make_shared<GSWndEGL_X11>());
 #endif
@@ -476,7 +486,7 @@ EXPORT_C_(int) GSopen2(void** dsp, uint32 flags)
 		}
 
 #endif
-#if defined(__unix__)
+#if defined(__unix__) || defined(__APPLE__)
 		switch(renderer) {
 			// Use alternative renderer (SW if currently using HW renderer, and vice versa)
 		case GSRendererType::OGL_SW: renderer = GSRendererType::OGL_HW; break;
@@ -790,6 +800,20 @@ EXPORT_C GSconfigure()
 			theApp.SetCurrentRendererType(GSRendererType::Undefined);
 		}
 
+#elif defined(__APPLE__)
+		// Rest of macOS UI doesn't use GTK so we need to init it now
+		gtk_init(nullptr, nullptr);;
+		// GTK expects us to be using its event loop, rather than Cocoa's
+		// If we call its stuff right now, it'll attempt to drain a static autorelease pool that was already drained by Cocoa (see https://github.com/GNOME/gtk/blob/8c1072fad1cb6a2e292fce2441b4a571f173ce0f/gdk/quartz/gdkeventloop-quartz.c#L640-L646)
+		// We can convince it that touching that pool would be unsafe by running all GTK calls within a CFRunLoop
+		// (Blocks submitted to the main queue by dispatch_async are run by its CFRunLoop)
+		dispatch_async(dispatch_get_main_queue(), ^{
+			if (RunLinuxDialog()) {
+				theApp.ReloadConfig();
+				// Force a reload of the gs state
+				theApp.SetCurrentRendererType(GSRendererType::Undefined);
+			}
+		});
 #else
 
 		if (RunLinuxDialog()) {
@@ -843,7 +867,7 @@ EXPORT_C_(int) GSsetupRecording(int start, void* data)
 		printf("GSdx: no s_gs for recording\n");
 		return 0;
 	}
-#if defined(__unix__)
+#if defined(__unix__) || defined(__APPLE__)
 	if (!theApp.GetConfigB("capture_enabled")) {
 		printf("GSdx: Recording is disabled\n");
 		return 0;
@@ -1340,7 +1364,7 @@ EXPORT_C GSBenchmark(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow
 
 #endif
 
-#if defined(__unix__)
+#if defined(__unix__) || defined(__APPLE__)
 
 inline unsigned long timeGetTime()
 {
@@ -1354,7 +1378,9 @@ EXPORT_C GSReplay(char* lpszCmdLine, int renderer)
 {
 	GLLoader::in_replayer = true;
 	// Required by multithread driver
+#ifndef __APPLE__
 	XInitThreads();
+#endif
 
 	GSinit();
 
