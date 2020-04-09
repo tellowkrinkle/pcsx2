@@ -40,6 +40,7 @@ static HRESULT s_hr = E_FAIL;
 #else
 
 #include "GS/Window/GSWndEGL.h"
+#include "GS/Window/GSWndCGLShim.h"
 
 #ifdef __APPLE__
 #include <gtk/gtk.h>
@@ -206,7 +207,7 @@ int _GSopen(void** dsp, const char* title, GSRendererType renderer, int threads 
 							break;
 					}
 #elif defined(__APPLE__)
-					// No windows available for macOS at the moment
+					wnds.push_back(makeGSWndCGL());
 #else
 					wnds.push_back(std::make_shared<GSWndWGL>());
 #endif
@@ -215,7 +216,7 @@ int _GSopen(void** dsp, const char* title, GSRendererType renderer, int threads 
 #ifdef _WIN32
 					wnds.push_back(std::make_shared<GSWndDX>());
 #elif defined(__APPLE__)
-					// No windows available for macOS at the moment
+					wnds.push_back(makeGSWndCGL());
 #else
 					wnds.push_back(std::make_shared<GSWndEGL_X11>());
 #endif
@@ -725,12 +726,12 @@ void GSconfigure()
 		// We can convince it that touching that pool would be unsafe by running all GTK calls within a CFRunLoop
 		// (Blocks submitted to the main queue by dispatch_async are run by its CFRunLoop)
 		dispatch_async(dispatch_get_main_queue(), ^{
-		  if (RunLinuxDialog())
-		  {
-			  theApp.ReloadConfig();
-			  // Force a reload of the gs state
-			  theApp.SetCurrentRendererType(GSRendererType::Undefined);
-		  }
+			if (RunLinuxDialog())
+			{
+				theApp.ReloadConfig();
+				// Force a reload of the gs state
+				theApp.SetCurrentRendererType(GSRendererType::Undefined);
+			}
 		});
 #else
 
