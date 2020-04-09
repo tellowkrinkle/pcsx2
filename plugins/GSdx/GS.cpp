@@ -42,6 +42,12 @@ static HRESULT s_hr = E_FAIL;
 #else
 
 #include "Window/GSWndEGL.h"
+#include "Window/GSWndCGLShim.h"
+
+#ifdef __APPLE__
+#include <gtk/gtk.h>
+#include <CoreFoundation/CoreFoundation.h>
+#endif
 
 #ifdef __APPLE__
 #include <gtk/gtk.h>
@@ -250,7 +256,7 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 							break;
 					}
 #elif defined(__APPLE__)
-					// No windows available for macOS at the moment
+					wnds.push_back(makeGSWndCGL());
 #else
 					wnds.push_back(std::make_shared<GSWndWGL>());
 #endif
@@ -259,7 +265,7 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 #ifdef _WIN32
 					wnds.push_back(std::make_shared<GSWndDX>());
 #elif defined(__APPLE__)
-					// No windows available for macOS at the moment
+					wnds.push_back(makeGSWndCGL());
 #else
 					wnds.push_back(std::make_shared<GSWndEGL_X11>());
 #endif
