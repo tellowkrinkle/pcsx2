@@ -210,6 +210,12 @@ if(Windows)
 elseif(APPLE)
     LIST(APPEND GSdxSources
         Window/GSLinuxDialog.cpp
+        Window/GSWndCGL.mm
+        )
+
+    LIST(APPEND GSdxHeaders
+        Window/GSWndCGL.h
+        Window/GSWndCGLShim.h
         )
 else()
     LIST(APPEND GSdxSources
@@ -242,6 +248,12 @@ set(GSdxFinalLibs
 
 if(USE_VTUNE)
     set(GSdxFinalLibs ${GSdxFinalLibs} ${VTUNE_LIBRARIES})
+endif()
+
+if(APPLE)
+    find_library(APPKIT_LIBRARY AppKit)
+    set(GSdxFinalFlags ${GSdxFinalFlags} -fobjc-arc)
+    set(GSdxFinalLibs ${GSdxFinalLibs} ${APPKIT_LIBRARY} -fobjc-link-runtime)
 endif()
 
 if(APPLE)
