@@ -42,6 +42,12 @@ static HRESULT s_hr = E_FAIL;
 #else
 
 #include "Window/GSWndEGL.h"
+#include "Window/GSWndCGLShim.h"
+
+#ifdef __APPLE__
+#include <gtk/gtk.h>
+#include <CoreFoundation/CoreFoundation.h>
+#endif
 
 #ifdef __APPLE__
 #include <gtk/gtk.h>
@@ -238,7 +244,7 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 							break;
 					}
 #elif defined(__APPLE__)
-					// No windows available for macOS at the moment
+					wnds.push_back(makeGSWndCGL());
 #else
 					wnds.push_back(std::make_shared<GSWndWGL>());
 #endif
@@ -247,7 +253,7 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 #ifdef _WIN32
 					wnds.push_back(std::make_shared<GSWndDX>());
 #elif defined(__APPLE__)
-					// No windows available for macOS at the moment
+					wnds.push_back(makeGSWndCGL());
 #else
 					wnds.push_back(std::make_shared<GSWndEGL_X11>());
 #endif
@@ -748,7 +754,7 @@ EXPORT_C GSconfigure()
 
 #elif defined(__APPLE__)
 		// Rest of macOS UI doesn't use GTK so we need to init it now
-		gtk_init(nullptr, nullptr);
+		gtk_init(nullptr, nullptr);;
 		// GTK expects us to be using its event loop, rather than Cocoa's
 		// If we call its stuff right now, it'll attempt to drain a static autorelease pool that was already drained by Cocoa (see https://github.com/GNOME/gtk/blob/8c1072fad1cb6a2e292fce2441b4a571f173ce0f/gdk/quartz/gdkeventloop-quartz.c#L640-L646)
 		// We can convince it that touching that pool would be unsafe by running all GTK calls within a CFRunLoop
