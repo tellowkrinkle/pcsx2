@@ -269,7 +269,17 @@ void operator+=(wxWindow &target, const pxWindowAndFlags<WinType> &src)
 template <typename WinType>
 void operator+=(wxSizer &target, const pxWindowAndFlags<WinType> &src)
 {
-    target.Add(src.window, src.flags);
+    // WXWidgets 3.1 added assertions non-applicable flags, so unset those
+    auto flags = src.flags;
+    if (auto box = dynamic_cast<wxBoxSizer*>(&target)) {
+        if (box->IsVertical()) {
+            flags.Top();
+        }
+        else {
+            flags.Left();
+        }
+    }
+    target.Add(src.window, flags);
 }
 
 wxDECLARE_EVENT(pxEvt_OnDialogCreated, wxCommandEvent);

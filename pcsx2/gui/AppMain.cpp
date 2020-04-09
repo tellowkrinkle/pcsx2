@@ -61,7 +61,7 @@
 #undef EAX
 #undef EBX
 #undef ECX
-#include <wx/osx/private.h>		// needed to implement the app!
+#include <wx/osx/core/private.h>		// needed to implement the app!
 #endif
 
 wxIMPLEMENT_APP(Pcsx2App);
