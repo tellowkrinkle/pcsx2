@@ -388,7 +388,7 @@ void VirtualPad::DoLayout()
 	rightAnalogButtonAndGUI->Add(r3Button, 0, wxALIGN_CENTER, 0);
 	rightAnalogYContainer->Add(rightAnalogButtonAndGUI, 1, wxEXPAND, 0);
 	rightAnalogY->Add(rightAnalogYVal, 1, wxALIGN_RIGHT, 0);
-	rightAnalogY->Add(rightAnalogYValPrecise, 0, wxALIGN_RIGHT | wxEXPAND, 0);
+	rightAnalogY->Add(rightAnalogYValPrecise, 0, wxEXPAND, 0);
 	rightAnalogYContainer->Add(rightAnalogY, 1, wxEXPAND, 0);
 	rightAnalog->Add(rightAnalogYContainer, 5, wxEXPAND, 0);
 	rightAnalogContainer->Add(rightAnalog, 1, wxEXPAND, 0);
