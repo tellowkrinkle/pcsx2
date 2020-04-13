@@ -155,6 +155,12 @@ public:
 		size_t offset = m_start * STRIDE;
 		size_t length = m_count * STRIDE;
 
+		if (!m_buffer_storage)
+		{
+			m_buffer_ptr = new uint8_t[length];
+			return m_buffer_ptr;
+		}
+
 		if (m_count > (m_limit - m_start))
 		{
 			size_t current_chunk = offset >> m_quarter_shift;
@@ -223,7 +229,15 @@ public:
 
 	void unmap()
 	{
-		glFlushMappedBufferRange(m_target, m_start * STRIDE, m_count * STRIDE);
+		if (m_buffer_storage)
+		{
+			glFlushMappedBufferRange(m_target, m_start * STRIDE, m_count * STRIDE);
+		}
+		else
+		{
+			subdata_upload(m_buffer_ptr);
+			delete[] m_buffer_ptr;
+		}
 	}
 
 	void upload(const void* src, size_t count)
@@ -239,6 +253,7 @@ public:
 		}
 		else
 		{
+			m_count = count;
 			subdata_upload(src);
 		}
 	}
