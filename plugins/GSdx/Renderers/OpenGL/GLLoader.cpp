@@ -65,7 +65,11 @@ namespace ReplaceGL
 	{
 	}
 
-} // namespace ReplaceGL
+	template <typename... Ts>
+	void APIENTRY DoNothing(Ts...)
+	{
+	}
+}
 
 #if defined(_WIN32) || defined(__APPLE__)
 namespace Emulate_DSA {
@@ -302,17 +306,7 @@ namespace GLLoader
 			// GL4.1
 			mandatory("GL_ARB_separate_shader_objects");
 			// GL4.2
-			found_GL_ARB_shading_language_420pack = optional("GL_ARB_shading_language_420pack");
 			mandatory("GL_ARB_texture_storage");
-			// GL4.3
-			if (!optional("GL_KHR_debug")) {
-				glObjectLabel = [](GLenum identifier, GLuint name, GLsizei length, const GLchar *label){};
-				glDebugMessageCallback = [](GLDEBUGPROC callback, const void *userParam){};
-				glDebugMessageInsert = [](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *buf){};
-				glDebugMessageControl = [](GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled){};
-			}
-			// GL4.4
-			found_GL_ARB_buffer_storage = optional("GL_ARB_buffer_storage");
 		}
 
 		// Only for HW renderer
@@ -331,6 +325,7 @@ namespace GLLoader
 			found_GL_ARB_gpu_shader5 = optional("GL_ARB_gpu_shader5");
 			// GL4.2
 			found_GL_ARB_shader_image_load_store = optional("GL_ARB_shader_image_load_store");
+			found_GL_ARB_shading_language_420pack = optional("GL_ARB_shading_language_420pack");
 			// GL4.3
 			found_GL_ARB_compute_shader = optional("GL_ARB_compute_shader");
 			found_GL_ARB_shader_storage_buffer_object = optional("GL_ARB_shader_storage_buffer_object");
@@ -339,6 +334,7 @@ namespace GLLoader
 			// GL4.4
 			found_GL_ARB_clear_texture = optional("GL_ARB_clear_texture");
 			found_GL_ARB_multi_bind = optional("GL_ARB_multi_bind");
+			found_GL_ARB_buffer_storage = optional("GL_ARB_buffer_storage");
 			// GL4.5
 			optional("GL_ARB_direct_state_access");
 			// Mandatory for the advance HW renderer effect. Unfortunately Mesa LLVMPIPE/SWR renderers doesn't support this extension.
@@ -362,9 +358,16 @@ namespace GLLoader
 								 "https://github.com/PCSX2/pcsx2/wiki/OpenGL-and-Intel-GPUs-All-you-need-to-know\n");
 		}
 
-		if (!GLExtension::Has("GL_ARB_viewport_array"))
-		{
-			glScissorIndexed = ReplaceGL::ScissorIndexed;
+		if (!GLExtension::Has("GL_KHR_debug")) {
+			glObjectLabel          = ReplaceGL::DoNothing;
+			glDebugMessageCallback = ReplaceGL::DoNothing;
+			glDebugMessageInsert   = ReplaceGL::DoNothing;
+			glDebugMessageControl  = ReplaceGL::DoNothing;
+			fprintf_once(stderr, "GL_KHR_debug is not supported!  Will stub functions\n");
+		}
+
+		if (!GLExtension::Has("GL_ARB_viewport_array")) {
+			glScissorIndexed   = ReplaceGL::ScissorIndexed;
 			glViewportIndexedf = ReplaceGL::ViewportIndexedf;
 			fprintf_once(stderr, "GL_ARB_viewport_array is not supported! Function pointer will be replaced\n");
 		}
