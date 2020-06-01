@@ -61,6 +61,7 @@ void GSWndCGL::CreateContext(int major, int minor) {
 		NSOpenGLPixelFormat *pxformat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
 
 		m_view = [[NSOpenGLView alloc] initWithFrame:[[m_NativeWindow contentView] frame] pixelFormat:pxformat];
+		[m_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
 		// Note: Don't replace the window's contentView because this window might be from wx, in which case replacing its contentView would break wx things
 		[[m_NativeWindow contentView] addSubview:m_view];
 
