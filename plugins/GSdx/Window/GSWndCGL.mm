@@ -43,13 +43,8 @@ GSWndCGL::~GSWndCGL() {
 void GSWndCGL::CreateContext(int major, int minor) {
 	if (!m_NativeWindow) throw GSDXRecoverableError();
 
-	NSOpenGLPixelFormatAttribute profileVer = NSOpenGLProfileVersion3_2Core;
-	if (major > 3 || (major == 3 && minor > 2)) {
-		profileVer = NSOpenGLProfileVersion4_1Core;
-	}
-
 	const NSOpenGLPixelFormatAttribute attrs[] = {
-		NSOpenGLPFAOpenGLProfile, profileVer,
+		NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
 		NSOpenGLPFAAccelerated,
 		NSOpenGLPFADoubleBuffer,
 		NSOpenGLPFAColorSize, 24,
