@@ -27,8 +27,8 @@ struct xImpl_JmpCall
 {
     bool isJmp;
 
-    void operator()(const xRegisterInt &absreg) const;
-    void operator()(const xIndirect64orLess &src) const;
+    void operator()(const xAddressReg &absreg) const;
+    void operator()(const xIndirectNative &src) const;
 
     // Special form for calling functions.  This form automatically resolves the
     // correct displacement based on the size of the instruction being generated.
@@ -157,7 +157,7 @@ struct xImpl_FastCall
 #endif
     }
 
-    void operator()(const xIndirect32 &f, const xRegisterLong &a1 = xEmptyReg, const xRegisterLong &a2 = xEmptyReg) const
+    void operator()(const xIndirectNative &f, const xRegisterLong &a1 = xEmptyReg, const xRegisterLong &a2 = xEmptyReg) const
     {
 #ifdef __M_X86_64
         if (a1.IsEmpty()) {
