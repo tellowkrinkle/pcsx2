@@ -29,6 +29,10 @@ struct xImpl_JmpCall
 
     void operator()(const xAddressReg &absreg) const;
     void operator()(const xIndirectNative &src) const;
+#ifdef __M_X86_64
+    [[deprecated]] // Should move to xIndirectNative
+#endif
+    void operator()(const xIndirect32 &absreg) const;
 
     // Special form for calling functions.  This form automatically resolves the
     // correct displacement based on the size of the instruction being generated.
@@ -90,7 +94,6 @@ struct xImpl_FastCall
 
     void operator()(void *f, const xRegisterLong &a1 = xEmptyReg, const xRegisterLong &a2 = xEmptyReg) const
     {
-#ifdef __M_X86_64
         if (a1.IsEmpty()) {
             XFASTCALL;
         } else if (a2.IsEmpty()) {
@@ -98,15 +101,6 @@ struct xImpl_FastCall
         } else {
             XFASTCALL2;
         }
-#else
-        if (a1.IsEmpty()) {
-            XFASTCALL;
-        } else if (a2.IsEmpty()) {
-            XFASTCALL1;
-        } else {
-            XFASTCALL2;
-        }
-#endif
     }
 
     template <typename T>
@@ -114,11 +108,7 @@ struct xImpl_FastCall
     {
         void *f = (void *)func;
 
-#ifdef __M_X86_64
         XFASTCALL2;
-#else
-        XFASTCALL2;
-#endif
     }
 
     template <typename T>
@@ -126,11 +116,7 @@ struct xImpl_FastCall
     {
         void *f = (void *)func;
 
-#ifdef __M_X86_64
         XFASTCALL1;
-#else
-        XFASTCALL1;
-#endif
     }
 
     template <typename T>
@@ -138,11 +124,7 @@ struct xImpl_FastCall
     {
         void *f = (void *)func;
 
-#ifdef __M_X86_64
         XFASTCALL2;
-#else
-        XFASTCALL2;
-#endif
     }
 
     template <typename T>
@@ -150,16 +132,25 @@ struct xImpl_FastCall
     {
         void *f = (void *)func;
 
+        XFASTCALL1;
+    }
+
 #ifdef __M_X86_64
-        XFASTCALL1;
-#else
-        XFASTCALL1;
+    [[deprecated]] // Switch to xIndirectNative
 #endif
+    void operator()(const xIndirect32 &f, const xRegisterLong &a1 = xEmptyReg, const xRegisterLong &a2 = xEmptyReg) const
+    {
+        if (a1.IsEmpty()) {
+            XFASTCALL;
+        } else if (a2.IsEmpty()) {
+            XFASTCALL1;
+        } else {
+            XFASTCALL2;
+        }
     }
 
     void operator()(const xIndirectNative &f, const xRegisterLong &a1 = xEmptyReg, const xRegisterLong &a2 = xEmptyReg) const
     {
-#ifdef __M_X86_64
         if (a1.IsEmpty()) {
             XFASTCALL;
         } else if (a2.IsEmpty()) {
@@ -167,15 +158,6 @@ struct xImpl_FastCall
         } else {
             XFASTCALL2;
         }
-#else
-        if (a1.IsEmpty()) {
-            XFASTCALL;
-        } else if (a2.IsEmpty()) {
-            XFASTCALL1;
-        } else {
-            XFASTCALL2;
-        }
-#endif
     }
 
 #undef XFASTCALL
