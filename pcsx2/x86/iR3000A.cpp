@@ -125,7 +125,7 @@ static DynGenFunc* _DynGen_JITCompile()
 
 	u8* retval = xGetPtr();
 
-	xFastCall((void*)iopRecRecompile, ptr[&psxRegs.pc] );
+	xFastCall((void*)iopRecRecompile, ptr32[&psxRegs.pc] );
 
 	xMOV( eax, ptr[&psxRegs.pc] );
 	xMOV( ebx, eax );
