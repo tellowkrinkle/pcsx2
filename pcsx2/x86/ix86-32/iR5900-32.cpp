@@ -51,7 +51,7 @@ using namespace R5900;
 
 u32 maxrecmem = 0;
 static __aligned16 uptr recLUT[_64kb];
-static __aligned16 uptr hwLUT[_64kb];
+static __aligned16 u32 hwLUT[_64kb];
 
 static __fi u32 HWADDR(u32 mem) { return hwLUT[mem >> 16] + mem; }
 
@@ -347,11 +347,15 @@ static DynGenFunc* _DynGen_JITCompile()
 
 	xFastCall((void*)recRecompile, ptr32[&cpuRegs.pc] );
 
-	xMOV( eax, ptr[&cpuRegs.pc] );
-	xMOV( ebx, eax );
-	xSHR( eax, 16 );
-	xMOV( ecx, ptr[recLUT + (eax*4)] );
-	xJMP( ptr32[ecx+ebx] );
+	// C equivalent:
+	// u32 addr = cpuRegs.pc;
+	// void(**base)() = (void(**)())recLUT[addr >> 16];
+	// base[addr >> 2]();
+	xMOV( eaxd, ptr[&cpuRegs.pc] );
+	xMOV( ebxd, eaxd );
+	xSHR( eaxd, 16 );
+	xMOV( rcx, ptr[recLUT + rax*wordsize] );
+	xJMP( ptrNative[rbx*(wordsize/4) + rcx] );
 
 	return (DynGenFunc*)retval;
 }
@@ -368,11 +372,15 @@ static DynGenFunc* _DynGen_DispatcherReg()
 {
 	u8* retval = xGetPtr();		// fallthrough target, can't align it!
 
-	xMOV( eax, ptr[&cpuRegs.pc] );
-	xMOV( ebx, eax );
-	xSHR( eax, 16 );
-	xMOV( ecx, ptr[recLUT + (eax*4)] );
-	xJMP( ptr32[ecx+ebx] );
+	// C equivalent:
+	// u32 addr = cpuRegs.pc;
+	// void(**base)() = (void(**)())recLUT[addr >> 16];
+	// base[addr >> 2]();
+	xMOV( eaxd, ptr[&cpuRegs.pc] );
+	xMOV( ebxd, eaxd );
+	xSHR( eaxd, 16 );
+	xMOV( rcx, ptr[recLUT + rax*wordsize] );
+	xJMP( ptrNative[rbx*(wordsize/4) + rcx] );
 
 	return (DynGenFunc*)retval;
 }
