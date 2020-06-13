@@ -346,7 +346,7 @@ static DynGenFunc* _DynGen_JITCompile()
 
 	u8* retval = xGetAlignedCallTarget();
 
-	xFastCall((void*)recRecompile, ptr[&cpuRegs.pc] );
+	xFastCall((void*)recRecompile, ptr32[&cpuRegs.pc] );
 
 	xMOV( eax, ptr[&cpuRegs.pc] );
 	xMOV( ebx, eax );
@@ -1737,7 +1737,7 @@ static void __fastcall recRecompile( const u32 startpc )
 			// Game will unmap some virtual addresses. If a constant address were hardcoded in the block, we would be in a bad situation.
 			eeRecNeedsReset = true;
 			// 0x3563b8 is the start address of the function that invalidate entry in TLB cache
-			xFastCall((void*)GoemonUnloadTlb, ptr[&cpuRegs.GPR.n.a0.UL[0]]);
+			xFastCall((void*)GoemonUnloadTlb, ptr32[&cpuRegs.GPR.n.a0.UL[0]]);
 		}
 	}
 
