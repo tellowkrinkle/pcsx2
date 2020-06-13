@@ -46,7 +46,7 @@ u32 g_psxMaxRecMem = 0;
 u32 s_psxrecblocks[] = {0};
 
 uptr psxRecLUT[0x10000];
-uptr psxhwLUT[0x10000];
+u32 psxhwLUT[0x10000];
 
 static __fi u32 HWADDR(u32 mem) { return psxhwLUT[mem >> 16] + mem; }
 
