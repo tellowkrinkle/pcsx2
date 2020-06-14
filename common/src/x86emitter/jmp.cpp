@@ -49,12 +49,32 @@ void xImpl_JmpCall::operator()(const xIndirect32 &absreg) const {
 const xImpl_JmpCall xJMP = {true};
 const xImpl_JmpCall xCALL = {false};
 
+static void prepareRegsForFastcall(const xRegister32 &a1, const xRegister32 &a2) {
+    if (!a1.IsEmpty()) {
+        xMOV(xRegister32(arg1reg.Id), a1);
+        if (!a2.IsEmpty()) {
+            xMOV(xRegister32(arg2reg.Id), a2);
+        }
+    }
+}
+
 static void prepareRegsForFastcall(const xRegisterLong &a1, const xRegisterLong &a2) {
     if (!a1.IsEmpty()) {
         xMOV(arg1reg, a1);
         if (!a2.IsEmpty()) {
             xMOV(arg2reg, a2);
         }
+    }
+}
+
+void xImpl_FastCall::operator()(void *f, const xRegister32 &a1, const xRegister32 &a2) const {
+    prepareRegsForFastcall(a1, a2);
+    uptr disp = ((uptr)xGetPtr() + 5) - (uptr)f;
+    if ((sptr)disp == (s32)disp) {
+        xCALL(f);
+    } else {
+        xMOV(rax, ptrNative[f]);
+        xCALL(rax);
     }
 }
 
@@ -74,16 +94,20 @@ void xImpl_FastCall::operator()(void *f, u32 a1, const xRegisterLong &a2) const 
     (*this)(f, arg1reg, a2);
 }
 
+void xImpl_FastCall::operator()(void *f, u32 a1, const xRegister32 &a2) const {
+    xMOV(xRegister32(arg1reg.Id), a1);
+    (*this)(f, xRegister32(arg1reg.Id), a2);
+}
+
 void xImpl_FastCall::operator()(void *f, const xIndirect32 &a1) const {
-    pxAssertDev(a1.GetOperandSize() == 4, "This function currently only supports dword arguments");
-    xMOV(arg1reg.GetNonWide(), a1);
-    (*this)(f, arg1reg);
+    xMOV(xRegister32(arg1reg.Id), a1);
+    (*this)(f, xRegister32(arg1reg.Id));
 }
 
 void xImpl_FastCall::operator()(void *f, u32 a1, u32 a2) const {
-    xMOV(arg1reg, a1);
-    xMOV(arg2reg, a2);
-    (*this)(f, arg1reg, arg2reg);
+    xMOV(xRegister32(arg1reg.Id), a1);
+    xMOV(xRegister32(arg2reg.Id), a2);
+    (*this)(f, xRegister32(arg1reg.Id), xRegister32(arg2reg.Id));
 }
 
 void xImpl_FastCall::operator()(const xIndirect32 &f, const xRegisterLong &a1, const xRegisterLong &a2) const {

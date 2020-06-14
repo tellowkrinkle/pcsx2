@@ -536,6 +536,11 @@ struct xRegisterEmpty
         return xRegister16(xRegId_Empty);
     }
 
+    operator xRegister32() const
+    {
+        return xRegister32(xRegId_Empty);
+    }
+
     operator xRegisterSSE() const
     {
         return xRegisterSSE(xRegId_Empty);
