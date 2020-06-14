@@ -272,7 +272,7 @@ static void recCFC2() {
 
 	if (_Rd_ == REG_STATUS_FLAG) { // Normalize Status Flag
 		xMOV(gprF0, ptr32[&vu0Regs.VI[REG_STATUS_FLAG].UL]);
-		mVUallocSFLAGc(eax, gprF0, 0);
+		mVUallocSFLAGc(eaxd, gprF0, 0);
 	}
 	else xMOV(eax, ptr32[&vu0Regs.VI[_Rd_].UL]);
 
