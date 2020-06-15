@@ -547,7 +547,7 @@ void recCVT_W() //called from iFPU.cpp's recCVT_W
 	if( regs >= 0 )
 	{
 		xCVTTSS2SI(eax, xRegisterSSE(regs));
-		xMOVMSKPS(edx, xRegisterSSE(regs));	//extract the signs
+		xMOVMSKPS(edxd, xRegisterSSE(regs));	//extract the signs
 		xAND(edx, 1);					//keep only LSB
 	}
 	else

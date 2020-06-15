@@ -924,7 +924,7 @@ void recCVT_W()
 	{
 		if (CHECK_FPU_EXTRA_OVERFLOW) fpuFloat2(regs);
 		xCVTTSS2SI(eax, xRegisterSSE(regs));
-		xMOVMSKPS(edx, xRegisterSSE(regs));	//extract the signs
+		xMOVMSKPS(edxd, xRegisterSSE(regs));	//extract the signs
 		xAND(edx, 1);				//keep only LSB
 	}
 	else
