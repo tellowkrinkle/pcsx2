@@ -103,13 +103,13 @@ void recJALR()
 	EE::Profiler.EmitOp(eeOpcode::JALR);
 
 	int newpc = pc + 4;
-	_allocX86reg(esi, X86TYPE_PCWRITEBACK, 0, MODE_WRITE);
-	_eeMoveGPRtoR(esi, _Rs_);
+	_allocX86reg(esid, X86TYPE_PCWRITEBACK, 0, MODE_WRITE);
+	_eeMoveGPRtoR(esid, _Rs_);
 
 	if (EmuConfig.Gamefixes.GoemonTlbHack) {
-		xMOV(ecx, esi);
+		xMOV(ecxd, esid);
 		vtlb_DynV2P();
-		xMOV(esi, eax);
+		xMOV(esid, eaxd);
 	}
 	// uncomment when there are NO instructions that need to call interpreter
 //	int mmreg;
@@ -147,14 +147,14 @@ void recJALR()
 	_clearNeededXMMregs();
 	recompileNextInstruction(1);
 
-	if( x86regs[esi.GetId()].inuse ) {
-		pxAssert( x86regs[esi.GetId()].type == X86TYPE_PCWRITEBACK );
-		xMOV(ptr[&cpuRegs.pc], esi);
-		x86regs[esi.GetId()].inuse = 0;
+	if( x86regs[esid.GetId()].inuse ) {
+		pxAssert( x86regs[esid.GetId()].type == X86TYPE_PCWRITEBACK );
+		xMOV(ptr[&cpuRegs.pc], esid);
+		x86regs[esid.GetId()].inuse = 0;
 	}
 	else {
-		xMOV(eax, ptr[&g_recWriteback]);
-		xMOV(ptr[&cpuRegs.pc], eax);
+		xMOV(eaxd, ptr[&g_recWriteback]);
+		xMOV(ptr[&cpuRegs.pc], eaxd);
 	}
 
 	SetBranchReg(0xffffffff);
