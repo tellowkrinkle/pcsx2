@@ -211,6 +211,7 @@ void _eeMoveGPRtoRm(x86IntRegType to, int fromgpr)
 
 void eeSignExtendTo(int gpr, bool onlyupper)
 {
+	// TODO: Use 64-bit registers (movsx) on x86-64
 	xCDQ();
 	if (!onlyupper)
 		xMOV(ptr32[&cpuRegs.GPR.r[gpr].UL[0]], eaxd);
