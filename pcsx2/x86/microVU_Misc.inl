@@ -574,7 +574,7 @@ void mVUcustomSearch() {
 	xPCMP.EQD(xmm1, ptr32[edx + 0x10]);
 	xPAND	 (xmm0, xmm1);
 
-	xMOVMSKPS(eax, xmm0);
+	xMOVMSKPS(eaxd, xmm0);
 	xCMP	 (eax, 0xf);
 	xForwardJL8 exitPoint;
 
@@ -605,7 +605,7 @@ void mVUcustomSearch() {
 	xPAND (xmm0, xmm2);
 	xPAND (xmm4, xmm6);
 	xPAND (xmm0, xmm4);
-	xMOVMSKPS(eax, xmm0);
+	xMOVMSKPS(eaxd, xmm0);
 
 	exitPoint.SetTarget();
 	xRET();

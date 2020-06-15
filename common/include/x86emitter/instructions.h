@@ -445,8 +445,8 @@ extern void xMOVNTDQA(const xIndirectVoid &to, const xRegisterSSE &from);
 extern void xMOVNTPD(const xIndirectVoid &to, const xRegisterSSE &from);
 extern void xMOVNTPS(const xIndirectVoid &to, const xRegisterSSE &from);
 
-extern void xMOVMSKPS(const xRegister32or64 &to, const xRegisterSSE &from);
-extern void xMOVMSKPD(const xRegister32or64 &to, const xRegisterSSE &from);
+extern void xMOVMSKPS(const xRegister32 &to, const xRegisterSSE &from);
+extern void xMOVMSKPD(const xRegister32 &to, const xRegisterSSE &from);
 
 extern void xMASKMOV(const xRegisterSSE &to, const xRegisterSSE &from);
 extern void xPMOVMSKB(const xRegister32or64 &to, const xRegisterSSE &from);
