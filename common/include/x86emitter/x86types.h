@@ -489,7 +489,7 @@ public:
 #else
 #define xRegisterLong xRegister32
 #endif
-const int wordsize = sizeof(sptr);
+static const int wordsize = sizeof(sptr);
 
 class xAddressReg : public xRegisterLong
 {
