@@ -62,12 +62,15 @@ struct xImpl_FastCall
 // some registers. But I think it is enough to handle the first call.
 
     void operator()(void *f, const xRegister32 &a1 = xEmptyReg, const xRegister32 &a2 = xEmptyReg) const;
-    void operator()(void *f, const xRegisterLong &a1, const xRegisterLong &a2 = xEmptyReg) const;
 
     void operator()(void *f, u32 a1, const xRegister32 &a2) const;
-    void operator()(void *f, u32 a1, const xRegisterLong &a2) const;
     void operator()(void *f, const xIndirect32 &a1) const;
     void operator()(void *f, u32 a1, u32 a2) const;
+
+#ifdef __M_X86_64
+    void operator()(void *f, const xRegisterLong &a1, const xRegisterLong &a2 = xEmptyReg) const;
+    void operator()(void *f, u32 a1, const xRegisterLong &a2) const;
+#endif
 
     template <typename T>
     __fi void operator()(T *func, u32 a1, const xRegisterLong &a2 = xEmptyReg) const
