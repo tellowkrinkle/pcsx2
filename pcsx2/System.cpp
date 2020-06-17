@@ -394,7 +394,7 @@ namespace HostMemoryMap {
 //  SysReserveVM  (implementations)
 // --------------------------------------------------------------------------------------
 SysMainMemory::SysMainMemory()
-	: m_mainMemory(std::make_shared<VirtualMemoryManager>("Main Memory Manager", HostMemoryMap::Base, HostMemoryMap::Size))
+	: m_mainMemory(std::make_shared<VirtualMemoryManager>("Main Memory Manager", 0x140000000, HostMemoryMap::Size))
 	, m_bumpAllocator(m_mainMemory, HostMemoryMap::bumpAllocatorOffset, HostMemoryMap::Size - HostMemoryMap::bumpAllocatorOffset)
 {
 	uptr base = (uptr)MainMemory()->GetBase();
