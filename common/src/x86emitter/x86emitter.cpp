@@ -948,7 +948,7 @@ void xImpl_Test::operator()(const xRegisterInt &to, const xRegisterInt &from) co
 
 void xImpl_Test::operator()(const xIndirect64orLess &dest, int imm) const
 {
-    xOpWrite(dest.GetPrefix16(), dest.Is8BitOp() ? 0xf6 : 0xf7, 0, dest);
+    xOpWrite(dest.GetPrefix16(), dest.Is8BitOp() ? 0xf6 : 0xf7, 0, dest, dest.GetImmSize());
     dest.xWriteImm(imm);
 }
 
@@ -977,13 +977,11 @@ void xImpl_IncDec::operator()(const xRegisterInt &to) const
     if (to.Is8BitOp()) {
         u8 regfield = isDec ? 1 : 0;
         xOpWrite(to.GetPrefix16(), 0xfe, regfield, to);
-    } else {
-#ifdef __M_X86_64
-        pxAssertMsg(0, "Single Byte INC/DEC aren't valid in 64 bits."
-                       "You need to use the ModR/M form (FF/0 FF/1 opcodes)");
-#endif
+    } else if (wordsize != 8) {
         to.prefix16();
         xWrite8((isDec ? 0x48 : 0x40) | to.Id);
+    } else {
+        xOpWrite(to.GetPrefix16(), 0xff, isDec ? 1 : 0, to);
     }
 }
 
