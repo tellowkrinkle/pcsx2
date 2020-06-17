@@ -111,6 +111,9 @@ void _eeMoveGPRtoM(uptr to, int fromgpr);
 void _eeMoveGPRtoRm(x86IntRegType to, int fromgpr);
 void eeSignExtendTo(int gpr, bool onlyupper=false);
 
+/// `mov output, [base + offset]` while taking into account the limitations of x86-64
+void _eeLoadComplex(const x86Emitter::xRegisterInt& output, const x86Emitter::xAddressReg& tmpReg, void *base, x86Emitter::xAddressVoid offset);
+
 void _eeFlushAllUnused();
 void _eeOnWriteReg(int reg, int signext);
 
