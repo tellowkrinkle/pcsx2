@@ -75,7 +75,7 @@ static const int RECCONSTBUF_SIZE = 16384 * 2; // 64 bit consts in 32 bit units
 static RecompiledCodeReserve* recMem = NULL;
 static u8* recRAMCopy = NULL;
 static u8* recLutReserve_RAM = NULL;
-static const size_t recLutSize = Ps2MemSize::MainRam + Ps2MemSize::Rom + Ps2MemSize::Rom1;
+static const size_t recLutSize = (Ps2MemSize::MainRam + Ps2MemSize::Rom + Ps2MemSize::Rom1) * wordsize / 4;
 
 static uptr m_ConfiguredCacheReserve = 64;
 
@@ -216,6 +216,15 @@ void eeSignExtendTo(int gpr, bool onlyupper)
 	if (!onlyupper)
 		xMOV(ptr32[&cpuRegs.GPR.r[gpr].UL[0]], eaxd);
 	xMOV(ptr32[&cpuRegs.GPR.r[gpr].UL[1]], edxd);
+}
+
+void _eeLoadComplex(const x86Emitter::xRegisterInt& output, const x86Emitter::xAddressReg& tmpReg, void *base, x86Emitter::xAddressVoid offset) {
+	if ((sptr)base == (s32)(sptr)base) {
+		xMOV(output, x86Emitter::ptr[base + offset]);
+	} else {
+		xLEA(tmpReg, x86Emitter::ptr[base]);
+		xMOV(output, x86Emitter::ptr[offset + tmpReg]);
+	}
 }
 
 int _flushXMMunused()
@@ -360,7 +369,7 @@ static DynGenFunc* _DynGen_JITCompile()
 	xMOV( eaxd, ptr[&cpuRegs.pc] );
 	xMOV( ebxd, eaxd );
 	xSHR( eaxd, 16 );
-	xMOV( rcx, ptr[recLUT + rax*wordsize] );
+	_eeLoadComplex(rcx, rcx, recLUT, rax*wordsize);
 	xJMP( ptrNative[rbx*(wordsize/4) + rcx] );
 
 	return (DynGenFunc*)retval;
@@ -385,7 +394,7 @@ static DynGenFunc* _DynGen_DispatcherReg()
 	xMOV( eaxd, ptr[&cpuRegs.pc] );
 	xMOV( ebxd, eaxd );
 	xSHR( eaxd, 16 );
-	xMOV( rcx, ptr[recLUT + rax*wordsize] );
+	_eeLoadComplex(rcx, rcx, recLUT, rax*wordsize);
 	xJMP( ptrNative[rbx*(wordsize/4) + rcx] );
 
 	return (DynGenFunc*)retval;
@@ -474,7 +483,7 @@ static void _DynGen_Dispatchers()
 
 static __ri void ClearRecLUT(BASEBLOCK* base, int memsize)
 {
-	for (int i = 0; i < memsize/4; i++)
+	for (int i = 0; i < memsize/(int)sizeof(uptr); i++)
 		base[i].SetFnptr((uptr)JITCompile);
 }
 
@@ -869,21 +878,21 @@ void SetBranchReg( u32 reg )
 //				xMOV(ptr[&cpuRegs.pc], eax);
 //			}
 //		}
-		_allocX86reg(esid, X86TYPE_PCWRITEBACK, 0, MODE_WRITE);
-		_eeMoveGPRtoR(esid, reg);
+		_allocX86reg(calleeSavedReg2d, X86TYPE_PCWRITEBACK, 0, MODE_WRITE);
+		_eeMoveGPRtoR(calleeSavedReg2d, reg);
 
 		if (EmuConfig.Gamefixes.GoemonTlbHack) {
-			xMOV(ecxd, esid);
+			xMOV(ecxd, calleeSavedReg2d);
 			vtlb_DynV2P();
-			xMOV(esid, eaxd);
+			xMOV(calleeSavedReg2d, eaxd);
 		}
 
 		recompileNextInstruction(1);
 
-		if( x86regs[esid.GetId()].inuse ) {
-			pxAssert( x86regs[esid.GetId()].type == X86TYPE_PCWRITEBACK );
-			xMOV(ptr[&cpuRegs.pc], esid);
-			x86regs[esid.GetId()].inuse = 0;
+		if( x86regs[calleeSavedReg2d.GetId()].inuse ) {
+			pxAssert( x86regs[calleeSavedReg2d.GetId()].type == X86TYPE_PCWRITEBACK );
+			xMOV(ptr[&cpuRegs.pc], calleeSavedReg2d);
+			x86regs[calleeSavedReg2d.GetId()].inuse = 0;
 		}
 		else {
 			xMOV(eaxd, ptr[&g_recWriteback]);

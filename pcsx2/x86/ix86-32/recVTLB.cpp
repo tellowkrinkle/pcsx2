@@ -154,16 +154,16 @@ namespace vtlb_private
 	// Prepares eax, ecx, and, ebx for Direct or Indirect operations.
 	// Returns the writeback pointer for ebx (return address from indirect handling)
 	//
-	static uptr* DynGen_PrepRegs()
+	static u32* DynGen_PrepRegs()
 	{
 		// Warning dirty ebx (in case someone got the very bad idea to move this code)
 		EE::Profiler.EmitMem();
 
 		xMOV( eaxd, arg1regd );
 		xSHR( eaxd, VTLB_PAGE_BITS );
-		xMOV( rax, ptr[(rax*wordsize) + vtlbdata.vmap] );
+		_eeLoadComplex(rax, rbx, vtlbdata.vmap, rax*wordsize);
 		xLEA( rbx, ptr[(void*)(0xdcdcdcd + (wordsize == 8 ? (uptr)xGetPtr() + 7 : 0))] );
-		uptr* writeback = ((uptr*)xGetPtr()) - 1;
+		u32* writeback = ((u32*)xGetPtr()) - 1;
 		xADD( arg1reg, rax );
 
 		return writeback;
@@ -292,7 +292,13 @@ static void DynGen_IndirectTlbDispatcher( int mode, int bits, bool sign )
 
 	// jump to the indirect handler, which is a __fastcall C++ function.
 	// [ecx is address, edx is data]
-	xFastCall(ptrNative[(eax*4) + vtlbdata.RWFT[bits][mode]], arg1reg, arg2reg);
+	sptr table = (sptr)vtlbdata.RWFT[bits][mode];
+	if (table == (s32)table) {
+		xFastCall(ptrNative[(rax*wordsize) + table], arg1reg, arg2reg);
+	} else {
+		xLEA(arg3reg, ptr[(void*)table]);
+		xFastCall(ptrNative[(rax*wordsize) + arg3reg], arg1reg, arg2reg);
+	}
 
 	if (!mode)
 	{
@@ -348,7 +354,7 @@ void vtlb_dynarec_init()
 	Perf::any.map((uptr)m_IndirectDispatchers, __pagesize, "TLB Dispatcher");
 }
 
-static void vtlb_SetWriteback(uptr *writeback) {
+static void vtlb_SetWriteback(u32 *writeback) {
 	uptr val = (uptr)xGetPtr();
 	if (wordsize == 8) {
 		val -= ((uptr)writeback + 4);
@@ -363,7 +369,7 @@ void vtlb_DynGenRead64(u32 bits)
 {
 	pxAssume( bits == 64 || bits == 128 );
 
-	uptr* writeback = DynGen_PrepRegs();
+	u32* writeback = DynGen_PrepRegs();
 
 	DynGen_IndirectDispatch( 0, bits );
 	DynGen_DirectRead( bits, false );
@@ -379,7 +385,7 @@ void vtlb_DynGenRead32(u32 bits, bool sign)
 {
 	pxAssume( bits <= 32 );
 
-	uptr* writeback = DynGen_PrepRegs();
+	u32* writeback = DynGen_PrepRegs();
 
 	DynGen_IndirectDispatch( 0, bits, sign && bits < 32 );
 	DynGen_DirectRead( bits, sign );
@@ -397,7 +403,7 @@ void vtlb_DynGenRead64_Const( u32 bits, u32 addr_const )
 	auto vmv = vtlbdata.vmap[addr_const>>VTLB_PAGE_BITS];
 	if( !vmv.isHandler(addr_const) )
 	{
-		auto ppf = vmv.assumeHandlerGetPAddr(addr_const);
+		auto ppf = vmv.assumePtr(addr_const);
 		switch( bits )
 		{
 			case 64:
@@ -513,7 +519,7 @@ void vtlb_DynGenRead32_Const( u32 bits, bool sign, u32 addr_const )
 
 void vtlb_DynGenWrite(u32 sz)
 {
-	uptr* writeback = DynGen_PrepRegs();
+	u32* writeback = DynGen_PrepRegs();
 
 	DynGen_IndirectDispatch( 1, sz );
 	DynGen_DirectWrite( sz );
