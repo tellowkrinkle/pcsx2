@@ -194,12 +194,12 @@ void recStore(u32 bits)
 
         if (bits < 64)
         {
-                _eeMoveGPRtoR(edxd, _Rt_);
+                _eeMoveGPRtoR(arg2regd, _Rt_);
         }
         else if (bits == 128 || bits == 64)
         {
                 _flushEEreg(_Rt_);          // flush register to mem
-                xMOV(edxd, (uptr)&cpuRegs.GPR.r[_Rt_].UL[0]);
+                xLEA(arg2reg, ptr[&cpuRegs.GPR.r[_Rt_].UL[0]]);
         }
 
         // Load ECX with the destination address, or issue a direct optimized write
