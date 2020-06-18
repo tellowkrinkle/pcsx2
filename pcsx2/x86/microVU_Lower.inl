@@ -913,24 +913,32 @@ mVUop(mVU_ISWR) {
 		analyzeVIreg1(mVU, _Is_, mVUlow.VI_read[0]);
 		analyzeVIreg1(mVU, _It_, mVUlow.VI_read[1]); }
 	pass2 {
-		xAddressVoid ptr(mVU.regs().Mem);
+		void *ptr = mVU.regs().Mem;
+		xRegister32 is = xEmptyReg;
 		if (_Is_) {
 			mVUallocVIa(mVU, gprT2d, _Is_);
 			mVUaddrFix (mVU, gprT2d);
-			ptr += gprT2;
+			is = gprT2d;
 		}
 		mVUallocVIa(mVU, gprT1d, _It_);
-		if (!ptr.Base.IsEmpty() && (_X || _Y || _Z || _W)) {
-			xLEA(gprT3q, x86Emitter::ptr[ptr]);
-			if (_X) xMOV(ptr32[gprT3q], gprT1d);
-			if (_Y) xMOV(ptr32[gprT3q+4], gprT1d);
-			if (_Z) xMOV(ptr32[gprT3q+8], gprT1d);
-			if (_W) xMOV(ptr32[gprT3q+12], gprT1d);
+		if (!is.IsEmpty() && (sptr)ptr != (s32)(sptr)ptr) {
+			int offset = -1;
+			auto writeOffset = [&](int offsetReq){
+				if (offset == -1) {
+					xLEA(gprT3q, x86Emitter::ptr[ptr]);
+					offset = offsetReq;
+				}
+				xMOV(ptr32[gprT3q+is+(offsetReq-offset)], gprT1d);
+			};
+			if (_X) writeOffset(0);
+			if (_Y) writeOffset(4);
+			if (_Z) writeOffset(8);
+			if (_W) writeOffset(12);
 		} else {
-			if (_X) xMOV(ptr32[ptr], gprT1d);
-			if (_Y) xMOV(ptr32[ptr+4], gprT1d);
-			if (_Z) xMOV(ptr32[ptr+8], gprT1d);
-			if (_W) xMOV(ptr32[ptr+12], gprT1d);
+			if (_X) xMOV(ptr32[ptr+is], gprT1d);
+			if (_Y) xMOV(ptr32[ptr+is+4], gprT1d);
+			if (_Z) xMOV(ptr32[ptr+is+8], gprT1d);
+			if (_W) xMOV(ptr32[ptr+is+12], gprT1d);
 		}
 		mVU.profiler.EmitOp(opISWR);
 	}
