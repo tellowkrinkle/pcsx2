@@ -143,7 +143,6 @@ void xImpl_Mov::operator()(const xRegisterInt &to, sptr imm, bool preserve_flags
 
 const xImpl_Mov xMOV;
 
-#ifdef __M_X86_64
 void xImpl_MovImm64::operator()(const xRegister64& to, s64 imm, bool preserve_flags) const
 {
     if (imm == (u32)imm || imm == (s32)imm) {
@@ -156,7 +155,6 @@ void xImpl_MovImm64::operator()(const xRegister64& to, s64 imm, bool preserve_fl
 }
 
 const xImpl_MovImm64 xMOV64;
-#endif
 
 // --------------------------------------------------------------------------------------
 //  CMOVcc
