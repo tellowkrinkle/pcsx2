@@ -211,15 +211,15 @@ namespace vtlb_private
 		{
 			//8 , 16, 32 : data on EDX
 			case 8:
-				xMOV( ptr[arg1reg], dl );
+				xMOV( ptr[arg1reg], xRegister8(arg2reg.Id) );
 			break;
 
 			case 16:
-				xMOV( ptr[arg1reg], dx );
+				xMOV( ptr[arg1reg], xRegister16(arg2reg.Id) );
 			break;
 
 			case 32:
-				xMOV( ptr[arg1reg], edx );
+				xMOV( ptr[arg1reg], arg2regd );
 			break;
 
 			case 64:
