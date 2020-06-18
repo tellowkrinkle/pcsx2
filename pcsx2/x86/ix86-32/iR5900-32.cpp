@@ -39,6 +39,7 @@
 #	include <csetjmp>
 #endif
 
+#include "EmuCmp.h"
 
 #include "Utilities/MemsetFast.inl"
 #include "Utilities/Perf.h"
@@ -1051,6 +1052,13 @@ static void iBranchTest(u32 newpc)
 	//    cpuRegs.cycle += blockcycles;
 	//    if( cpuRegs.cycle > g_nextEventCycle ) { DoEvents(); }
 
+	if (EmuCmp::mode != EmuCmp::Config::Mode::Off
+		&& EmuCmp::granularity == EmuCmp::Config::Granularity::BasicBlock)
+	{
+		iFlushCall(FLUSH_FREE_XMM);
+		xFastCall((void*)EmuCmp::cmpR5900, 0);
+	}
+
 	if (EmuConfig.Speedhacks.WaitLoop && s_nBlockFF && newpc == s_branchTo)
 	{
 		xMOV(eaxd, ptr32[&g_nextEventCycle]);
@@ -1306,6 +1314,13 @@ void recompileNextInstruction(int delayslot)
 		xNOP();
 	if( IsDebugBuild )
 		xMOV(eaxd, pc);
+
+	if (EmuCmp::mode != EmuCmp::Config::Mode::Off
+		&& EmuCmp::granularity == EmuCmp::Config::Granularity::Instruction)
+	{
+		iFlushCall(FLUSH_FREE_XMM);
+		xFastCall((void*)EmuCmp::cmpR5900, pc);
+	}
 
 	cpuRegs.code = *(int *)s_pCode;
 
