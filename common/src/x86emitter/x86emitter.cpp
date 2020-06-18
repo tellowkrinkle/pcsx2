@@ -1145,6 +1145,14 @@ __emitinline void xRestoreReg(const xRegisterSSE &dest)
 
 #endif
 
+static void stackAlign(int offset, bool moveDown) {
+    int needed = (16 - (offset % 16)) % 16;
+    if (moveDown) {
+        needed = -needed;
+    }
+    ALIGN_STACK(needed);
+}
+
 xScopedStackFrame::xScopedStackFrame(bool base_frame, bool save_base_pointer, int offset)
 {
     m_base_frame = base_frame;
@@ -1188,12 +1196,12 @@ xScopedStackFrame::xScopedStackFrame(bool base_frame, bool save_base_pointer, in
 
 #endif
 
-    ALIGN_STACK(-(16 - m_offset % 16));
+    stackAlign(m_offset, true);
 }
 
 xScopedStackFrame::~xScopedStackFrame()
 {
-    ALIGN_STACK(16 - m_offset % 16);
+    stackAlign(m_offset, false);
 
 #ifdef __M_X86_64
 
@@ -1223,6 +1231,22 @@ xScopedStackFrame::~xScopedStackFrame()
         xLEAVE();
     } else if (m_save_base_pointer) {
         xPOP(rbp);
+    }
+}
+
+xScopedSavedRegisters::xScopedSavedRegisters(std::initializer_list<std::reference_wrapper<const xAddressReg>> regs) {
+    for (auto reg : regs) {
+        const xAddressReg& regRef = reg;
+        xPUSH(regRef);
+    }
+    stackAlign(regs.size() * wordsize, true);
+}
+
+xScopedSavedRegisters::~xScopedSavedRegisters() {
+    stackAlign(regs.size() * wordsize, false);
+    for (auto reg : regs) {
+        const xAddressReg& regRef = reg;
+        xPOP(regRef);
     }
 }
 

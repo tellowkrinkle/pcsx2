@@ -236,6 +236,18 @@ __fi void mVUrestoreRegs(microVU& mVU, bool fromMemory = false) {
 	else xMOVAPS(xmmPQ, ptr128[&mVU.xmmBackup[xmmPQ.Id][0]]);
 }
 
+class mVUScopedXMMBackup {
+	microVU& mVU;
+	bool fromMemory;
+public:
+	mVUScopedXMMBackup(microVU& mVU, bool fromMemory): mVU(mVU), fromMemory(fromMemory) {
+		mVUbackupRegs(mVU, fromMemory);
+	}
+	~mVUScopedXMMBackup() {
+		mVUrestoreRegs(mVU, fromMemory);
+	}
+};
+
 _mVUt void __fc mVUprintRegs() {
 	microVU& mVU = mVUx;
 	for(int i = 0; i < 8; i++) {
@@ -287,27 +299,16 @@ __fi void mVUaddrFix(mV, const x32& gprReg)
 			xForwardJump32 jmpB;
 		jmpA.SetTarget();
 			if (THREAD_VU1) {
-				mVUbackupRegs(mVU, true);
-				xPUSH(gprT1);
-				xPUSH(gprT2);
-				xPUSH(gprT3);
-				// Align the stackframe (GCC only, since GCC assumes stackframe is always aligned)
-#ifdef __GNUC__
-				xSUB(esp, 4);
-#endif
-				if (IsDevBuild && !isCOP2) {         // Lets see which games do this!
-					xMOV(gprT2, mVU.prog.cur->idx); // Note: Kernel does it via COP2 to initialize VU1!
-					xMOV(gprT3, xPC);               // So we don't spam console, we'll only check micro-mode...
-					xCALL((void*)mVUwarningRegAccess);
+				{
+					mVUScopedXMMBackup mVUSave(mVU, true);
+					xScopedSavedRegisters save {gprT1q, gprT2q, gprT3q};
+					if (IsDevBuild && !isCOP2) {         // Lets see which games do this!
+						xMOV(arg1regd, mVU.prog.cur->idx); // Note: Kernel does it via COP2 to initialize VU1!
+						xMOV(arg2regd, xPC);               // So we don't spam console, we'll only check micro-mode...
+						xFastCall((void*)mVUwarningRegAccess, arg1regd, arg2regd);
+					}
+					xFastCall((void*)mVUwaitMTVU);
 				}
-				xCALL((void*)mVUwaitMTVU);
-#ifdef __GNUC__
-				xADD(esp, 4);
-#endif
-				xPOP (gprT3);
-				xPOP (gprT2);
-				xPOP (gprT1);
-				mVUrestoreRegs(mVU, true);
 			}
 			xAND(gprReg, 0x3f); // ToDo: theres a potential problem if VU0 overrides VU1's VF0/VI0 regs!
 			xADD(gprReg, (u128*)VU1.VF - (u128*)VU0.Mem);
