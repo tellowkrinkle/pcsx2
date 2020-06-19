@@ -1510,7 +1510,7 @@ void recQFSRV()
 	xMOV(eaxd, ptr32[&cpuRegs.sa]);
 	xLEA(rcx, ptr[tempqw]);
 	xMOVDQA(ptr32[rcx], xRegisterSSE(EEREC_T));
-	xMOVDQA(ptr32[rcx+4], xRegisterSSE(EEREC_S));
+	xMOVDQA(ptr32[rcx+16], xRegisterSSE(EEREC_S));
 	xMOVDQU(xRegisterSSE(EEREC_D), ptr32[rax + rcx]);
 
 	_clearNeededXMMregs();
