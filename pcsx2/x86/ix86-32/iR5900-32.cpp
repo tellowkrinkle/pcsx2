@@ -1056,7 +1056,7 @@ static void iBranchTest(u32 newpc)
 		&& EmuCmp::granularity == EmuCmp::Config::Granularity::BasicBlock)
 	{
 		iFlushCall(FLUSH_FREE_XMM);
-		xFastCall((void*)EmuCmp::cmpR5900, 0);
+		xFastCall((void*)EmuCmp::cmpR5900, cpuRegs.pc);
 	}
 
 	if (EmuConfig.Speedhacks.WaitLoop && s_nBlockFF && newpc == s_branchTo)
