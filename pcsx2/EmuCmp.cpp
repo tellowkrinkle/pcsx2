@@ -183,10 +183,6 @@ static void Compare(const GPR_reg& server, GPR_reg& client, const char *name, bo
 
 void EmuCmp::cmpR5900(u32 pc) {
 	static u32 lastPC = 0;
-	if (granularity == Config::Granularity::BasicBlock) {
-		// We really want the pc from before the jump
-		pc = lastPC;
-	}
 	if (mode == Config::Mode::Server) {
 		send(cpuRegs);
 		send(fpuRegs);
@@ -196,10 +192,10 @@ void EmuCmp::cmpR5900(u32 pc) {
 		if (0 != memcmp(&servCPU, &cpuRegs, sizeof(cpuRegisters))) {
 			bool found = false;
 			for (int i = 0; i < 32; i++) {
-				Compare(servCPU.GPR.r[i], cpuRegs.GPR.r[i], R5900::GPR_REG[i], found, pc);
-				Compare(servCPU.CP0.r[i], cpuRegs.CP0.r[i], R5900::COP0_REG[i], found, pc);
-				Compare(servCPU.eCycle[i], cpuRegs.eCycle[i], "eCycle", found, pc);
-				Compare(servCPU.sCycle[i], cpuRegs.sCycle[i], "sCycle", found, pc);
+				Compare(servCPU.GPR.r[i], cpuRegs.GPR.r[i], R5900::GPR_REG[i], found, lastPC);
+				Compare(servCPU.CP0.r[i], cpuRegs.CP0.r[i], R5900::COP0_REG[i], found, lastPC);
+				Compare(servCPU.eCycle[i], cpuRegs.eCycle[i], "eCycle", found, lastPC);
+				Compare(servCPU.sCycle[i], cpuRegs.sCycle[i], "sCycle", found, lastPC);
 			}
 			COMPARE(HI);
 			COMPARE(LO);
@@ -211,29 +207,29 @@ void EmuCmp::cmpR5900(u32 pc) {
 			COMPARE(branch);
 			COMPARE(opmode);
 			COMPARE(tempcycles);
-			Compare(servCPU.PERF.n.pccr.val, cpuRegs.PERF.n.pccr.val, "pccr", found, pc);
-			Compare(servCPU.PERF.n.pad, cpuRegs.PERF.n.pad, "pccr", found, pc);
-			Compare(servCPU.PERF.n.pcr0, cpuRegs.PERF.n.pcr0, "pcr0", found, pc);
-			Compare(servCPU.PERF.n.pcr1, cpuRegs.PERF.n.pcr1, "pcr1", found, pc);
+			Compare(servCPU.PERF.n.pccr.val, cpuRegs.PERF.n.pccr.val, "pccr", found, lastPC);
+			Compare(servCPU.PERF.n.pad, cpuRegs.PERF.n.pad, "pccr", found, lastPC);
+			Compare(servCPU.PERF.n.pcr0, cpuRegs.PERF.n.pcr0, "pcr0", found, lastPC);
+			Compare(servCPU.PERF.n.pcr1, cpuRegs.PERF.n.pcr1, "pcr1", found, lastPC);
 			if (!found) {
 				std::stringstream out;
-				out << "Server client mismatch of unknown CPU register at " << std::hex << pc;
+				out << "Server client mismatch of unknown CPU register at " << std::hex << lastPC;
 				pxAssertMsg(0, out.str().c_str());
 			}
 		}
 		if (0 != memcmp(&servFPU, &fpuRegs, sizeof(fpuRegisters))) {
 			bool found = false;
 			for (int i = 0; i < 32; i++) {
-				Compare(servFPU.fpr[i].f, fpuRegs.fpr[i].f, R5900::COP1_REG_FP[i], found, pc);
-				Compare(servFPU.fprc[i], fpuRegs.fprc[i], R5900::COP1_REG_FCR[i], found, pc);
+				Compare(servFPU.fpr[i].f, fpuRegs.fpr[i].f, R5900::COP1_REG_FP[i], found, lastPC);
+				Compare(servFPU.fprc[i], fpuRegs.fprc[i], R5900::COP1_REG_FCR[i], found, lastPC);
 			}
-			Compare(servFPU.ACC.f, fpuRegs.ACC.f, "FP ACC", found, pc);
+			Compare(servFPU.ACC.f, fpuRegs.ACC.f, "FP ACC", found, lastPC);
 			if (!found) {
 				std::stringstream out;
-				out << "Server client mismatch of unknown FPU register at " << std::hex << pc;
+				out << "Server client mismatch of unknown FPU register at " << std::hex << lastPC;
 				pxAssertMsg(0, out.str().c_str());
 			}
 		}
 	}
-	lastPC = cpuRegs.pc;
+	lastPC = pc;
 }
