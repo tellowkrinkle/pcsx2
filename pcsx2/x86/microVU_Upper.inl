@@ -25,7 +25,7 @@
 
 // Note: If modXYZW is true, then it adjusts XYZW for Single Scalar operations
 static void mVUupdateFlags(mV, const xmm& reg, const xmm& regT1in = xEmptyReg, const xmm& regT2in = xEmptyReg, bool modXYZW = 1) {
-	const x32&  mReg   = gprT1;
+	const x32&  mReg   = gprT1d;
 	const x32&  sReg   = getFlagReg(sFLAG.write);
 	bool regT1b = regT1in.IsEmpty(), regT2b = false;
 	static const u16 flipMask[16] = {0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15};
@@ -56,16 +56,16 @@ static void mVUupdateFlags(mV, const xmm& reg, const xmm& regT1in = xEmptyReg, c
 	xMOVMSKPS(mReg,  regT2); // Move the Sign Bits of the t2reg
 	xXOR.PS  (regT1, regT1); // Clear regT1
 	xCMPEQ.PS(regT1, regT2); // Set all F's if each vector is zero
-	xMOVMSKPS(gprT2, regT1); // Used for Zero Flag Calculation
+	xMOVMSKPS(gprT2d, regT1); // Used for Zero Flag Calculation
 
 	xAND(mReg, AND_XYZW);	// Grab "Is Signed" bits from the previous calculation
 	xSHL(mReg, 4 + ADD_XYZW);
 
 	//-------------------------Check for Zero flags------------------------------
 
-	xAND(gprT2, AND_XYZW);	// Grab "Is Zero" bits from the previous calculation
-	if (mFLAG.doFlag) { SHIFT_XYZW(gprT2); }
-	xOR(mReg, gprT2);
+	xAND(gprT2d, AND_XYZW);	// Grab "Is Zero" bits from the previous calculation
+	if (mFLAG.doFlag) { SHIFT_XYZW(gprT2d); }
+	xOR(mReg, gprT2d);
 
 	//-------------------------Write back flags------------------------------
 
@@ -414,8 +414,8 @@ mVUop(mVU_CLIP) {
 		const xmm& t1 = mVU.regAlloc->allocReg();
 
 		mVUunpack_xyzw(Ft, Ft, 0);
-		mVUallocCFLAGa(mVU, gprT1, cFLAG.lastWrite);
-		xSHL(gprT1, 6);
+		mVUallocCFLAGa(mVU, gprT1d, cFLAG.lastWrite);
+		xSHL(gprT1d, 6);
 
 		xAND.PS(Ft, ptr128[mVUglob.absclip]);
 		xMOVAPS(t1, Ft);
@@ -428,17 +428,17 @@ mVUop(mVU_CLIP) {
 		xUNPCK.LPS(Ft, t1); // Ft = -y,+y,-x,+x
 		xUNPCK.HPS(Fs, t1); // Fs = -w,+w,-z,+z
 
-		xMOVMSKPS(gprT2, Fs); // -w,+w,-z,+z
-		xAND(gprT2, 0x3);
-		xSHL(gprT2, 4);
-		xOR(gprT1, gprT2);
+		xMOVMSKPS(gprT2d, Fs); // -w,+w,-z,+z
+		xAND(gprT2d, 0x3);
+		xSHL(gprT2d, 4);
+		xOR(gprT1d, gprT2d);
 
-		xMOVMSKPS(gprT2, Ft); // -y,+y,-x,+x
-		xAND(gprT2, 0xf);
-		xOR(gprT1, gprT2);
-		xAND(gprT1, 0xffffff);
+		xMOVMSKPS(gprT2d, Ft); // -y,+y,-x,+x
+		xAND(gprT2d, 0xf);
+		xOR(gprT1d, gprT2d);
+		xAND(gprT1d, 0xffffff);
 
-		mVUallocCFLAGb(mVU, gprT1, cFLAG.write);
+		mVUallocCFLAGb(mVU, gprT1d, cFLAG.write);
 		mVU.regAlloc->clearNeeded(Fs);
 		mVU.regAlloc->clearNeeded(Ft);
 		mVU.regAlloc->clearNeeded(t1);
