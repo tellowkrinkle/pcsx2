@@ -128,8 +128,8 @@ __ri void mVUallocVIa(mV, const x32& GPRreg, int _reg_, bool signext = false)
 __ri void mVUallocVIb(mV, const x32& GPRreg, int _reg_)
 {
 	if (mVUlow.backupVI) { // Backs up reg to memory (used when VI is modified b4 a branch)
-		xMOVZX(gprT3d, ptr16[&mVU.regs().VI[_reg_].UL]);
-		xMOV  (ptr32[&mVU.VIbackup], gprT3d);
+		xMOVZX(gprT3, ptr16[&mVU.regs().VI[_reg_].UL]);
+		xMOV  (ptr32[&mVU.VIbackup], gprT3);
 	}
 
 	if   (_reg_ == 0) {
