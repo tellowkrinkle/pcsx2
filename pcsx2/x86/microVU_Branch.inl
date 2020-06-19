@@ -72,10 +72,10 @@ void mVUDTendProgram(mV, microFlagCycles* mFC, int isEbit) {
 
 	// Save Flag Instances
 	xMOV(ptr32[&mVU.regs().VI[REG_STATUS_FLAG].UL],	getFlagReg(fStatus));
-	mVUallocMFLAGa(mVU, gprT1d, fMac);
-	mVUallocCFLAGa(mVU, gprT2d, fClip);
-	xMOV(ptr32[&mVU.regs().VI[REG_MAC_FLAG].UL],	gprT1d);
-	xMOV(ptr32[&mVU.regs().VI[REG_CLIP_FLAG].UL],	gprT2d);
+	mVUallocMFLAGa(mVU, gprT1, fMac);
+	mVUallocCFLAGa(mVU, gprT2, fClip);
+	xMOV(ptr32[&mVU.regs().VI[REG_MAC_FLAG].UL],	gprT1);
+	xMOV(ptr32[&mVU.regs().VI[REG_CLIP_FLAG].UL],	gprT2);
 
 	if (isEbit || isVU1) { // Clear 'is busy' Flags
 		if (!mVU.index || !THREAD_VU1) {
@@ -133,10 +133,10 @@ void mVUendProgram(mV, microFlagCycles* mFC, int isEbit) {
 
 	// Save Flag Instances
 	xMOV(ptr32[&mVU.regs().VI[REG_STATUS_FLAG].UL],	getFlagReg(fStatus));
-	mVUallocMFLAGa(mVU, gprT1d, fMac);
-	mVUallocCFLAGa(mVU, gprT2d, fClip);
-	xMOV(ptr32[&mVU.regs().VI[REG_MAC_FLAG].UL],	gprT1d);
-	xMOV(ptr32[&mVU.regs().VI[REG_CLIP_FLAG].UL],	gprT2d);
+	mVUallocMFLAGa(mVU, gprT1, fMac);
+	mVUallocCFLAGa(mVU, gprT2, fClip);
+	xMOV(ptr32[&mVU.regs().VI[REG_MAC_FLAG].UL],	gprT1);
+	xMOV(ptr32[&mVU.regs().VI[REG_CLIP_FLAG].UL],	gprT2);
 
 	if (isEbit || isVU1) { // Clear 'is busy' Flags
 		if (!mVU.index || !THREAD_VU1) {
@@ -242,9 +242,9 @@ void normBranch(mV, microFlagCycles& mFC) {
 		if(mVUlow.branch == 2 || mVUlow.branch == 10)	//Delay slot branch needs linking
 		{
 			DevCon.Warning("Found %s in delay slot, linking - If game broken report to PCSX2 Team", mVUlow.branch == 2 ? "BAL" : "JALR");
-			xMOV(gprT3d, badBranchAddr);
-			xSHR(gprT3d, 3);
-			mVUallocVIb(mVU, gprT3d, _It_);
+			xMOV(gprT3, badBranchAddr);
+			xSHR(gprT3, 3);
+			mVUallocVIb(mVU, gprT3, _It_);
 
 		}
 		incPC(-3);
@@ -273,11 +273,11 @@ void condJumpProcessingEvil(mV, microFlagCycles& mFC, int JMPcc) {
 
 	mVUcompileSingleInstruction(mVU, badBranchAddr, (uptr)&mVUregs, mFC);
 
-	xMOV(gprT3d, badBranchAddr+8);
+	xMOV(gprT3, badBranchAddr+8);
 	iPC = bPC;
 	setCode();
-	xSHR(gprT3d, 3);
-	mVUallocVIb(mVU, gprT3d, _It_); //Link to branch addr + 8
+	xSHR(gprT3, 3);
+	mVUallocVIb(mVU, gprT3, _It_); //Link to branch addr + 8
 	
 	normJumpCompile(mVU, mFC, true); //Compile evil branch, just in time!
 	
@@ -286,11 +286,11 @@ void condJumpProcessingEvil(mV, microFlagCycles& mFC, int JMPcc) {
 	incPC(2);  // Point to delay slot of evil Branch (as the original branch isn't taken)
 	mVUcompileSingleInstruction(mVU, xPC, (uptr)&mVUregs, mFC);
 
-	xMOV(gprT3d, xPC);
+	xMOV(gprT3, xPC);
 	iPC = bPC;
 	setCode();
-	xSHR(gprT3d, 3);
-	mVUallocVIb(mVU, gprT3d, _It_);
+	xSHR(gprT3, 3);
+	mVUallocVIb(mVU, gprT3, _It_);
 		
 	normJumpCompile(mVU, mFC, true); //Compile evil branch, just in time!
 
@@ -417,11 +417,11 @@ void normJump(mV, microFlagCycles& mFC) {
 		{
 			DevCon.Warning("Found %x in delay slot, linking - If game broken report to PCSX2 Team", mVUlow.branch == 2 ? "BAL" : "JALR");
 			incPC(-2);
-			mVUallocVIa(mVU, gprT1d, _Is_);
-			xADD(gprT1d, 8);
-			xSHR(gprT1d, 3);
+			mVUallocVIa(mVU, gprT1, _Is_);
+			xADD(gprT1, 8);
+			xSHR(gprT1, 3);
 			incPC(2);
-			mVUallocVIb(mVU, gprT1d, _It_);
+			mVUallocVIb(mVU, gprT1, _It_);
 
 		}
 		incPC(-3);
@@ -433,8 +433,8 @@ void normJump(mV, microFlagCycles& mFC) {
 		xOR(ptr32[&VU0.VI[REG_VPU_STAT].UL], (isVU1 ? 0x200 : 0x2));
 		xOR(ptr32[&mVU.regs().flags], VUFLAG_INTCINTERRUPT);
 		mVUDTendProgram(mVU, &mFC, 2);
-		xMOV(gprT1d, ptr32[&mVU.branch]);
-		xMOV(ptr32[&mVU.regs().VI[REG_TPC].UL], gprT1d);
+		xMOV(gprT1, ptr32[&mVU.branch]);
+		xMOV(ptr32[&mVU.regs().VI[REG_TPC].UL], gprT1);
 		xJMP(mVU.exitFunct);
 		eJMP.SetTarget();	
 	}
@@ -445,15 +445,15 @@ void normJump(mV, microFlagCycles& mFC) {
 		xOR(ptr32[&VU0.VI[REG_VPU_STAT].UL], (isVU1 ? 0x400 : 0x4));
 		xOR(ptr32[&mVU.regs().flags], VUFLAG_INTCINTERRUPT);
 		mVUDTendProgram(mVU, &mFC, 2);
-		xMOV(gprT1d, ptr32[&mVU.branch]);
-		xMOV(ptr32[&mVU.regs().VI[REG_TPC].UL], gprT1d);
+		xMOV(gprT1, ptr32[&mVU.branch]);
+		xMOV(ptr32[&mVU.regs().VI[REG_TPC].UL], gprT1);
 		xJMP(mVU.exitFunct);
 		eJMP.SetTarget();
 	}
 	if (mVUup.eBit) { // E-bit Jump
 		mVUendProgram(mVU, &mFC, 2);
-		xMOV(gprT1d, ptr32[&mVU.branch]);
-		xMOV(ptr32[&mVU.regs().VI[REG_TPC].UL], gprT1d);
+		xMOV(gprT1, ptr32[&mVU.branch]);
+		xMOV(ptr32[&mVU.regs().VI[REG_TPC].UL], gprT1);
 		xJMP(mVU.exitFunct);
 	}
 	else {

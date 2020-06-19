@@ -109,8 +109,8 @@ void doIbit(mV) {
 		incPC(-1);
 		mVU.regAlloc->clearRegVF(33);
 		if (EmuConfig.Gamefixes.ScarfaceIbit || EmuConfig.Gamefixes.CrashTagTeamRacingIbit) {
-			xMOV(gprT1d, ptr32[&curI]);
-			xMOV(ptr32[&mVU.getVI(REG_I)], gprT1d);
+			xMOV(gprT1, ptr32[&curI]);
+			xMOV(ptr32[&mVU.getVI(REG_I)], gprT1);
 		}
 		else {
 			u32 tempI;
