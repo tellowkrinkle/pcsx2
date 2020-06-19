@@ -161,7 +161,7 @@ namespace vtlb_private
 
 		xMOV( eaxd, arg1regd );
 		xSHR( eaxd, VTLB_PAGE_BITS );
-		_eeLoadComplex(rax, rbx, vtlbdata.vmap, rax*wordsize);
+		xMOV( rax, ptrNative[xComplexAddress(rbx, vtlbdata.vmap, rax*wordsize)] );
 		xLEA( rbx, ptr[(void*)(0xdcdcdcd + (wordsize == 8 ? (uptr)xGetPtr() + 7 : 0))] );
 		u32* writeback = ((u32*)xGetPtr()) - 1;
 		xADD( arg1reg, rax );
