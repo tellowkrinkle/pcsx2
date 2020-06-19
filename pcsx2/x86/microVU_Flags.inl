@@ -253,9 +253,9 @@ __fi void mVUsetFlags(mV, microFlagCycles& mFC) {
 	}
 }
 
-#define getFlagReg2(x)	((bStatus[0] == x) ? getFlagReg(x) : gprT1)
-#define getFlagReg3(x)	((gFlag == x) ? gprT1 : getFlagReg(x))
-#define getFlagReg4(x)	((gFlag == x) ? gprT1 : gprT2)
+#define getFlagReg2(x)	((bStatus[0] == x) ? getFlagReg(x) : gprT1d)
+#define getFlagReg3(x)	((gFlag == x) ? gprT1d : getFlagReg(x))
+#define getFlagReg4(x)	((gFlag == x) ? gprT1d : gprT2d)
 #define shuffleMac		((bMac [3]<<6)|(bMac [2]<<4)|(bMac [1]<<2)|bMac [0])
 #define shuffleClip		((bClip[3]<<6)|(bClip[2]<<4)|(bClip[1]<<2)|bClip[0])
 
@@ -283,29 +283,29 @@ __fi void mVUsetupFlags(mV, microFlagCycles& mFC) {
 			xMOV(gprF3,  getFlagReg(bStatus[3]));
 		}
 		else if (sortRegs == 2) {
-			xMOV(gprT1,	 getFlagReg (bStatus[3])); 
+			xMOV(gprT1d,	 getFlagReg (bStatus[3]));
 			xMOV(gprF0,  getFlagReg (bStatus[0]));
 			xMOV(gprF1,  getFlagReg2(bStatus[1]));
 			xMOV(gprF2,  getFlagReg2(bStatus[2]));
-			xMOV(gprF3,  gprT1);
+			xMOV(gprF3,  gprT1d);
 		}
 		else if (sortRegs == 3) {
 			int gFlag = (bStatus[0] == bStatus[1]) ? bStatus[2] : bStatus[1];
-			xMOV(gprT1,	 getFlagReg (gFlag)); 
-			xMOV(gprT2,	 getFlagReg (bStatus[3]));
+			xMOV(gprT1d,	 getFlagReg (gFlag));
+			xMOV(gprT2d,	 getFlagReg (bStatus[3]));
 			xMOV(gprF0,  getFlagReg (bStatus[0]));
 			xMOV(gprF1,  getFlagReg3(bStatus[1]));
 			xMOV(gprF2,  getFlagReg4(bStatus[2]));
-			xMOV(gprF3,  gprT2);
+			xMOV(gprF3,  gprT2d);
 		}
 		else {
-			xMOV(gprT1,  getFlagReg(bStatus[0])); 
-			xMOV(gprT2,  getFlagReg(bStatus[1]));
-			xMOV(gprT3,  getFlagReg(bStatus[2]));
+			xMOV(gprT1d,  getFlagReg(bStatus[0]));
+			xMOV(gprT2d,  getFlagReg(bStatus[1]));
+			xMOV(gprT3d,  getFlagReg(bStatus[2]));
 			xMOV(gprF3,  getFlagReg(bStatus[3]));
-			xMOV(gprF0,  gprT1);
-			xMOV(gprF1,  gprT2); 
-			xMOV(gprF2,  gprT3);
+			xMOV(gprF0,  gprT1d);
+			xMOV(gprF1,  gprT2d);
+			xMOV(gprF2,  gprT3d);
 		}
 	}
 	
