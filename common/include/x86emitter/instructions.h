@@ -209,6 +209,11 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////
+/// Helper function to calculate base+offset taking into account the limitations of x86-64's RIP-relative addressing
+/// (Will either return `base+offset` or LEA `base` into `tmpRegister` and return `tmpRegister+offset`)
+xAddressVoid xComplexAddress(const xAddressReg& tmpRegister, void *base, const xAddressVoid& offset);
+
+//////////////////////////////////////////////////////////////////////////////////////////
 /// Helper function to load addresses that may be far from the current instruction pointer
 /// On i386, resolves to `mov dst, (sptr)addr`
 /// On x86-64, resolves to either `mov dst, (sptr)addr` or `lea dst, [addr]` depending on the distance from RIP

@@ -286,16 +286,16 @@ static void __fc mVUwaitMTVU() {
 }
 
 // Transforms the Address in gprReg to valid VU0/VU1 Address
-__fi void mVUaddrFix(mV, const x32& gprReg)
+__fi void mVUaddrFix(mV, const xAddressReg& gprReg)
 {
 	if (isVU1) {
-		xAND(gprReg, 0x3ff); // wrap around
-		xSHL(gprReg, 4);
+		xAND(xRegister32(gprReg.Id), 0x3ff); // wrap around
+		xSHL(xRegister32(gprReg.Id), 4);
 	}
 	else {
-		xTEST(gprReg, 0x400);
+		xTEST(xRegister32(gprReg.Id), 0x400);
 		xForwardJNZ8 jmpA;		// if addr & 0x4000, reads VU1's VF regs and VI regs
-			xAND(gprReg, 0xff); // if !(addr & 0x4000), wrap around
+			xAND(xRegister32(gprReg.Id), 0xff); // if !(addr & 0x4000), wrap around
 			xForwardJump32 jmpB;
 		jmpA.SetTarget();
 			if (THREAD_VU1) {
@@ -310,7 +310,7 @@ __fi void mVUaddrFix(mV, const x32& gprReg)
 					xFastCall((void*)mVUwaitMTVU);
 				}
 			}
-			xAND(gprReg, 0x3f); // ToDo: theres a potential problem if VU0 overrides VU1's VF0/VI0 regs!
+			xAND(xRegister32(gprReg.Id), 0x3f); // ToDo: theres a potential problem if VU0 overrides VU1's VF0/VI0 regs!
 			xADD(gprReg, (u128*)VU1.VF - (u128*)VU0.Mem);
 		jmpB.SetTarget();
 		xSHL(gprReg, 4); // multiply by 16 (shift left by 4)

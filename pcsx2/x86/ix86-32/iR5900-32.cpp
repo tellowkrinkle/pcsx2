@@ -218,15 +218,6 @@ void eeSignExtendTo(int gpr, bool onlyupper)
 	xMOV(ptr32[&cpuRegs.GPR.r[gpr].UL[1]], edxd);
 }
 
-void _eeLoadComplex(const x86Emitter::xRegisterInt& output, const x86Emitter::xAddressReg& tmpReg, void *base, x86Emitter::xAddressVoid offset) {
-	if ((sptr)base == (s32)(sptr)base) {
-		xMOV(output, x86Emitter::ptr[base + offset]);
-	} else {
-		xLEA(tmpReg, x86Emitter::ptr[base]);
-		xMOV(output, x86Emitter::ptr[offset + tmpReg]);
-	}
-}
-
 int _flushXMMunused()
 {
 	u32 i;
@@ -369,7 +360,7 @@ static DynGenFunc* _DynGen_JITCompile()
 	xMOV( eaxd, ptr[&cpuRegs.pc] );
 	xMOV( ebxd, eaxd );
 	xSHR( eaxd, 16 );
-	_eeLoadComplex(rcx, rcx, recLUT, rax*wordsize);
+	xMOV( rcx, ptrNative[xComplexAddress(rcx, recLUT, rax*wordsize)] );
 	xJMP( ptrNative[rbx*(wordsize/4) + rcx] );
 
 	return (DynGenFunc*)retval;
@@ -394,7 +385,7 @@ static DynGenFunc* _DynGen_DispatcherReg()
 	xMOV( eaxd, ptr[&cpuRegs.pc] );
 	xMOV( ebxd, eaxd );
 	xSHR( eaxd, 16 );
-	_eeLoadComplex(rcx, rcx, recLUT, rax*wordsize);
+	xMOV( rcx, ptrNative[xComplexAddress(rcx, recLUT, rax*wordsize)] );
 	xJMP( ptrNative[rbx*(wordsize/4) + rcx] );
 
 	return (DynGenFunc*)retval;
