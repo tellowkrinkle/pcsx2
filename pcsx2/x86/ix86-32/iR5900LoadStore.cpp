@@ -269,14 +269,14 @@ void recLWL()
 		return;
 
 	// mask off bytes loaded
-	xMOV(arg1regd, calleeSavedReg1d);
+	xMOV(ecxd, calleeSavedReg1d);
 	xMOV(edxd, 0xffffff);
 	xSHR(edxd, cl);
 	xAND(ptr32[&cpuRegs.GPR.r[_Rt_].UL[0]], edxd);
 
 	// OR in bytes loaded
-	xNEG(arg1regd);
-	xADD(arg1regd, 24);
+	xNEG(ecxd);
+	xADD(ecxd, 24);
 	xSHL(eaxd, cl);
 	xOR(ptr32[&cpuRegs.GPR.r[_Rt_].UL[0]], eaxd);
 
