@@ -55,10 +55,10 @@ mVUop(mVU_DIV) {
 		const xmm& Fs = mVU.regAlloc->allocReg(_Fs_, 0, (1 << (3 - _Fsf_)));
 		const xmm& t1 = mVU.regAlloc->allocReg();
 
-		testZero(Ft, t1, gprT1d); // Test if Ft is zero
+		testZero(Ft, t1, gprT1); // Test if Ft is zero
 		xForwardJZ8 cjmp; // Skip if not zero
 
-			testZero(Fs, t1, gprT1d); // Test if Fs is zero
+			testZero(Fs, t1, gprT1); // Test if Fs is zero
 			xForwardJZ8 ajmp;
 				xMOV(ptr32[&mVU.divFlag], divI); // Set invalid flag (0/0)
 				xForwardJump8 bjmp;
@@ -93,7 +93,7 @@ mVUop(mVU_SQRT) {
 		const xmm& Ft = mVU.regAlloc->allocReg(_Ft_, 0, (1 << (3 - _Ftf_)));
 
 		xMOV(ptr32[&mVU.divFlag], 0); // Clear I/D flags
-		testNeg(mVU, Ft, gprT1d); // Check for negative sqrt
+		testNeg(mVU, Ft, gprT1); // Check for negative sqrt
 
 		if (CHECK_VU_OVERFLOW) xMIN.SS(Ft, ptr32[mVUglob.maxvals]); // Clamp infinities (only need to do positive clamp since xmmFt is positive)
 		xSQRT.SS(Ft, Ft);
@@ -113,13 +113,13 @@ mVUop(mVU_RSQRT) {
 		const xmm& t1 = mVU.regAlloc->allocReg();
 
 		xMOV(ptr32[&mVU.divFlag], 0); // Clear I/D flags
-		testNeg(mVU, Ft, gprT1d); // Check for negative sqrt
+		testNeg(mVU, Ft, gprT1); // Check for negative sqrt
 
 		xSQRT.SS(Ft, Ft);
-		testZero(Ft, t1, gprT1d); // Test if Ft is zero
+		testZero(Ft, t1, gprT1); // Test if Ft is zero
 		xForwardJZ8 ajmp; // Skip if not zero
 
-			testZero(Fs, t1, gprT1d); // Test if Fs is zero
+			testZero(Fs, t1, gprT1); // Test if Fs is zero
 			xForwardJZ8 bjmp; // Skip if none are
 				xMOV(ptr32[&mVU.divFlag], divI); // Set invalid flag (0/0)
 				xForwardJump8 cjmp;
@@ -464,11 +464,11 @@ mVUop(mVU_ESUM) {
 mVUop(mVU_FCAND) {
 	pass1 { mVUanalyzeCflag(mVU, 1); }
 	pass2 {
-		mVUallocCFLAGa(mVU, gprT1d, cFLAG.read);
-		xAND(gprT1d, _Imm24_);
-		xADD(gprT1d, 0xffffff);
-		xSHR(gprT1d, 24);
-		mVUallocVIb(mVU, gprT1d, 1);
+		mVUallocCFLAGa(mVU, gprT1, cFLAG.read);
+		xAND(gprT1, _Imm24_);
+		xADD(gprT1, 0xffffff);
+		xSHR(gprT1, 24);
+		mVUallocVIb(mVU, gprT1, 1);
 		mVU.profiler.EmitOp(opFCAND);
 	}
 	pass3 { mVUlog("FCAND vi01, $%x", _Imm24_); }
@@ -478,11 +478,11 @@ mVUop(mVU_FCAND) {
 mVUop(mVU_FCEQ) {
 	pass1 { mVUanalyzeCflag(mVU, 1); }
 	pass2 {
-		mVUallocCFLAGa(mVU, gprT1d, cFLAG.read);
-		xXOR(gprT1d, _Imm24_);
-		xSUB(gprT1d, 1);
-		xSHR(gprT1d, 31);
-		mVUallocVIb(mVU, gprT1d, 1);
+		mVUallocCFLAGa(mVU, gprT1, cFLAG.read);
+		xXOR(gprT1, _Imm24_);
+		xSUB(gprT1, 1);
+		xSHR(gprT1, 31);
+		mVUallocVIb(mVU, gprT1, 1);
 		mVU.profiler.EmitOp(opFCEQ);
 	}
 	pass3 { mVUlog("FCEQ vi01, $%x", _Imm24_); }
@@ -492,9 +492,9 @@ mVUop(mVU_FCEQ) {
 mVUop(mVU_FCGET) {
 	pass1 { mVUanalyzeCflag(mVU, _It_); }
 	pass2 {
-		mVUallocCFLAGa(mVU, gprT1d, cFLAG.read);
-		xAND(gprT1d, 0xfff);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		mVUallocCFLAGa(mVU, gprT1, cFLAG.read);
+		xAND(gprT1, 0xfff);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opFCGET);
 	}
 	pass3 { mVUlog("FCGET vi%02d", _Ft_);	   }
@@ -504,11 +504,11 @@ mVUop(mVU_FCGET) {
 mVUop(mVU_FCOR) {
 	pass1 { mVUanalyzeCflag(mVU, 1); }
 	pass2 {
-		mVUallocCFLAGa(mVU, gprT1d, cFLAG.read);
-		xOR(gprT1d, _Imm24_);
-		xADD(gprT1d, 1);  // If 24 1's will make 25th bit 1, else 0
-		xSHR(gprT1d, 24); // Get the 25th bit (also clears the rest of the garbage in the reg)
-		mVUallocVIb(mVU, gprT1d, 1);
+		mVUallocCFLAGa(mVU, gprT1, cFLAG.read);
+		xOR(gprT1, _Imm24_);
+		xADD(gprT1, 1);  // If 24 1's will make 25th bit 1, else 0
+		xSHR(gprT1, 24); // Get the 25th bit (also clears the rest of the garbage in the reg)
+		mVUallocVIb(mVU, gprT1, 1);
 		mVU.profiler.EmitOp(opFCOR);
 	}
 	pass3 { mVUlog("FCOR vi01, $%x", _Imm24_); }
@@ -518,8 +518,8 @@ mVUop(mVU_FCOR) {
 mVUop(mVU_FCSET) {
 	pass1 { cFLAG.doFlag = true; }
 	pass2 {
-		xMOV(gprT1d, _Imm24_);
-		mVUallocCFLAGb(mVU, gprT1d, cFLAG.write);
+		xMOV(gprT1, _Imm24_);
+		mVUallocCFLAGb(mVU, gprT1, cFLAG.write);
 		mVU.profiler.EmitOp(opFCSET);
 	}
 	pass3 { mVUlog("FCSET $%x", _Imm24_); }
@@ -532,10 +532,10 @@ mVUop(mVU_FCSET) {
 mVUop(mVU_FMAND) {
 	pass1 { mVUanalyzeMflag(mVU, _Is_, _It_); }
 	pass2 {
-		mVUallocMFLAGa(mVU, gprT1d, mFLAG.read);
-		mVUallocVIa(mVU, gprT2d, _Is_);
+		mVUallocMFLAGa(mVU, gprT1, mFLAG.read);
+		mVUallocVIa(mVU, gprT2, _Is_);
 		xAND(gprT1b, gprT2b);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opFMAND);
 	}
 	pass3 { mVUlog("FMAND vi%02d, vi%02d", _Ft_, _Fs_); }
@@ -545,12 +545,12 @@ mVUop(mVU_FMAND) {
 mVUop(mVU_FMEQ) {
 	pass1 { mVUanalyzeMflag(mVU, _Is_, _It_); }
 	pass2 {
-		mVUallocMFLAGa(mVU, gprT1d, mFLAG.read);
-		mVUallocVIa(mVU, gprT2d, _Is_);
-		xXOR(gprT1d, gprT2d);
-		xSUB(gprT1d, 1);
-		xSHR(gprT1d, 31);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		mVUallocMFLAGa(mVU, gprT1, mFLAG.read);
+		mVUallocVIa(mVU, gprT2, _Is_);
+		xXOR(gprT1, gprT2);
+		xSUB(gprT1, 1);
+		xSHR(gprT1, 31);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opFMEQ);
 	}
 	pass3 { mVUlog("FMEQ vi%02d, vi%02d", _Ft_, _Fs_); }
@@ -560,10 +560,10 @@ mVUop(mVU_FMEQ) {
 mVUop(mVU_FMOR) {
 	pass1 { mVUanalyzeMflag(mVU, _Is_, _It_); }
 	pass2 {
-		mVUallocMFLAGa(mVU, gprT1d, mFLAG.read);
-		mVUallocVIa(mVU, gprT2d, _Is_);
+		mVUallocMFLAGa(mVU, gprT1, mFLAG.read);
+		mVUallocVIa(mVU, gprT2, _Is_);
 		xOR(gprT1b, gprT2b);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opFMOR);
 	}
 	pass3 { mVUlog("FMOR vi%02d, vi%02d", _Ft_, _Fs_); }
@@ -579,9 +579,9 @@ mVUop(mVU_FSAND) {
 	pass2 {
 		if (_Imm12_ & 0x0c30) DevCon.WriteLn(Color_Green, "mVU_FSAND: Checking I/D/IS/DS Flags");
 		if (_Imm12_ & 0x030c) DevCon.WriteLn(Color_Green, "mVU_FSAND: Checking U/O/US/OS Flags");
-		mVUallocSFLAGc(gprT1d, gprT2d, sFLAG.read);
-		xAND(gprT1d, _Imm12_);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		mVUallocSFLAGc(gprT1, gprT2, sFLAG.read);
+		xAND(gprT1, _Imm12_);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opFSAND);
 	}
 	pass3 { mVUlog("FSAND vi%02d, $%x", _Ft_, _Imm12_); }
@@ -591,9 +591,9 @@ mVUop(mVU_FSAND) {
 mVUop(mVU_FSOR) {
 	pass1 { mVUanalyzeSflag(mVU, _It_); }
 	pass2 {
-		mVUallocSFLAGc(gprT1d, gprT2d, sFLAG.read);
-		xOR(gprT1d, _Imm12_);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		mVUallocSFLAGc(gprT1, gprT2, sFLAG.read);
+		xOR(gprT1, _Imm12_);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opFSOR);
 	}
 	pass3 { mVUlog("FSOR vi%02d, $%x", _Ft_, _Imm12_); }
@@ -619,15 +619,15 @@ mVUop(mVU_FSEQ) {
 		if (_Imm12_ & 0x0400) imm |= 0x1000000; // IS
 		if (_Imm12_ & 0x0800) imm |= 0x2000000; // DS
 
-		mVUallocSFLAGa(gprT1d, sFLAG.read);
-		setBitFSEQ(gprT1d, 0x0f00); // Z  bit
-		setBitFSEQ(gprT1d, 0xf000); // S  bit
-		setBitFSEQ(gprT1d, 0x000f); // ZS bit
-		setBitFSEQ(gprT1d, 0x00f0); // SS bit
-		xXOR(gprT1d, imm);
-		xSUB(gprT1d, 1);
-		xSHR(gprT1d, 31);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		mVUallocSFLAGa(gprT1, sFLAG.read);
+		setBitFSEQ(gprT1, 0x0f00); // Z  bit
+		setBitFSEQ(gprT1, 0xf000); // S  bit
+		setBitFSEQ(gprT1, 0x000f); // ZS bit
+		setBitFSEQ(gprT1, 0x00f0); // SS bit
+		xXOR(gprT1, imm);
+		xSUB(gprT1, 1);
+		xSHR(gprT1, 31);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opFSEQ);
 	}
 	pass3 { mVUlog("FSEQ vi%02d, $%x", _Ft_, _Imm12_); }
@@ -661,13 +661,13 @@ mVUop(mVU_FSSET) {
 mVUop(mVU_IADD) {
 	pass1 { mVUanalyzeIALU1(mVU, _Id_, _Is_, _It_); }
 	pass2 {
-		mVUallocVIa(mVU, gprT1d, _Is_);
+		mVUallocVIa(mVU, gprT1, _Is_);
 		if (_It_ != _Is_) {
-			mVUallocVIa(mVU, gprT2d, _It_);
+			mVUallocVIa(mVU, gprT2, _It_);
 			xADD(gprT1b, gprT2b);
 		}
 		else xADD(gprT1b, gprT1b);
-		mVUallocVIb(mVU, gprT1d, _Id_);
+		mVUallocVIb(mVU, gprT1, _Id_);
 		mVU.profiler.EmitOp(opIADD);
 	}
 	pass3 { mVUlog("IADD vi%02d, vi%02d, vi%02d", _Fd_, _Fs_, _Ft_); }
@@ -676,9 +676,9 @@ mVUop(mVU_IADD) {
 mVUop(mVU_IADDI) {
 	pass1 { mVUanalyzeIADDI(mVU, _Is_, _It_, _Imm5_); }
 	pass2 {
-		mVUallocVIa(mVU, gprT1d, _Is_);
+		mVUallocVIa(mVU, gprT1, _Is_);
 		xADD(gprT1b, _Imm5_);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opIADDI);
 	}
 	pass3 { mVUlog("IADDI vi%02d, vi%02d, %d", _Ft_, _Fs_, _Imm5_); }
@@ -687,9 +687,9 @@ mVUop(mVU_IADDI) {
 mVUop(mVU_IADDIU) {
 	pass1 { mVUanalyzeIADDI(mVU, _Is_, _It_, _Imm15_); }
 	pass2 {
-		mVUallocVIa(mVU, gprT1d, _Is_);
+		mVUallocVIa(mVU, gprT1, _Is_);
 		xADD(gprT1b, _Imm15_);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opIADDIU);
 	}
 	pass3 { mVUlog("IADDIU vi%02d, vi%02d, %d", _Ft_, _Fs_, _Imm15_); }
@@ -698,12 +698,12 @@ mVUop(mVU_IADDIU) {
 mVUop(mVU_IAND) {
 	pass1 { mVUanalyzeIALU1(mVU, _Id_, _Is_, _It_); }
 	pass2 {
-		mVUallocVIa(mVU, gprT1d, _Is_);
+		mVUallocVIa(mVU, gprT1, _Is_);
 		if (_It_ != _Is_) {
-			mVUallocVIa(mVU, gprT2d, _It_);
-			xAND(gprT1d, gprT2d);
+			mVUallocVIa(mVU, gprT2, _It_);
+			xAND(gprT1, gprT2);
 		}
-		mVUallocVIb(mVU, gprT1d, _Id_);
+		mVUallocVIb(mVU, gprT1, _Id_);
 		mVU.profiler.EmitOp(opIAND);
 	}
 	pass3 { mVUlog("IAND vi%02d, vi%02d, vi%02d", _Fd_, _Fs_, _Ft_); }
@@ -712,12 +712,12 @@ mVUop(mVU_IAND) {
 mVUop(mVU_IOR) {
 	pass1 { mVUanalyzeIALU1(mVU, _Id_, _Is_, _It_); }
 	pass2 {
-		mVUallocVIa(mVU, gprT1d, _Is_);
+		mVUallocVIa(mVU, gprT1, _Is_);
 		if (_It_ != _Is_) {
-			mVUallocVIa(mVU, gprT2d, _It_);
-			xOR(gprT1d, gprT2d);
+			mVUallocVIa(mVU, gprT2, _It_);
+			xOR(gprT1, gprT2);
 		}
-		mVUallocVIb(mVU, gprT1d, _Id_);
+		mVUallocVIb(mVU, gprT1, _Id_);
 		mVU.profiler.EmitOp(opIOR);
 	}
 	pass3 { mVUlog("IOR vi%02d, vi%02d, vi%02d", _Fd_, _Fs_, _Ft_); }
@@ -727,14 +727,14 @@ mVUop(mVU_ISUB) {
 	pass1 { mVUanalyzeIALU1(mVU, _Id_, _Is_, _It_); }
 	pass2 {
 		if (_It_ != _Is_) {
-			mVUallocVIa(mVU, gprT1d, _Is_);
-			mVUallocVIa(mVU, gprT2d, _It_);
+			mVUallocVIa(mVU, gprT1, _Is_);
+			mVUallocVIa(mVU, gprT2, _It_);
 			xSUB(gprT1b, gprT2b);
-			mVUallocVIb(mVU, gprT1d, _Id_);
+			mVUallocVIb(mVU, gprT1, _Id_);
 		}
 		else {
-			xXOR(gprT1d, gprT1d);
-			mVUallocVIb(mVU, gprT1d, _Id_);
+			xXOR(gprT1, gprT1);
+			mVUallocVIb(mVU, gprT1, _Id_);
 		}
 		mVU.profiler.EmitOp(opISUB);
 	}
@@ -744,9 +744,9 @@ mVUop(mVU_ISUB) {
 mVUop(mVU_ISUBIU) {
 	pass1 { mVUanalyzeIALU2(mVU, _Is_, _It_); }
 	pass2 {
-		mVUallocVIa(mVU, gprT1d, _Is_);
+		mVUallocVIa(mVU, gprT1, _Is_);
 		xSUB(gprT1b, _Imm15_);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opISUBIU);
 	}
 	pass3 { mVUlog("ISUBIU vi%02d, vi%02d, %d", _Ft_, _Fs_, _Imm15_); }
@@ -766,8 +766,8 @@ mVUop(mVU_MFIR) {
 	}
 	pass2 {
 		const xmm& Ft = mVU.regAlloc->allocReg(-1, _Ft_, _X_Y_Z_W);
-		mVUallocVIa(mVU, gprT1d, _Is_, true);
-		xMOVDZX(Ft, gprT1d);
+		mVUallocVIa(mVU, gprT1, _Is_, true);
+		xMOVDZX(Ft, gprT1);
 		if (!_XYZW_SS) { mVUunpack_xyzw(Ft, Ft, 0); }
 		mVU.regAlloc->clearNeeded(Ft);
 		mVU.profiler.EmitOp(opMFIR);
@@ -820,8 +820,8 @@ mVUop(mVU_MTIR) {
 	}
 	pass2 {
 		const xmm& Fs = mVU.regAlloc->allocReg(_Fs_, 0, (1 << (3 - _Fsf_)));
-		xMOVD(gprT1d, Fs);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		xMOVD(gprT1, Fs);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.regAlloc->clearNeeded(Fs);
 		mVU.profiler.EmitOp(opMTIR);
 	}
@@ -843,13 +843,13 @@ mVUop(mVU_ILW) {
 	pass2 {
 		void *ptr = mVU.regs().Mem + offsetSS;
 
-		mVUallocVIa(mVU, gprT2d, _Is_);
+		mVUallocVIa(mVU, gprT2, _Is_);
 		if (!_Is_)
-			xXOR(gprT2d, gprT2d);
-		xADD(gprT2d, _Imm11_);
+			xXOR(gprT2, gprT2);
+		xADD(gprT2, _Imm11_);
 		mVUaddrFix (mVU, gprT2q);
-		xMOVZX(gprT1d, ptr16[xComplexAddress(gprT3q, ptr, gprT2q)]);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		xMOVZX(gprT1, ptr16[xComplexAddress(gprT3q, ptr, gprT2q)]);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opILW);
 	}
 	pass3 { mVUlog("ILW.%s vi%02d, vi%02d + %d", _XYZW_String, _Ft_, _Fs_, _Imm11_); }
@@ -866,13 +866,13 @@ mVUop(mVU_ILWR) {
 	pass2 {
 		void *ptr = mVU.regs().Mem + offsetSS;
 		if (_Is_) {
-			mVUallocVIa(mVU, gprT2d, _Is_);
+			mVUallocVIa(mVU, gprT2, _Is_);
 			mVUaddrFix (mVU, gprT2q);
-			xMOVZX(gprT1d, ptr16[xComplexAddress(gprT3q, ptr, gprT2q)]);
+			xMOVZX(gprT1, ptr16[xComplexAddress(gprT3q, ptr, gprT2q)]);
 		} else {
-			xMOVZX(gprT1d, ptr16[ptr]);
+			xMOVZX(gprT1, ptr16[ptr]);
 		}
-		mVUallocVIb(mVU, gprT1d, _It_);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opILWR);
 	}
 	pass3 { mVUlog("ILWR.%s vi%02d, vi%02d", _XYZW_String, _Ft_, _Fs_); }
@@ -890,17 +890,17 @@ static void writeBackISW(microVU& mVU, void *basePtr, xAddressReg reg) {
 				xLEA(gprT3q, ptr[basePtr]);
 				offset = offsetReq;
 			}
-			xMOV(ptr32[gprT3q+gprT2q+(offsetReq-offset)], gprT1d);
+			xMOV(ptr32[gprT3q+gprT2q+(offsetReq-offset)], gprT1);
 		};
 		if (_X) writeBackAt(0);
 		if (_Y) writeBackAt(4);
 		if (_Z) writeBackAt(8);
 		if (_W) writeBackAt(12);
 	} else {
-		if (_X) xMOV(ptr32[basePtr+reg], gprT1d);
-		if (_Y) xMOV(ptr32[basePtr+reg+4], gprT1d);
-		if (_Z) xMOV(ptr32[basePtr+reg+8], gprT1d);
-		if (_W) xMOV(ptr32[basePtr+reg+12], gprT1d);
+		if (_X) xMOV(ptr32[basePtr+reg], gprT1);
+		if (_Y) xMOV(ptr32[basePtr+reg+4], gprT1);
+		if (_Z) xMOV(ptr32[basePtr+reg+8], gprT1);
+		if (_W) xMOV(ptr32[basePtr+reg+12], gprT1);
 	}
 }
 
@@ -912,14 +912,14 @@ mVUop(mVU_ISW) {
 	pass2 {
 		void *ptr = mVU.regs().Mem;
 		
-		mVUallocVIa(mVU, gprT2d, _Is_);
+		mVUallocVIa(mVU, gprT2, _Is_);
 		if (!_Is_)
-			xXOR(gprT2d, gprT2d);
-		xADD(gprT2d, _Imm11_);
-		mVUaddrFix (mVU, gprT2d);
+			xXOR(gprT2, gprT2);
+		xADD(gprT2, _Imm11_);
+		mVUaddrFix (mVU, gprT2);
 
-		mVUallocVIa(mVU, gprT1d, _It_);
-		writeBackISW(mVU, ptr, gprT2d);
+		mVUallocVIa(mVU, gprT1, _It_);
+		writeBackISW(mVU, ptr, gprT2);
 		mVU.profiler.EmitOp(opISW);
 	}
 	pass3 { mVUlog("ISW.%s vi%02d, vi%02d + %d", _XYZW_String, _Ft_, _Fs_, _Imm11_);  }
@@ -933,11 +933,11 @@ mVUop(mVU_ISWR) {
 		void *ptr = mVU.regs().Mem;
 		xAddressReg is = xEmptyReg;
 		if (_Is_) {
-			mVUallocVIa(mVU, gprT2d, _Is_);
+			mVUallocVIa(mVU, gprT2, _Is_);
 			mVUaddrFix (mVU, gprT2q);
 			is = gprT2q;
 		}
-		mVUallocVIa(mVU, gprT1d, _It_);
+		mVUallocVIa(mVU, gprT1, _It_);
 		writeBackISW(mVU, ptr, is);
 
 		mVU.profiler.EmitOp(opISWR);
@@ -953,10 +953,10 @@ mVUop(mVU_LQ) {
 	pass1 { mVUanalyzeLQ(mVU, _Ft_, _Is_, false); }
 	pass2 {
 		void *ptr = mVU.regs().Mem;
-		mVUallocVIa(mVU, gprT2d, _Is_);
+		mVUallocVIa(mVU, gprT2, _Is_);
         if (!_Is_)
-            xXOR(gprT2d, gprT2d);
-		xADD(gprT2d, _Imm11_);
+            xXOR(gprT2, gprT2);
+		xADD(gprT2, _Imm11_);
 		mVUaddrFix(mVU, gprT2q);
 
 		const xmm& Ft = mVU.regAlloc->allocReg(-1, _Ft_, _X_Y_Z_W);
@@ -973,9 +973,9 @@ mVUop(mVU_LQD) {
 		void * ptr = mVU.regs().Mem;
 		xAddressReg is = xEmptyReg;
 		if (_Is_ || isVU0) { // Access VU1 regs mem-map in !_Is_ case
-			mVUallocVIa(mVU, gprT2d, _Is_);
+			mVUallocVIa(mVU, gprT2, _Is_);
 			xSUB(gprT2b, 1);
-			if (_Is_) mVUallocVIb(mVU, gprT2d, _Is_);
+			if (_Is_) mVUallocVIb(mVU, gprT2, _Is_);
 			mVUaddrFix (mVU, gprT2q);
 			is = gprT2q;
 		}
@@ -1002,10 +1002,10 @@ mVUop(mVU_LQI) {
 		void *ptr = mVU.regs().Mem;
 		xAddressReg is = xEmptyReg;
 		if (_Is_) {
-			mVUallocVIa(mVU, gprT1d, _Is_);
-			xMOV(gprT2d, gprT1d);
+			mVUallocVIa(mVU, gprT1, _Is_);
+			xMOV(gprT2, gprT1);
 			xADD(gprT1b, 1);
-			mVUallocVIb(mVU, gprT1d, _Is_);
+			mVUallocVIb(mVU, gprT1, _Is_);
 			mVUaddrFix (mVU, gprT2q);
 			is = gprT2q;
 		}
@@ -1032,10 +1032,10 @@ mVUop(mVU_SQ) {
 	pass2 {
 		void * ptr = mVU.regs().Mem;
 
-		mVUallocVIa(mVU, gprT2d, _It_);
+		mVUallocVIa(mVU, gprT2, _It_);
         if (!_It_)
-            xXOR(gprT2d, gprT2d);
-		xADD(gprT2d, _Imm11_);
+            xXOR(gprT2, gprT2);
+		xADD(gprT2, _Imm11_);
 		mVUaddrFix(mVU, gprT2q);
 
 		const xmm& Fs = mVU.regAlloc->allocReg(_Fs_, 0, _X_Y_Z_W);
@@ -1052,9 +1052,9 @@ mVUop(mVU_SQD) {
 		void *ptr = mVU.regs().Mem;
 		xAddressReg it = xEmptyReg;
 		if (_It_ || isVU0) {// Access VU1 regs mem-map in !_It_ case
-			mVUallocVIa(mVU, gprT2d, _It_);
+			mVUallocVIa(mVU, gprT2, _It_);
 			xSUB(gprT2b, 1);
-			if (_It_) mVUallocVIb(mVU, gprT2d, _It_);
+			if (_It_) mVUallocVIb(mVU, gprT2, _It_);
 			mVUaddrFix (mVU, gprT2q);
 			it = gprT2q;
 		}
@@ -1078,10 +1078,10 @@ mVUop(mVU_SQI) {
 	pass2 {
 		void *ptr = mVU.regs().Mem;
 		if (_It_) {
-			mVUallocVIa(mVU, gprT1d, _It_);
-			xMOV(gprT2d, gprT1d);
+			mVUallocVIa(mVU, gprT1, _It_);
+			xMOV(gprT2, gprT1);
 			xADD(gprT1b, 1);
-			mVUallocVIb(mVU, gprT1d, _It_);
+			mVUallocVIb(mVU, gprT1, _It_);
 			mVUaddrFix (mVU, gprT2q);
 		}
 		const xmm& Fs = mVU.regAlloc->allocReg(_Fs_, 0, _X_Y_Z_W);
@@ -1105,10 +1105,10 @@ mVUop(mVU_RINIT) {
 	pass2 {
 		if (_Fs_ || (_Fsf_ == 3)) {
 			const xmm& Fs = mVU.regAlloc->allocReg(_Fs_, 0, (1 << (3 - _Fsf_)));
-			xMOVD(gprT1d, Fs);
-			xAND(gprT1d, 0x007fffff);
-			xOR (gprT1d, 0x3f800000);
-			xMOV(ptr32[Rmem], gprT1d);
+			xMOVD(gprT1, Fs);
+			xAND(gprT1, 0x007fffff);
+			xOR (gprT1, 0x3f800000);
+			xMOV(ptr32[Rmem], gprT1);
 			mVU.regAlloc->clearNeeded(Fs);
 		}
 		else xMOV(ptr32[Rmem], 0x3f800000);
@@ -1129,8 +1129,8 @@ static __fi void mVU_RGET_(mV, const x32& Rreg) {
 mVUop(mVU_RGET) {
 	pass1 { mVUanalyzeR2(mVU, _Ft_, true); }
 	pass2 {
-		xMOV(gprT1d, ptr32[Rmem]);
-		mVU_RGET_(mVU, gprT1d);
+		xMOV(gprT1, ptr32[Rmem]);
+		mVU_RGET_(mVU, gprT1);
 		mVU.profiler.EmitOp(opRGET);
 	}
 	pass3 { mVUlog("RGET.%s vf%02d, R", _XYZW_String, _Ft_); }
@@ -1140,22 +1140,22 @@ mVUop(mVU_RNEXT) {
 	pass1 { mVUanalyzeR2(mVU, _Ft_, false); }
 	pass2 {
 		// algorithm from www.project-fao.org
-		xMOV(gprT3d, ptr32[Rmem]);
-		xMOV(gprT1d, gprT3d);
-		xSHR(gprT1d, 4);
-		xAND(gprT1d, 1);
+		xMOV(gprT3, ptr32[Rmem]);
+		xMOV(gprT1, gprT3);
+		xSHR(gprT1, 4);
+		xAND(gprT1, 1);
 
-		xMOV(gprT2d, gprT3d);
-		xSHR(gprT2d, 22);
-		xAND(gprT2d, 1);
+		xMOV(gprT2, gprT3);
+		xSHR(gprT2, 22);
+		xAND(gprT2, 1);
 
-		xSHL(gprT3d, 1);
-		xXOR(gprT1d, gprT2d);
-		xXOR(gprT3d, gprT1d);
-		xAND(gprT3d, 0x007fffff);
-		xOR (gprT3d, 0x3f800000);
-		xMOV(ptr32[Rmem], gprT3d);
-		mVU_RGET_(mVU,  gprT3d);
+		xSHL(gprT3, 1);
+		xXOR(gprT1, gprT2);
+		xXOR(gprT3, gprT1);
+		xAND(gprT3, 0x007fffff);
+		xOR (gprT3, 0x3f800000);
+		xMOV(ptr32[Rmem], gprT3);
+		mVU_RGET_(mVU,  gprT3);
 		mVU.profiler.EmitOp(opRNEXT);
 	}
 	pass3 { mVUlog("RNEXT.%s vf%02d, R", _XYZW_String, _Ft_); }
@@ -1166,9 +1166,9 @@ mVUop(mVU_RXOR) {
 	pass2 {
 		if (_Fs_ || (_Fsf_ == 3)) {
 			const xmm& Fs = mVU.regAlloc->allocReg(_Fs_, 0, (1 << (3 - _Fsf_)));
-			xMOVD(gprT1d, Fs);
-			xAND(gprT1d, 0x7fffff);
-			xXOR(ptr32[Rmem],  gprT1d);
+			xMOVD(gprT1, Fs);
+			xAND(gprT1, 0x7fffff);
+			xXOR(ptr32[Rmem],  gprT1);
 			mVU.regAlloc->clearNeeded(Fs);
 		}
 		mVU.profiler.EmitOp(opRXOR);
@@ -1204,8 +1204,8 @@ mVUop(mVU_XTOP) {
 		analyzeVIreg2(mVU, _It_, mVUlow.VI_write, 1);
 	}
 	pass2 {
-		xMOVZX(gprT1d, ptr16[&mVU.getVifRegs().top]);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		xMOVZX(gprT1, ptr16[&mVU.getVifRegs().top]);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opXTOP);
 	}
 	pass3 { mVUlog("XTOP vi%02d", _Ft_); }
@@ -1219,9 +1219,9 @@ mVUop(mVU_XITOP) {
 		analyzeVIreg2(mVU, _It_, mVUlow.VI_write, 1);
 	}
 	pass2 {
-		xMOVZX(gprT1d, ptr16[&mVU.getVifRegs().itop]);
-		xAND  (gprT1d, isVU1 ? 0x3ff : 0xff);
-		mVUallocVIb(mVU, gprT1d, _It_);
+		xMOVZX(gprT1, ptr16[&mVU.getVifRegs().itop]);
+		xAND  (gprT1, isVU1 ? 0x3ff : 0xff);
+		mVUallocVIb(mVU, gprT1, _It_);
 		mVU.profiler.EmitOp(opXITOP);
 	}
 	pass3 { mVUlog("XITOP vi%02d", _Ft_); }
@@ -1265,8 +1265,8 @@ mVUop(mVU_XGKICK) {
 			mVUinfo.doXGKICK = false;
 		}
 
-		mVUallocVIa(mVU, gprT1d, _Is_);
-		xMOV(ptr32[&mVU.VIxgkick], gprT1d);
+		mVUallocVIa(mVU, gprT1, _Is_);
+		xMOV(ptr32[&mVU.VIxgkick], gprT1);
 		mVU.profiler.EmitOp(opXGKICK);
 	}
 	pass3 { mVUlog("XGKICK vi%02d", _Fs_); }
@@ -1300,7 +1300,7 @@ void setBranchA(mP, int x, int _x_) {
 
 void condEvilBranch(mV, int JMPcc) {
 	if (mVUlow.badBranch) {
-		xMOV(ptr32[&mVU.branch], gprT1d);
+		xMOV(ptr32[&mVU.branch], gprT1);
 		xMOV(ptr32[&mVU.badBranch], branchAddrN(mVU));
 
 		xCMP(gprT1b, 0);
@@ -1314,8 +1314,8 @@ void condEvilBranch(mV, int JMPcc) {
 	xMOV(ptr32[&mVU.evilBranch], branchAddr(mVU));
 	xCMP(gprT1b, 0);
 	xForwardJump8 cJMP((JccComparisonType)JMPcc);
-		xMOV(gprT1d, ptr32[&mVU.badBranch]); // Branch Not Taken
-		xMOV(ptr32[&mVU.evilBranch], gprT1d);
+		xMOV(gprT1, ptr32[&mVU.badBranch]); // Branch Not Taken
+		xMOV(ptr32[&mVU.evilBranch], gprT1);
 	cJMP.SetTarget();
 	incPC(-2);
 	if(mVUlow.branch >= 9) DevCon.Warning("Conditional in JALR/JR delay slot - If game broken report to PCSX2 Team"); 
@@ -1339,8 +1339,8 @@ mVUop(mVU_BAL) {
 	pass2 {
 		if(!mVUlow.evilBranch)
 		{
-			xMOV(gprT1d, bSaveAddr);
-			mVUallocVIb(mVU, gprT1d, _It_);
+			xMOV(gprT1, bSaveAddr);
+			mVUallocVIb(mVU, gprT1, _It_);
 		}
 
 		if (mVUlow.badBranch)  { xMOV(ptr32[&mVU.badBranch],  branchAddrN(mVU)); }
@@ -1354,13 +1354,13 @@ mVUop(mVU_IBEQ) {
 	setBranchA(mX, 3, 0);
 	pass1 { mVUanalyzeCondBranch2(mVU, _Is_, _It_); }
 	pass2 {
-		if (mVUlow.memReadIs) xMOV(gprT1d, ptr32[&mVU.VIbackup]);
-		else mVUallocVIa(mVU, gprT1d, _Is_);
+		if (mVUlow.memReadIs) xMOV(gprT1, ptr32[&mVU.VIbackup]);
+		else mVUallocVIa(mVU, gprT1, _Is_);
 		
-		if (mVUlow.memReadIt) xXOR(gprT1d, ptr32[&mVU.VIbackup]);
-		else { mVUallocVIa(mVU, gprT2d, _It_); xXOR(gprT1d, gprT2d); }
+		if (mVUlow.memReadIt) xXOR(gprT1, ptr32[&mVU.VIbackup]);
+		else { mVUallocVIa(mVU, gprT2, _It_); xXOR(gprT1, gprT2); }
 
-		if (!(isBadOrEvil))	xMOV(ptr32[&mVU.branch], gprT1d);
+		if (!(isBadOrEvil))	xMOV(ptr32[&mVU.branch], gprT1);
 		else				condEvilBranch(mVU, Jcc_Equal);
 		mVU.profiler.EmitOp(opIBEQ);
 	}
@@ -1371,9 +1371,9 @@ mVUop(mVU_IBGEZ) {
 	setBranchA(mX, 4, 0);
 	pass1 { mVUanalyzeCondBranch1(mVU, _Is_); }
 	pass2 {
-		if (mVUlow.memReadIs)	xMOV(gprT1d, ptr32[&mVU.VIbackup]);
-		else					mVUallocVIa(mVU, gprT1d, _Is_);
-		if (!(isBadOrEvil))		xMOV(ptr32[&mVU.branch], gprT1d);
+		if (mVUlow.memReadIs)	xMOV(gprT1, ptr32[&mVU.VIbackup]);
+		else					mVUallocVIa(mVU, gprT1, _Is_);
+		if (!(isBadOrEvil))		xMOV(ptr32[&mVU.branch], gprT1);
 		else					condEvilBranch(mVU, Jcc_GreaterOrEqual);
 		mVU.profiler.EmitOp(opIBGEZ);
 	}
@@ -1384,9 +1384,9 @@ mVUop(mVU_IBGTZ) {
 	setBranchA(mX, 5, 0);
 	pass1 { mVUanalyzeCondBranch1(mVU, _Is_); }
 	pass2 {
-		if (mVUlow.memReadIs)	xMOV(gprT1d, ptr32[&mVU.VIbackup]);
-		else					mVUallocVIa(mVU, gprT1d, _Is_);
-		if (!(isBadOrEvil))		xMOV(ptr32[&mVU.branch], gprT1d);
+		if (mVUlow.memReadIs)	xMOV(gprT1, ptr32[&mVU.VIbackup]);
+		else					mVUallocVIa(mVU, gprT1, _Is_);
+		if (!(isBadOrEvil))		xMOV(ptr32[&mVU.branch], gprT1);
 		else					condEvilBranch(mVU, Jcc_Greater);
 		mVU.profiler.EmitOp(opIBGTZ);
 	}
@@ -1397,9 +1397,9 @@ mVUop(mVU_IBLEZ) {
 	setBranchA(mX, 6, 0);
 	pass1 { mVUanalyzeCondBranch1(mVU, _Is_); }
 	pass2 {
-		if (mVUlow.memReadIs)	xMOV(gprT1d, ptr32[&mVU.VIbackup]);
-		else					mVUallocVIa(mVU, gprT1d, _Is_);
-		if (!(isBadOrEvil))		xMOV(ptr32[&mVU.branch], gprT1d);
+		if (mVUlow.memReadIs)	xMOV(gprT1, ptr32[&mVU.VIbackup]);
+		else					mVUallocVIa(mVU, gprT1, _Is_);
+		if (!(isBadOrEvil))		xMOV(ptr32[&mVU.branch], gprT1);
 		else					condEvilBranch(mVU, Jcc_LessOrEqual);
 		mVU.profiler.EmitOp(opIBLEZ);
 	}
@@ -1410,9 +1410,9 @@ mVUop(mVU_IBLTZ) {
 	setBranchA(mX, 7, 0);
 	pass1 { mVUanalyzeCondBranch1(mVU, _Is_); }
 	pass2 {	
-		if (mVUlow.memReadIs)	xMOV(gprT1d, ptr32[&mVU.VIbackup]);
-		else					mVUallocVIa(mVU, gprT1d, _Is_);
-		if (!(isBadOrEvil))		xMOV(ptr32[&mVU.branch], gprT1d);
+		if (mVUlow.memReadIs)	xMOV(gprT1, ptr32[&mVU.VIbackup]);
+		else					mVUallocVIa(mVU, gprT1, _Is_);
+		if (!(isBadOrEvil))		xMOV(ptr32[&mVU.branch], gprT1);
 		else					condEvilBranch(mVU, Jcc_Less);
 		mVU.profiler.EmitOp(opIBLTZ);
 	}
@@ -1423,13 +1423,13 @@ mVUop(mVU_IBNE) {
 	setBranchA(mX, 8, 0);
 	pass1 { mVUanalyzeCondBranch2(mVU, _Is_, _It_); }
 	pass2 {
-		if (mVUlow.memReadIs) xMOV(gprT1d, ptr32[&mVU.VIbackup]);
-		else mVUallocVIa(mVU, gprT1d, _Is_);
+		if (mVUlow.memReadIs) xMOV(gprT1, ptr32[&mVU.VIbackup]);
+		else mVUallocVIa(mVU, gprT1, _Is_);
 		
-		if (mVUlow.memReadIt) xXOR(gprT1d, ptr32[&mVU.VIbackup]);
-		else { mVUallocVIa(mVU, gprT2d, _It_); xXOR(gprT1d, gprT2d); }
+		if (mVUlow.memReadIt) xXOR(gprT1, ptr32[&mVU.VIbackup]);
+		else { mVUallocVIa(mVU, gprT2, _It_); xXOR(gprT1, gprT2); }
 		
-		if (!(isBadOrEvil))	xMOV(ptr32[&mVU.branch], gprT1d);
+		if (!(isBadOrEvil))	xMOV(ptr32[&mVU.branch], gprT1);
 		else				condEvilBranch(mVU, Jcc_NotEqual);
 		mVU.profiler.EmitOp(opIBNE);
 	}
@@ -1438,14 +1438,14 @@ mVUop(mVU_IBNE) {
 
 void normJumpPass2(mV) {
 	if (!mVUlow.constJump.isValid || mVUlow.evilBranch) {
-		mVUallocVIa(mVU, gprT1d, _Is_);
-		xSHL(gprT1d, 3);
-		xAND(gprT1d, mVU.microMemSize - 8);
+		mVUallocVIa(mVU, gprT1, _Is_);
+		xSHL(gprT1, 3);
+		xAND(gprT1, mVU.microMemSize - 8);
 				
-		if (!mVUlow.evilBranch) { xMOV(ptr32[&mVU.branch],	   gprT1d	  ); }
-		else					{ xMOV(ptr32[&mVU.evilBranch], gprT1d	  ); }
+		if (!mVUlow.evilBranch) { xMOV(ptr32[&mVU.branch],	   gprT1	  ); }
+		else					{ xMOV(ptr32[&mVU.evilBranch], gprT1	  ); }
 		//If delay slot is conditional, it uses badBranch to go to its target
-		if (mVUlow.badBranch)   { xADD(gprT1d, 8); xMOV(ptr32[&mVU.badBranch],  gprT1d); }
+		if (mVUlow.badBranch)   { xADD(gprT1, 8); xMOV(ptr32[&mVU.badBranch],  gprT1); }
 	}
 }
 
@@ -1463,8 +1463,8 @@ mVUop(mVU_JALR) {
 		normJumpPass2(mVU);
 		if(!mVUlow.evilBranch)
 		{
-			xMOV(gprT1d, bSaveAddr);
-			mVUallocVIb(mVU, gprT1d, _It_);
+			xMOV(gprT1, bSaveAddr);
+			mVUallocVIb(mVU, gprT1, _It_);
 		}
 		if(mVUlow.evilBranch)
 		{
@@ -1473,11 +1473,11 @@ mVUop(mVU_JALR) {
 								   //we need to take the branch address from the register it uses.
 			{
 				DevCon.Warning("Linking JALR from JALR/JR branch target! - If game broken report to PCSX2 Team");
-				mVUallocVIa(mVU, gprT1d, _Is_);
-				xADD(gprT1d, 8);
-				xSHR(gprT1d, 3);
+				mVUallocVIa(mVU, gprT1, _Is_);
+				xADD(gprT1, 8);
+				xSHR(gprT1, 3);
 				incPC(2);
-				mVUallocVIb(mVU, gprT1d, _It_);
+				mVUallocVIb(mVU, gprT1, _It_);
 			}
 			else incPC(2);
 		}
