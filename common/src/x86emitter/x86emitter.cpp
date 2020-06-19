@@ -1250,4 +1250,13 @@ xScopedSavedRegisters::~xScopedSavedRegisters() {
     }
 }
 
+xAddressVoid xComplexAddress(const xAddressReg& tmpRegister, void *base, const xAddressVoid& offset) {
+    if ((sptr)base == (s32)(sptr)base) {
+        return offset + base;
+    } else {
+        xLEA(tmpRegister, ptr[base]);
+        return offset + tmpRegister;
+    }
+}
+
 } // End namespace x86Emitter
