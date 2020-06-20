@@ -1545,8 +1545,8 @@ static void memory_protect_recompiled_code(u32 startpc, u32 size)
 			break;
 
         case ProtMode_Manual:
-			xMOV( ecxd, inpage_ptr );
-			xMOV( edxd, inpage_sz / 4 );
+			xMOV( arg1regd, inpage_ptr );
+			xMOV( arg2regd, inpage_sz / 4 );
 			//xMOV( eax, startpc );		// uncomment this to access startpc (as eax) in dyna_block_discard
 
 			u32 lpc = inpage_ptr;
