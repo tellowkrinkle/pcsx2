@@ -78,6 +78,8 @@ struct xImpl_Mov
 //
 struct xImpl_MovImm64
 {
+    xImpl_MovImm64() {} // Satisfy GCC's whims.
+
     void operator()(const xRegister64 &to, s64 imm, bool preserve_flags = false) const;
 };
 #endif
