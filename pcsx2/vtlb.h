@@ -111,10 +111,17 @@ class VtlbMemoryReserve
 protected:
 	VirtualMemoryReserve	m_reserve;
 
+	virtual bool IsSizeOK(size_t size) { return true; }
+	virtual void DidAssign(void *mem) {}
 public:
-	VtlbMemoryReserve( const wxString& name, size_t size );
+	VtlbMemoryReserve( const wxString& name );
 
-	void Reserve( VirtualMemoryManagerPtr allocator, sptr offset );
+	void Assign( void *ptr, size_t size );
+
+	template <typename T, typename = typename std::enable_if<std::is_trivial<T>::value>::type>
+	void Assign(T& t) {
+		Assign((void*)&t, sizeof(T));
+	}
 
 	virtual void Commit();
 	virtual void Reset();
@@ -130,11 +137,11 @@ class eeMemoryReserve : public VtlbMemoryReserve
 {
 	typedef VtlbMemoryReserve _parent;
 
+	bool IsSizeOK(size_t size) override;
 public:
 	eeMemoryReserve();
 	~eeMemoryReserve();
 
-	void Reserve(VirtualMemoryManagerPtr allocator);
 	void Commit() override;
 	void Decommit() override;
 	void Reset() override;
@@ -147,10 +154,10 @@ class iopMemoryReserve : public VtlbMemoryReserve
 {
 	typedef VtlbMemoryReserve _parent;
 
+	bool IsSizeOK(size_t size) override;
 public:
 	iopMemoryReserve();
 
-	void Reserve(VirtualMemoryManagerPtr allocator);
 	void Commit() override;
 	void Decommit() override;
 	void Reset() override;
@@ -163,11 +170,11 @@ class vuMemoryReserve : public VtlbMemoryReserve
 {
 	typedef VtlbMemoryReserve _parent;
 
+	bool IsSizeOK(size_t size) override;
+	void DidAssign(void *mem) override;
 public:
 	vuMemoryReserve();
 	~vuMemoryReserve();
-
-	void Reserve(VirtualMemoryManagerPtr allocator);
 
 	void Reset() override;
 };
