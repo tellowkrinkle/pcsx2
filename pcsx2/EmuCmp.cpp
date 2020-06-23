@@ -61,7 +61,8 @@ void EmuCmp::init() {
 #ifdef __POSIX__
 	if (attemptMode == Config::Mode::Server) {
 		signal(SIGPIPE, SIG_IGN); // I don't think anyone needs these
-		struct sockaddr_in addr = { .sin_len = sizeof(sockaddr_in), .sin_family = AF_INET };
+		struct sockaddr_in addr = {0};
+		addr.sin_family = AF_INET;
 		((u8*)&addr.sin_port)[0] = portnum >> 8;
 		((u8*)&addr.sin_port)[1] = portnum & 0xFF;
 		int fd = socket(PF_INET, SOCK_STREAM, 0);
@@ -77,7 +78,8 @@ void EmuCmp::init() {
 		}
 		Console.Error("EmuCmp: Failed to listen on %s: %s", WX_STR(port), strerror(errno));
 	} else {
-		struct addrinfo hints = { .ai_socktype = SOCK_STREAM };
+		struct addrinfo hints = {0};
+		hints.ai_socktype = SOCK_STREAM;
 		struct addrinfo *res;
 
 		int error = getaddrinfo(host.IsEmpty() ? nullptr : WX_STR(host), port.c_str(), &hints, &res);

@@ -957,12 +957,16 @@ protected:
     void Reduce();
 };
 
-typedef xIndirect<uptr> xIndirectNative;
 typedef xIndirect<u128> xIndirect128;
 typedef xIndirect<u64> xIndirect64;
 typedef xIndirect<u32> xIndirect32;
 typedef xIndirect<u16> xIndirect16;
 typedef xIndirect<u8> xIndirect8;
+#ifdef __M_X86_64
+typedef xIndirect<u64> xIndirectNative;
+#else
+typedef xIndirect<u32> xIndirectNative;
+#endif
 
 // --------------------------------------------------------------------------------------
 //  xIndirect64orLess  -  base class 64, 32, 16, and 8 bit operand types
@@ -991,11 +995,6 @@ public:
         m_OpSize = src.GetOperandSize();
     }
     xIndirect64orLess(const xIndirect64 &src)
-        : _parent(src)
-    {
-        m_OpSize = src.GetOperandSize();
-    }
-    xIndirect64orLess(const xIndirectNative &src)
         : _parent(src)
     {
         m_OpSize = src.GetOperandSize();
