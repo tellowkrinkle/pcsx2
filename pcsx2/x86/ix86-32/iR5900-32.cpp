@@ -171,11 +171,6 @@ void _eeMoveGPRtoR(const xRegister32& to, int fromgpr)
 	}
 }
 
-void _eeMoveGPRtoR(const xRegister64& to, int fromgpr)
-{
-	_eeMoveGPRtoR(xRegister32(to.Id), fromgpr);
-}
-
 void _eeMoveGPRtoM(uptr to, int fromgpr)
 {
 	if( GPR_IS_CONST1(fromgpr) )
