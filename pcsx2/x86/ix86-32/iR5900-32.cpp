@@ -1052,8 +1052,7 @@ static void iBranchTest(u32 newpc)
 	//    cpuRegs.cycle += blockcycles;
 	//    if( cpuRegs.cycle > g_nextEventCycle ) { DoEvents(); }
 
-	if (EmuCmp::mode != EmuCmp::Config::Mode::Off
-		&& EmuCmp::granularity == EmuCmp::Config::Granularity::BasicBlock)
+	if (EmuCmp::shouldEmitAfterBB() && EmuCmp::shouldCompareR5900())
 	{
 		iFlushCall(FLUSH_FREE_XMM);
 		xFastCall((void*)EmuCmp::cmpR5900, cpuRegs.pc);
@@ -1315,8 +1314,7 @@ void recompileNextInstruction(int delayslot)
 	if( IsDebugBuild )
 		xMOV(eaxd, pc);
 
-	if (EmuCmp::mode != EmuCmp::Config::Mode::Off
-		&& EmuCmp::granularity == EmuCmp::Config::Granularity::Instruction)
+	if (EmuCmp::shouldEmitAfterInstr() && EmuCmp::shouldCompareR5900())
 	{
 		iFlushCall(FLUSH_FREE_XMM);
 		xFastCall((void*)EmuCmp::cmpR5900, pc);
