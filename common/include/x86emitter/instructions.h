@@ -209,6 +209,12 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////
+/// Helper function to load addresses that may be far from the current instruction pointer
+/// On i386, resolves to `mov dst, (sptr)addr`
+/// On x86-64, resolves to either `mov dst, (sptr)addr` or `lea dst, [addr]` depending on the distance from RIP
+void xLoadFarAddr(const xAddressReg& dst, void *addr);
+
+//////////////////////////////////////////////////////////////////////////////////////////
 // JMP / Jcc Instructions!
 
 extern void xJcc(JccComparisonType comparison, const void *target);

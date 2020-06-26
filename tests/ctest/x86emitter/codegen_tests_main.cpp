@@ -63,7 +63,10 @@ TEST(CodegenTests, LEATest)
 	CODEGEN_TEST_BOTH(xLEA(eaxd, ptr32[rbx*4+3+rcx]), "8d 44 99 03");
 	CODEGEN_TEST_64(xLEA(r8, ptr[r10*4+3+r9]), "4f 8d 44 91 03");
 	CODEGEN_TEST_64(xLEA(r8, ptr[base]), "4c 8d 05 f9 ff ff ff");
+	CODEGEN_TEST_64(xLoadFarAddr(r8, base), "4c 8d 05 f9 ff ff ff");
+	CODEGEN_TEST_64(xLoadFarAddr(r8, (void*)0x1234567890), "49 b8 90 78 56 34 12 00 00 00");
 	CODEGEN_TEST_BOTH(xLEA(rax, ptr[(void*)0x1234]), "b8 34 12 00 00"); // Converted to mov rax, 0x1234
+	CODEGEN_TEST_BOTH(xLoadFarAddr(rax, (void*)0x1234), "b8 34 12 00 00");
 }
 
 TEST(CodegenTests, PUSHTest)
