@@ -119,7 +119,7 @@ int _getFreeX86reg(int mode)
 
 	for (uint i=0; i<iREGCNT_GPR; i++) {
 		int reg = (g_x86checknext+i)%iREGCNT_GPR;
-		if( reg == 0 || reg == espd.GetId() || reg == ebpd.GetId() ) continue;
+		if( reg == 0 || reg == esp.GetId() || reg == ebp.GetId() ) continue;
 		if( reg >= maxreg ) continue;
 		//if( (mode&MODE_NOFRAME) && reg==EBP ) continue;
 
@@ -130,7 +130,7 @@ int _getFreeX86reg(int mode)
 	}
 
 	for (int i=1; i<maxreg; i++) {
-		if( i == espd.GetId()  || i==ebpd.GetId()) continue;
+		if( i == esp.GetId()  || i==ebp.GetId()) continue;
 		//if( (mode&MODE_NOFRAME) && i==EBP ) continue;
 
 		if (x86regs[i].needed) continue;
@@ -188,11 +188,11 @@ void _flushConstRegs()
 		if (g_cpuConstRegs[i].SL[j] != 0) continue;
 
 		if (eaxval != 0) {
-			xXOR(eaxd, eaxd);
+			xXOR(eax, eax);
 			eaxval = 0;
 		}
 
-		xMOV(ptr[&cpuRegs.GPR.r[i].SL[j]], eaxd);
+		xMOV(ptr[&cpuRegs.GPR.r[i].SL[j]], eax);
 		done[j] |= 1<<i;
 		zero_cnt++;
 	}
@@ -204,15 +204,15 @@ void _flushConstRegs()
 		if (g_cpuConstRegs[i].SL[j] != -1) continue;
 
 		if (eaxval > 0) {
-			xXOR(eaxd, eaxd);
+			xXOR(eax, eax);
 			eaxval = 0;
 		}
 		if (eaxval == 0) {
-			xNOT(eaxd);
+			xNOT(eax);
 			eaxval = -1;
 		}
 
-		xMOV(ptr[&cpuRegs.GPR.r[i].SL[j]], eaxd);
+		xMOV(ptr[&cpuRegs.GPR.r[i].SL[j]], eax);
 		done[j + 2] |= 1<<i;
 		minusone_cnt++;
 	}
@@ -253,7 +253,7 @@ int _allocX86reg(xRegister32 x86reg, int type, int reg, int mode)
 {
 	uint i;
 	pxAssertDev( reg >= 0 && reg < 32, "Register index out of bounds." );
-	pxAssertDev( x86reg != espd && x86reg != ebpd, "Allocation of ESP/EBP is not allowed!" );
+	pxAssertDev( x86reg != esp && x86reg != ebp, "Allocation of ESP/EBP is not allowed!" );
 
 	// don't alloc EAX and ESP,EBP if MODE_NOFRAME
 	int oldmode = mode;
@@ -282,7 +282,7 @@ int _allocX86reg(xRegister32 x86reg, int type, int reg, int mode)
 		}
 
 		for (i=1; i<maxreg; i++) {
-			if ( (int)i == espd.GetId() || (int)i == ebpd.GetId() ) continue;
+			if ( (int)i == esp.GetId() || (int)i == ebp.GetId() ) continue;
 			if (!x86regs[i].inuse || x86regs[i].type != type || x86regs[i].reg != reg) continue;
 
 			// We're in a for loop until i<maxreg. This will never happen.
@@ -485,5 +485,5 @@ void _signExtendSFtoM(uptr mem)
 	xLAHF();
 	xSAR(ax, 15);
 	xCWDE();
-	xMOV(ptr[(void*)(mem)], eaxd);
+	xMOV(ptr[(void*)(mem)], eax);
 }

@@ -182,8 +182,8 @@ void _eeMoveGPRtoM(uptr to, int fromgpr)
 			xMOVSS(ptr[(void*)(to)], xRegisterSSE(mmreg));
 		}
 		else {
-			xMOV(eaxd, ptr[&cpuRegs.GPR.r[ fromgpr ].UL[ 0 ] ]);
-			xMOV(ptr[(void*)(to)], eaxd);
+			xMOV(eax, ptr[&cpuRegs.GPR.r[ fromgpr ].UL[ 0 ] ]);
+			xMOV(ptr[(void*)(to)], eax);
 		}
 	}
 }
@@ -199,8 +199,8 @@ void _eeMoveGPRtoRm(x86IntRegType to, int fromgpr)
 			xMOVSS(ptr[xAddressReg(to)], xRegisterSSE(mmreg));
 		}
 		else {
-			xMOV(eaxd, ptr[&cpuRegs.GPR.r[ fromgpr ].UL[ 0 ] ]);
-			xMOV(ptr[xAddressReg(to)], eaxd);
+			xMOV(eax, ptr[&cpuRegs.GPR.r[ fromgpr ].UL[ 0 ] ]);
+			xMOV(ptr[xAddressReg(to)], eax);
 		}
 	}
 }
@@ -209,8 +209,8 @@ void eeSignExtendTo(int gpr, bool onlyupper)
 {
 	xCDQ();
 	if (!onlyupper)
-		xMOV(ptr32[&cpuRegs.GPR.r[gpr].UL[0]], eaxd);
-	xMOV(ptr32[&cpuRegs.GPR.r[gpr].UL[1]], edxd);
+		xMOV(ptr32[&cpuRegs.GPR.r[gpr].UL[0]], eax);
+	xMOV(ptr32[&cpuRegs.GPR.r[gpr].UL[1]], edx);
 }
 
 int _flushXMMunused()
@@ -298,8 +298,8 @@ void recBranchCall( void (*func)() )
 	// In order to make sure a branch test is performed, the nextBranchCycle is set
 	// to the current cpu cycle.
 
-	xMOV(eaxd, ptr[&cpuRegs.cycle ]);
-	xMOV(ptr[&g_nextEventCycle], eaxd);
+	xMOV(eax, ptr[&cpuRegs.cycle ]);
+	xMOV(ptr[&g_nextEventCycle], eax);
 
 	recCall(func);
 	g_branch = 2;
@@ -352,9 +352,9 @@ static DynGenFunc* _DynGen_JITCompile()
 	// u32 addr = cpuRegs.pc;
 	// void(**base)() = (void(**)())recLUT[addr >> 16];
 	// base[addr >> 2]();
-	xMOV( eaxd, ptr[&cpuRegs.pc] );
-	xMOV( ebxd, eaxd );
-	xSHR( eaxd, 16 );
+	xMOV( eax, ptr[&cpuRegs.pc] );
+	xMOV( ebx, eax );
+	xSHR( eax, 16 );
 	xMOV( rcx, ptrNative[xComplexAddress(rcx, recLUT, rax*wordsize)] );
 	xJMP( ptrNative[rbx*(wordsize/4) + rcx] );
 
@@ -377,9 +377,9 @@ static DynGenFunc* _DynGen_DispatcherReg()
 	// u32 addr = cpuRegs.pc;
 	// void(**base)() = (void(**)())recLUT[addr >> 16];
 	// base[addr >> 2]();
-	xMOV( eaxd, ptr[&cpuRegs.pc] );
-	xMOV( ebxd, eaxd );
-	xSHR( eaxd, 16 );
+	xMOV( eax, ptr[&cpuRegs.pc] );
+	xMOV( ebx, eax );
+	xSHR( eax, 16 );
 	xMOV( rcx, ptrNative[xComplexAddress(rcx, recLUT, rax*wordsize)] );
 	xJMP( ptrNative[rbx*(wordsize/4) + rcx] );
 
@@ -876,9 +876,9 @@ void SetBranchReg( u32 reg )
 		_eeMoveGPRtoR(calleeSavedReg2d, reg);
 
 		if (EmuConfig.Gamefixes.GoemonTlbHack) {
-			xMOV(ecxd, calleeSavedReg2d);
+			xMOV(ecx, calleeSavedReg2d);
 			vtlb_DynV2P();
-			xMOV(calleeSavedReg2d, eaxd);
+			xMOV(calleeSavedReg2d, eax);
 		}
 
 		recompileNextInstruction(1);
@@ -889,8 +889,8 @@ void SetBranchReg( u32 reg )
 			x86regs[calleeSavedReg2d.GetId()].inuse = 0;
 		}
 		else {
-			xMOV(eaxd, ptr[&g_recWriteback]);
-			xMOV(ptr[&cpuRegs.pc], eaxd);
+			xMOV(eax, ptr[&g_recWriteback]);
+			xMOV(ptr[&cpuRegs.pc], eax);
 		}
 	}
 
@@ -942,9 +942,9 @@ void LoadBranchState()
 void iFlushCall(int flushtype)
 {
 	// Free registers that are not saved across function calls (x86-32 ABI):
-	_freeX86reg(eaxd);
-	_freeX86reg(ecxd);
-	_freeX86reg(edxd);
+	_freeX86reg(eax);
+	_freeX86reg(ecx);
+	_freeX86reg(edx);
 
 	if ((flushtype & FLUSH_PC) && !g_cpuFlushedPC) {
 		xMOV(ptr32[&cpuRegs.pc], pc);
@@ -1047,20 +1047,20 @@ static void iBranchTest(u32 newpc)
 
 	if (EmuConfig.Speedhacks.WaitLoop && s_nBlockFF && newpc == s_branchTo)
 	{
-		xMOV(eaxd, ptr32[&g_nextEventCycle]);
+		xMOV(eax, ptr32[&g_nextEventCycle]);
 		xADD(ptr32[&cpuRegs.cycle], scaleblockcycles());
-		xCMP(eaxd, ptr32[&cpuRegs.cycle]);
-		xCMOVS(eaxd, ptr32[&cpuRegs.cycle]);
-		xMOV(ptr32[&cpuRegs.cycle], eaxd);
+		xCMP(eax, ptr32[&cpuRegs.cycle]);
+		xCMOVS(eax, ptr32[&cpuRegs.cycle]);
+		xMOV(ptr32[&cpuRegs.cycle], eax);
 
 		xJMP( (void*)DispatcherEvent );
 	}
 	else
 	{
-		xMOV(eaxd, ptr[&cpuRegs.cycle]);
-		xADD(eaxd, scaleblockcycles());
-		xMOV(ptr[&cpuRegs.cycle], eaxd); // update cycles
-		xSUB(eaxd, ptr[&g_nextEventCycle]);
+		xMOV(eax, ptr[&cpuRegs.cycle]);
+		xADD(eax, scaleblockcycles());
+		xMOV(ptr[&cpuRegs.cycle], eax); // update cycles
+		xSUB(eax, ptr[&g_nextEventCycle]);
 
 		if (newpc == 0xffffffff)
 			xJS( DispatcherReg );
@@ -1193,16 +1193,16 @@ void recMemcheck(u32 op, u32 bits, bool store)
 	iFlushCall(FLUSH_EVERYTHING|FLUSH_PC);
 
 	// compute accessed address
-	_eeMoveGPRtoR(ecxd, (op >> 21) & 0x1F);
+	_eeMoveGPRtoR(ecx, (op >> 21) & 0x1F);
 	if ((s16)op != 0)
-		xADD(ecxd, (s16)op);
+		xADD(ecx, (s16)op);
 	if (bits == 128)
-		xAND(ecxd, ~0x0F);
+		xAND(ecx, ~0x0F);
 
-	xFastCall((void*)standardizeBreakpointAddress, ecxd);
-	xMOV(ecxd,eaxd);
-	xMOV(edxd,eaxd);
-	xADD(edxd,bits/8);
+	xFastCall((void*)standardizeBreakpointAddress, ecx);
+	xMOV(ecx,eax);
+	xMOV(edx,eax);
+	xADD(edx,bits/8);
 
 	// ecx = access address
 	// edx = access address+size
@@ -1219,18 +1219,18 @@ void recMemcheck(u32 op, u32 bits, bool store)
 
 		// logic: memAddress < bpEnd && bpStart < memAddress+memSize
 
-		xMOV(eaxd,standardizeBreakpointAddress(checks[i].end));
-		xCMP(ecxd,eaxd);				// address < end
+		xMOV(eax,standardizeBreakpointAddress(checks[i].end));
+		xCMP(ecx,eax);				// address < end
 		xForwardJGE8 next1;			// if address >= end then goto next1
 
-		xMOV(eaxd,standardizeBreakpointAddress(checks[i].start));
-		xCMP(eaxd,edxd);				// start < address+size
+		xMOV(eax,standardizeBreakpointAddress(checks[i].start));
+		xCMP(eax,edx);				// start < address+size
 		xForwardJGE8 next2;			// if start >= address+size then goto next2
 
 		// hit the breakpoint
 		if (checks[i].result & MEMCHECK_LOG) {
-			xMOV(edxd, store);
-			xFastCall((void*)dynarecMemLogcheck, ecxd, edxd);
+			xMOV(edx, store);
+			xFastCall((void*)dynarecMemLogcheck, ecx, edx);
 		}
 		if (checks[i].result & MEMCHECK_BREAK) {
 			xFastCall((void*)dynarecMemcheck);
@@ -1299,7 +1299,7 @@ void recompileNextInstruction(int delayslot)
 	if( IsDevBuild )
 		xNOP();
 	if( IsDebugBuild )
-		xMOV(eaxd, pc);
+		xMOV(eax, pc);
 
 	cpuRegs.code = *(int *)s_pCode;
 
@@ -1606,8 +1606,8 @@ bool skipMPEG_By_Pattern(u32 sPC) {
 		if (memRead32(sPC+8) != p2) return 0;
 		xMOV(ptr32[&cpuRegs.GPR.n.v0.UL[0]], 1);
 		xMOV(ptr32[&cpuRegs.GPR.n.v0.UL[1]], 0);
-		xMOV(eaxd, ptr32[&cpuRegs.GPR.n.ra.UL[0]]);
-		xMOV(ptr32[&cpuRegs.pc], eaxd);
+		xMOV(eax, ptr32[&cpuRegs.GPR.n.ra.UL[0]]);
+		xMOV(ptr32[&cpuRegs.pc], eax);
 		iBranchTest();
 		g_branch = 1;
 		pc = s_nEndBlock;
