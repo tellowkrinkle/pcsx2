@@ -119,7 +119,7 @@ int _getFreeX86reg(int mode)
 
 	for (uint i=0; i<iREGCNT_GPR; i++) {
 		int reg = (g_x86checknext+i)%iREGCNT_GPR;
-		if( reg == 0 || reg == esp.GetId() || reg == ebp.GetId() ) continue;
+		if( reg == 0 || reg == espd.GetId() || reg == ebpd.GetId() ) continue;
 		if( reg >= maxreg ) continue;
 		//if( (mode&MODE_NOFRAME) && reg==EBP ) continue;
 
@@ -130,7 +130,7 @@ int _getFreeX86reg(int mode)
 	}
 
 	for (int i=1; i<maxreg; i++) {
-		if( i == esp.GetId()  || i==ebp.GetId()) continue;
+		if( i == espd.GetId()  || i==ebpd.GetId()) continue;
 		//if( (mode&MODE_NOFRAME) && i==EBP ) continue;
 
 		if (x86regs[i].needed) continue;
@@ -282,7 +282,7 @@ int _allocX86reg(xRegister32 x86reg, int type, int reg, int mode)
 		}
 
 		for (i=1; i<maxreg; i++) {
-			if ( (int)i == esp.GetId() || (int)i == ebp.GetId() ) continue;
+			if ( (int)i == espd.GetId() || (int)i == ebpd.GetId() ) continue;
 			if (!x86regs[i].inuse || x86regs[i].type != type || x86regs[i].reg != reg) continue;
 
 			// We're in a for loop until i<maxreg. This will never happen.
