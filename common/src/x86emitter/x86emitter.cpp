@@ -131,10 +131,10 @@ const xAddressReg
     r14(14), r15(15);
 
 const xRegister32
-    eaxd(0), ebxd(3),
-    ecxd(1), edxd(2),
-    espd(4), ebpd(5),
-    esid(6), edid(7),
+    eax(0), ebx(3),
+    ecx(1), edx(2),
+    esp(4), ebp(5),
+    esi(6), edi(7),
     r8d(8), r9d(9),
     r10d(10), r11d(11),
     r12d(12), r13d(13),
@@ -167,10 +167,10 @@ const xAddressReg
     calleeSavedReg2 = rsi;
 
 const xRegister32
-    arg1regd = ecxd,
-    arg2regd = edxd,
-    calleeSavedReg1d = edid,
-    calleeSavedReg2d = esid;
+    arg1regd = ecx,
+    arg2regd = edx,
+    calleeSavedReg1d = edi,
+    calleeSavedReg2d = esi;
 #else
 const xAddressReg
     arg1reg = rdi,
@@ -181,8 +181,8 @@ const xAddressReg
     calleeSavedReg2 = r13;
 
 const xRegister32
-    arg1regd = edid,
-    arg2regd = esid,
+    arg1regd = edi,
+    arg2regd = esi,
     calleeSavedReg1d = r12d,
     calleeSavedReg2d = r13d;
 #endif
