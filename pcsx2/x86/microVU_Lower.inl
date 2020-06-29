@@ -887,7 +887,7 @@ static void writeBackISW(microVU& mVU, void *basePtr, xAddressReg reg) {
 		int offset = -1;
 		auto writeBackAt = [&](int offsetReq){
 			if (offset == -1) {
-				xLEA(gprT3q, ptr[basePtr]);
+				xLEA(gprT3q, ptr[(void*)((sptr)basePtr + offsetReq)]);
 				offset = offsetReq;
 			}
 			xMOV(ptr32[gprT3q+gprT2q+(offsetReq-offset)], gprT1);
