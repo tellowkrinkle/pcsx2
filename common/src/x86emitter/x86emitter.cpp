@@ -130,12 +130,6 @@ const xAddressReg
     r12(12), r13(13),
     r14(14), r15(15);
 
-const xAddressReg
-    eax(0), ebx(3),
-    ecx(1), edx(2),
-    esp(4), ebp(5),
-    esi(6), edi(7);
-
 const xRegister32
     eaxd(0), ebxd(3),
     ecxd(1), edxd(2),
@@ -367,7 +361,7 @@ void EmitSibMagic(uint regfield, const xIndirectVoid &info, int extraRIPOffset)
             EmitSibMagic(regfield, (void *)info.Displacement, extraRIPOffset);
             return;
         } else {
-            if (info.Index == ebp && displacement_size == 0)
+            if (info.Index == rbp && displacement_size == 0)
                 displacement_size = 1; // forces [ebp] to be encoded as [ebp+0]!
 
             ModRM(displacement_size, regfield, info.Index.Id & 7);
@@ -385,7 +379,7 @@ void EmitSibMagic(uint regfield, const xIndirectVoid &info, int extraRIPOffset)
             xWrite<s32>(info.Displacement);
             return;
         } else {
-            if (info.Base == ebp && displacement_size == 0)
+            if (info.Base == rbp && displacement_size == 0)
                 displacement_size = 1; // forces [ebp] to be encoded as [ebp+0]!
 
             ModRM(displacement_size, regfield, ModRm_UseSib);
@@ -896,7 +890,7 @@ static void EmitLeaMagic(const xRegisterInt &to, const xIndirectVoid &src, bool 
         } else {
             if (src.Scale == 0) {
                 if (!preserve_flags) {
-                    if (src.Index == esp) {
+                    if (src.Index == rsp) {
                         // ESP is not encodable as an index (ix86 ignores it), thus:
                         _xMovRtoR(to, sizeMatchedBase); // will do the trick!
                         if (src.Displacement)
@@ -907,7 +901,7 @@ static void EmitLeaMagic(const xRegisterInt &to, const xIndirectVoid &src, bool 
                         _g1_EmitOp(G1Type_ADD, to, sizeMatchedIndex);
                         return;
                     }
-                } else if ((src.Index == esp) && (src.Displacement == 0)) {
+                } else if ((src.Index == rsp) && (src.Displacement == 0)) {
                     // special case handling of ESP as Index, which is replaceable with
                     // a single MOV even when preserve_flags is set! :D
 

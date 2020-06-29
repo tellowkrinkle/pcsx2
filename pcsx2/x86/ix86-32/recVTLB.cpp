@@ -89,10 +89,10 @@ static void iMOV64_Smart( const xIndirectVoid& destRm, const xIndirectVoid& srcR
 		return;
 	}
 
-	xMOV( eax, srcRm );
-	xMOV( destRm, eax );
-	xMOV( eax, srcRm+4 );
-	xMOV( destRm+4, eax );
+	xMOV( eaxd, srcRm );
+	xMOV( destRm, eaxd );
+	xMOV( eaxd, srcRm+4 );
+	xMOV( destRm+4, eaxd );
 }
 
 /*
@@ -594,13 +594,14 @@ void vtlb_DynGenWrite_Const( u32 bits, u32 addr_const )
 
 //   ecx - virtual address
 //   Returns physical address in eax.
+//   Clobbers edx
 void vtlb_DynV2P()
 {
 	xMOV(eaxd, ecxd);
 	xAND(ecxd, VTLB_PAGE_MASK); // vaddr & VTLB_PAGE_MASK
 
 	xSHR(eaxd, VTLB_PAGE_BITS);
-	xMOV(eaxd, ptr[(eax*4) + vtlbdata.ppmap]); //vtlbdata.ppmap[vaddr>>VTLB_PAGE_BITS];
+	xMOV(eaxd, ptr[xComplexAddress(rdx, vtlbdata.ppmap, rax*4)]); //vtlbdata.ppmap[vaddr>>VTLB_PAGE_BITS];
 
 	xOR(eaxd, ecxd);
 }
