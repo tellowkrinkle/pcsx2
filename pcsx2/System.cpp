@@ -390,11 +390,28 @@ namespace HostMemoryMap {
 	uptr EEmem, IOPmem, VUmem, EErec, IOPrec, VIF0rec, VIF1rec, mVU0rec, mVU1rec, bumpAllocator;
 }
 
+/// Attempts to find a spot near static variables for the main memory
+static VirtualMemoryManagerPtr makeMainMemoryManager() {
+	uptr codeBase = (uptr)(void*)makeMainMemoryManager / (1 << 28) * (1 << 28);
+	for (int offset = 4; offset >= -6; offset--) {
+		uptr base = codeBase + (offset << 28);
+		auto mgr = std::make_shared<VirtualMemoryManager>("Main Memory Manager", base, HostMemoryMap::Size, /*upper_bounds=*/0, /*strict=*/true);
+		if (mgr->IsOk()) {
+			return mgr;
+		}
+	}
+
+	if (sizeof(void*) == 8) {
+		pxAssertRel(0, "Failed to find a good place for the main memory allocation, recompilers may fail");
+	}
+	return std::make_shared<VirtualMemoryManager>("Main Memory Manager", 0, HostMemoryMap::Size);
+}
+
 // --------------------------------------------------------------------------------------
 //  SysReserveVM  (implementations)
 // --------------------------------------------------------------------------------------
 SysMainMemory::SysMainMemory()
-	: m_mainMemory(std::make_shared<VirtualMemoryManager>("Main Memory Manager", 0x140000000, HostMemoryMap::Size))
+	: m_mainMemory(makeMainMemoryManager())
 	, m_bumpAllocator(m_mainMemory, HostMemoryMap::bumpAllocatorOffset, HostMemoryMap::Size - HostMemoryMap::bumpAllocatorOffset)
 {
 	uptr base = (uptr)MainMemory()->GetBase();
