@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nulls", "Nulls", "{E1828E40-2FBB-48FE-AE7F-5587755DCE0E}"
 EndProject
@@ -87,6 +87,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freetype", "3rdparty\freetype\builds\windows\freetype.vcxproj", "{78B079BD-9FC7-4B9E-B4A6-96DA0F00248B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "liblzma", "3rdparty\xz\liblzma.vcxproj", "{12728250-16EC-4DC6-94D7-E21DD88947F8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D6073A1D-970C-40F1-8ABD-CFC1BE1297FF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -656,5 +658,8 @@ Global
 		{27F17499-A372-4408-8AFA-4F9F4584FBD3} = {78EBE642-7A4D-4EA7-86BE-5639C6646C38}
 		{78B079BD-9FC7-4B9E-B4A6-96DA0F00248B} = {78EBE642-7A4D-4EA7-86BE-5639C6646C38}
 		{12728250-16EC-4DC6-94D7-E21DD88947F8} = {78EBE642-7A4D-4EA7-86BE-5639C6646C38}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A88257C7-3F2C-4098-B246-BD11DD94214E}
 	EndGlobalSection
 EndGlobal
