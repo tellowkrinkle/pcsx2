@@ -13,9 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "EmuCmp.h"
 #include "PrecompiledHeader.h"
-#include "Assertions.h"
+#include "EmuCmp.h"
 #include "R5900.h"
 #include "VU.h"
 #include "DebugTools/Debug.h"
@@ -108,10 +107,12 @@ done:
 }
 
 void EmuCmp::shutdown() {
+#ifdef __POSIX__
 	if (comms) {
 		fclose(comms);
 		comms = nullptr;
 	}
+#endif
 	mode = Config::Mode::Off;
 }
 
@@ -200,8 +201,7 @@ static void CompareBuffer(void *buffer, int startOffset, int length, const char 
 		send(local, length);
 	} else if (mode == Config::Mode::Client) {
 		const int maxStackBuffer = _64kb;
-		u8 srv_[std::min(length, maxStackBuffer)];
-		u8 *srv = length > maxStackBuffer ? (u8*)malloc(length) : srv_;
+		u8 *srv = length > maxStackBuffer ? (u8*)malloc(length) : (u8*)alloca(length);
 		receive(srv, length);
 
 		if (0 != memcmp(srv, local, length)) {
@@ -328,8 +328,7 @@ void EmuCmp::detail::cmpMem(void *mem, int length, const char *description) {
 		send(mem, length);
 	} else {
 		const int maxStackBuffer = _64kb;
-		u8 srv_[std::min(length, maxStackBuffer)];
-		u8 *srv = length > maxStackBuffer ? (u8*)malloc(length) : srv_;
+		u8 *srv = length > maxStackBuffer ? (u8*)malloc(length) : (u8*)alloca(length);
 
 		if (0 != memcmp(srv, mem, length)) {
 			char err[1024];
