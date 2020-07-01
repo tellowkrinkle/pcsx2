@@ -782,9 +782,7 @@ void vtlb_Term()
 	//nothing to do for now
 }
 
-// We need this to be near recompiled code
-static __pagealigned VTLBVirtual vtlbdata_vmap[VTLB_VMAP_ITEMS];
-static_assert(sizeof(vtlbdata_vmap) % __pagesize == 0, "We decommit this when we're not using it");
+constexpr size_t VMAP_SIZE = sizeof(VTLBVirtual) * VTLB_VMAP_ITEMS;
 
 // Reserves the vtlb core allocation used by various emulation components!
 // [TODO] basemem - request allocating memory at the specified virtual location, which can allow
@@ -792,17 +790,15 @@ static_assert(sizeof(vtlbdata_vmap) % __pagesize == 0, "We decommit this when we
 //    default is used.
 void vtlb_Core_Alloc()
 {
-	static bool hasRun = false; // Memory starts out committed
+	// Can't return regions to the bump allocator
+	static VTLBVirtual* vmap = nullptr;
+	if (!vmap)
+		vmap = (VTLBVirtual*)GetVmMemory().BumpAllocator().Alloc(VMAP_SIZE);
 	if (!vtlbdata.vmap)
 	{
-		bool okay = true;
-		if (hasRun) {
-			okay = HostSys::MmapCommitPtr(vtlbdata_vmap, sizeof(vtlbdata_vmap), PageProtectionMode().Read().Write());
-		} else {
-			hasRun = true;
-		}
+		bool okay = HostSys::MmapCommitPtr(vmap, VMAP_SIZE, PageProtectionMode().Read().Write());
 		if (okay) {
-			vtlbdata.vmap = vtlbdata_vmap;
+			vtlbdata.vmap = vmap;
 		} else {
 			throw Exception::OutOfMemory( L"VTLB Virtual Address Translation LUT" )
 				.SetDiagMsg(pxsFmt("(%u megs)", VTLB_VMAP_ITEMS * sizeof(*vtlbdata.vmap) / _1mb)
@@ -830,7 +826,7 @@ void vtlb_Alloc_Ppmap()
 void vtlb_Core_Free()
 {
 	if (vtlbdata.vmap) {
-		HostSys::MmapResetPtr(vtlbdata_vmap, sizeof(vtlbdata_vmap));
+		HostSys::MmapResetPtr(vtlbdata.vmap, VMAP_SIZE);
 		vtlbdata.vmap = nullptr;
 	}
 	safe_aligned_free( vtlbdata.ppmap );
