@@ -49,7 +49,7 @@ long __stdcall SysPageFaultExceptionFilter(EXCEPTION_POINTERS *eps)
 
 void _platform_InstallSignalHandler()
 {
-#ifdef _WIN64
+#ifdef _WIN64 // We don't handle SEH properly on Win64 so use a vectored exception handler instead
     AddVectoredExceptionHandler(true, SysPageFaultExceptionFilter);
 #endif
 }
