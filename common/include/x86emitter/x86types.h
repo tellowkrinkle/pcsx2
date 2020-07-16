@@ -201,8 +201,18 @@ class xAddressVoid;
 // --------------------------------------------------------------------------------------
 class OperandSizedObject
 {
+protected:
+    uint _operandSize = 0;
+    OperandSizedObject() = default;
+    constexpr OperandSizedObject(uint operandSize)
+        : _operandSize(operandSize)
+    {
+    }
 public:
-    virtual uint GetOperandSize() const = 0;
+    constexpr uint GetOperandSize() const {
+        pxAssertDev(_operandSize != 0, "Attempted to use operand size of uninitialized or void object");
+        return _operandSize;
+    }
 
     bool Is8BitOp() const { return GetOperandSize() == 1; }
     u8 GetPrefix16() const { return GetOperandSize() == 2 ? 0x66 : 0; }
@@ -243,11 +253,11 @@ public:
 
 // Represents an unused or "empty" register assignment.  If encountered by the emitter, this
 // will be ignored (in some cases it is disallowed and generates an assertion)
-static const int xRegId_Empty = -1;
+static constexpr int xRegId_Empty = -1;
 
 // Represents an invalid or uninitialized register.  If this is encountered by the emitter it
 // will generate an assertion.
-static const int xRegId_Invalid = -2;
+static constexpr int xRegId_Invalid = -2;
 
 // --------------------------------------------------------------------------------------
 //  xRegisterBase  -  type-unsafe x86 register representation.
@@ -258,20 +268,18 @@ static const int xRegId_Invalid = -2;
 //
 class xRegisterBase : public OperandSizedObject
 {
+protected:
+    constexpr xRegisterBase(uint operandSize, int regId)
+        : OperandSizedObject(operandSize), Id(regId)
+    {
+        pxAssert((Id >= xRegId_Empty) && (Id < 16));
+    }
 public:
     int Id;
 
-    xRegisterBase()
+    constexpr xRegisterBase()
+        : OperandSizedObject(0), Id(xRegId_Invalid)
     {
-        Id = xRegId_Invalid;
-    }
-
-    explicit xRegisterBase(int regId)
-    {
-        Id = regId;
-        // Note: to avoid tons of ifdef, the 32 bits build will instantiate
-        // all 16x64 bits registers.
-        pxAssert((Id >= xRegId_Empty) && (Id < 16));
     }
 
     bool IsEmpty() const { return Id < 0; }
@@ -301,9 +309,6 @@ public:
     // return true if the register is a valid YMM register
     bool IsWideSIMD() const { return GetOperandSize() == 32; }
 
-    bool operator==(const xRegisterBase &src) const { return (Id == src.Id); }
-    bool operator!=(const xRegisterBase &src) const { return (Id != src.Id); }
-
     // Diagnostics -- returns a string representation of this register.  Return string
     // is a valid non-null string for any Id, valid or invalid.  No assertions are generated.
     const char *GetName();
@@ -314,19 +319,27 @@ class xRegisterInt : public xRegisterBase
 {
     typedef xRegisterBase _parent;
 
-public:
-    xRegisterInt() {}
-    explicit xRegisterInt(const xRegisterBase &src)
-        : _parent(src)
+protected:
+    constexpr explicit xRegisterInt(uint operandSize, int regId)
+        : _parent(operandSize, regId)
     {
     }
-    explicit xRegisterInt(int regId)
-        : _parent(regId)
+public:
+    xRegisterInt() = default;
+
+    /// Maps IDs of ah, bh, ch, dh to IDs of ax, bx, cx, dx instead of sp, bp, si, di
+    constexpr int largeRegID() const
     {
+        return (GetOperandSize() != 1 || Id < 4 || Id >= 8) ? Id : Id - 4;
     }
 
     /// Get a non-wide version of the register (for use with e.g. mov, where `mov eax, 3` and `mov rax, 3` are functionally identical but `mov eax, 3` is shorter)
-    virtual const xRegisterInt& GetNonWide() const = 0;
+    constexpr xRegisterInt GetNonWide() const
+    {
+        return GetOperandSize() == 8 ? xRegisterInt(4, Id) : *this;
+    }
+
+    xRegisterInt MatchSizeTo(xRegisterInt other) const;
 
     bool operator==(const xRegisterInt &src) const { return Id == src.Id && (GetOperandSize() == src.GetOperandSize()); }
     bool operator!=(const xRegisterInt &src) const { return !operator==(src); }
@@ -340,17 +353,19 @@ class xRegister8 : public xRegisterInt
     typedef xRegisterInt _parent;
 
 public:
-    xRegister8()
-        : _parent()
+    xRegister8() = default;
+    constexpr explicit xRegister8(int regId)
+        : _parent(1, regId)
     {
     }
-    explicit xRegister8(int regId)
-        : _parent(regId)
+    constexpr explicit xRegister8(xRegisterInt other)
+        : _parent(1, other.Id)
     {
+        bool is8 = other.GetOperandSize() == 1;
+        // 4-7 are h equivalents of 0-3, not l versions of 4-7
+        bool idSameInAll = other.Id < 4 || other.Id >= 8;
+        pxAssertDev(is8 || idSameInAll, "spl, bpl, sil, dil not yet supported");
     }
-
-    virtual uint GetOperandSize() const override { return 1; }
-    virtual const xRegisterInt& GetNonWide() const override { return *this; }
 
     bool operator==(const xRegister8 &src) const { return Id == src.Id; }
     bool operator!=(const xRegister8 &src) const { return Id != src.Id; }
@@ -361,17 +376,15 @@ class xRegister16 : public xRegisterInt
     typedef xRegisterInt _parent;
 
 public:
-    xRegister16()
-        : _parent()
+    xRegister16() = default;
+    constexpr explicit xRegister16(int regId)
+        : _parent(2, regId)
     {
     }
-    explicit xRegister16(int regId)
-        : _parent(regId)
+    constexpr explicit xRegister16(xRegisterInt other)
+        : _parent(2, other.largeRegID())
     {
     }
-
-    virtual uint GetOperandSize() const override { return 2; }
-    virtual const xRegisterInt& GetNonWide() const override { return *this; }
 
     bool operator==(const xRegister16 &src) const { return this->Id == src.Id; }
     bool operator!=(const xRegister16 &src) const { return this->Id != src.Id; }
@@ -382,17 +395,16 @@ class xRegister32 : public xRegisterInt
     typedef xRegisterInt _parent;
 
 public:
-    xRegister32()
-        : _parent()
+    xRegister32() = default;
+    constexpr explicit xRegister32(int regId)
+        : _parent(4, regId)
     {
     }
-    explicit xRegister32(int regId)
-        : _parent(regId)
+    constexpr explicit xRegister32(xRegisterInt other)
+        : _parent(4, other.largeRegID())
     {
+        pxAssert(other.GetOperandSize() != 1);
     }
-
-    virtual uint GetOperandSize() const override { return 4; }
-    virtual const xRegisterInt& GetNonWide() const override { return *this; }
 
     bool operator==(const xRegister32 &src) const { return this->Id == src.Id; }
     bool operator!=(const xRegister32 &src) const { return this->Id != src.Id; }
@@ -402,21 +414,17 @@ class xRegister64 : public xRegisterInt
 {
     typedef xRegisterInt _parent;
 
-    xRegister32 m_nonWide;
 public:
-    xRegister64()
-        : _parent()
-        , m_nonWide()
+    xRegister64() = default;
+    constexpr explicit xRegister64(int regId)
+        : _parent(8, regId)
     {
     }
-    explicit xRegister64(int regId)
-        : _parent(regId)
-        , m_nonWide(regId)
+    constexpr explicit xRegister64(xRegisterInt other)
+        : _parent(8, other.largeRegID())
     {
+        pxAssert(other.GetOperandSize() != 1);
     }
-
-    virtual uint GetOperandSize() const override { return 8; }
-    virtual const xRegisterInt& GetNonWide() const override { return m_nonWide; }
 
     bool operator==(const xRegister64 &src) const { return this->Id == src.Id; }
     bool operator!=(const xRegister64 &src) const { return this->Id != src.Id; }
@@ -433,33 +441,14 @@ class xRegisterSSE : public xRegisterBase
     typedef xRegisterBase _parent;
 
 public:
-    xRegisterSSE()
-        : _parent()
+    xRegisterSSE() = default;
+    constexpr explicit xRegisterSSE(int regId)
+        : _parent(16, regId)
     {
     }
-    explicit xRegisterSSE(int regId)
-        : _parent(regId)
-    {
-    }
-
-    virtual uint GetOperandSize() const { return 16; }
 
     bool operator==(const xRegisterSSE &src) const { return this->Id == src.Id; }
     bool operator!=(const xRegisterSSE &src) const { return this->Id != src.Id; }
-
-    xRegisterSSE &operator++()
-    {
-        ++Id;
-        Id &= (iREGCNT_XMM - 1);
-        return *this;
-    }
-
-    xRegisterSSE &operator--()
-    {
-        --Id;
-        Id &= (iREGCNT_XMM - 1);
-        return *this;
-    }
 
     static const inline xRegisterSSE &GetInstance(uint id);
 };
@@ -467,7 +456,7 @@ public:
 class xRegisterCL : public xRegister8
 {
 public:
-    xRegisterCL()
+    constexpr xRegisterCL()
         : xRegister8(1)
     {
     }
@@ -494,23 +483,12 @@ static const int wordsize = sizeof(sptr);
 class xAddressReg : public xRegisterLong
 {
 public:
-    xAddressReg()
-        : xRegisterLong()
+    xAddressReg() = default;
+    constexpr explicit xAddressReg(xRegisterInt other)
+        : xRegisterLong(other)
     {
     }
-    xAddressReg(const xAddressReg &src)
-        : xRegisterLong(src.Id)
-    {
-    }
-    xAddressReg(const xRegister32 &src)
-        : xRegisterLong(src.Id)
-    {
-    }
-    xAddressReg(const xRegister64 &src)
-        : xRegisterLong(src.Id)
-    {
-    }
-    explicit xAddressReg(int regId)
+    constexpr explicit xAddressReg(int regId)
         : xRegisterLong(regId)
     {
     }
@@ -533,27 +511,27 @@ public:
 // --------------------------------------------------------------------------------------
 struct xRegisterEmpty
 {
-    operator xRegister8() const
+    constexpr operator xRegister8() const
     {
         return xRegister8(xRegId_Empty);
     }
 
-    operator xRegister16() const
+    constexpr operator xRegister16() const
     {
         return xRegister16(xRegId_Empty);
     }
 
-    operator xRegister32() const
+    constexpr operator xRegister32() const
     {
         return xRegister32(xRegId_Empty);
     }
 
-    operator xRegisterSSE() const
+    constexpr operator xRegisterSSE() const
     {
         return xRegisterSSE(xRegId_Empty);
     }
 
-    operator xAddressReg() const
+    constexpr operator xAddressReg() const
     {
         return xAddressReg(xRegId_Empty);
     }
@@ -885,8 +863,6 @@ public:
     explicit xIndirectVoid(sptr disp);
     explicit xIndirectVoid(const xAddressVoid &src);
     xIndirectVoid(xAddressReg base, xAddressReg index, int scale = 0, sptr displacement = 0);
-
-    virtual uint GetOperandSize() const;
     xIndirectVoid &Add(sptr imm);
 
     bool IsByteSizeDisp() const { return is_s8(Displacement); }
@@ -916,17 +892,22 @@ public:
     explicit xIndirect(sptr disp)
         : _parent(disp)
     {
+        _operandSize = sizeof(OperandType);
     }
     explicit xIndirect(const xAddressInfo<OperandType> &src)
         : _parent(src)
     {
+        _operandSize = sizeof(OperandType);
     }
     xIndirect(xAddressReg base, xAddressReg index, int scale = 0, sptr displacement = 0)
         : _parent(base, index, scale, displacement)
     {
+        _operandSize = sizeof(OperandType);
     }
-
-    virtual uint GetOperandSize() const { return sizeof(OperandType); }
+    explicit xIndirect(const xIndirectVoid& other)
+        : _parent(other)
+    {
+    }
 
     xIndirect<OperandType> &Add(sptr imm)
     {
