@@ -951,42 +951,21 @@ class xIndirect64orLess : public xIndirectVoid
 {
     typedef xIndirectVoid _parent;
 
-protected:
-    uint m_OpSize;
-
 public:
     xIndirect64orLess(const xIndirect8 &src)
         : _parent(src)
     {
-        m_OpSize = src.GetOperandSize();
     }
     xIndirect64orLess(const xIndirect16 &src)
         : _parent(src)
     {
-        m_OpSize = src.GetOperandSize();
     }
     xIndirect64orLess(const xIndirect32 &src)
         : _parent(src)
     {
-        m_OpSize = src.GetOperandSize();
     }
     xIndirect64orLess(const xIndirect64 &src)
         : _parent(src)
-    {
-        m_OpSize = src.GetOperandSize();
-    }
-
-    uint GetOperandSize() const { return m_OpSize; }
-
-protected:
-    //xIndirect64orLess( const xAddressVoid& src ) : _parent( src ) {}
-
-    explicit xIndirect64orLess(sptr disp)
-        : _parent(disp)
-    {
-    }
-    xIndirect64orLess(xAddressReg base, xAddressReg index, int scale = 0, sptr displacement = 0)
-        : _parent(base, index, scale, displacement)
     {
     }
 };
