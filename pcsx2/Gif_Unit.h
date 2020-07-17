@@ -22,6 +22,7 @@
 
 // FIXME common path ?
 #include "Utilities/boost_spsc_queue.hpp"
+#include "DebugTools/Signposts.h"
 
 struct GS_Packet;
 extern void Gif_MTGS_Wait(bool isMTVU);
@@ -575,12 +576,14 @@ struct Gif_Unit {
 		int curPath = stat.APATH > 0 ? stat.APATH-1 : 0; //Init to zero if no path is already set.
 		gifPath[2].dmaRewind = 0;
 		stat.OPH = 1;
-		
+
 		for(;;) {
 			if (stat.APATH) { // Some Transfer is happening
 				Gif_Path& path   = gifPath[stat.APATH-1];
 				bool done = false;
+				SIGNPOST_START(GIFTransfer, path.idx);
 				GS_Packet gsPack = path.ExecuteGSPacket(done);
+				SIGNPOST_END(GIFTransfer, path.idx);
 				if(!done) {
 					if (stat.APATH == 3 && CanDoP3Slice() && !gsSIGNAL.queued) {
 						if(!didPath3 && /*!Path3Masked() &&*/ checkPaths(1,1,0)) { // Path3 slicing

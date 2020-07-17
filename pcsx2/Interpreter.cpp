@@ -24,6 +24,7 @@
 #include "Elfheader.h"
 
 #include "../DebugTools/Breakpoints.h"
+#include "../DebugTools/Signposts.h"
 
 #include <float.h>
 
@@ -506,6 +507,7 @@ static void intEventTest()
 
 static void intExecute()
 {
+	SIGNPOST_START(EEInt);
 	bool instruction_was_cancelled;
 	enum ExecuteState {
 		RESET,
@@ -576,6 +578,7 @@ static void intExecute()
 		// For example a tlb miss will throw an exception. Cpu must be resumed
 		// to execute the handler
 	} while (instruction_was_cancelled);
+	SIGNPOST_END(EEInt);
 }
 
 static void intCheckExecutionState()

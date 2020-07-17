@@ -17,6 +17,7 @@
 #include "Common.h"
 #include "Vif_Dma.h"
 #include "newVif.h"
+#include "DebugTools/Signposts.h"
 
 //------------------------------------------------------------------
 // VifCode Transfer Interpreter (Vif0/Vif1)
@@ -63,6 +64,7 @@ _vifT void vifTransferLoop(u32* &data) {
 }
 
 _vifT static __fi bool vifTransfer(u32 *data, int size, bool TTE) {
+	SIGNPOST_START(VIFTransfer, idx);
 	vifStruct& vifX = GetVifX;
 
 	// irqoffset necessary to add up the right qws, or else will spin (spiderman)
@@ -112,6 +114,7 @@ _vifT static __fi bool vifTransfer(u32 *data, int size, bool TTE) {
 
 	vifExecQueue(idx);
 
+	SIGNPOST_END(VIFTransfer, idx);
 	return !vifX.vifstalled.enabled;
 }
 

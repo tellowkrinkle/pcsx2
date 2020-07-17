@@ -42,6 +42,7 @@
 
 #include "Utilities/MemsetFast.inl"
 #include "Utilities/Perf.h"
+#include "DebugTools/Signposts.h"
 
 
 using namespace x86Emitter;
@@ -707,6 +708,7 @@ static void recExecute()
 	m_cpuException	= NULL;
 	m_Exception		= NULL;
 
+	SIGNPOST_START(EERec);
 	// setjmp will save the register context and will return 0
 	// A call to longjmp will restore the context (included the eip/rip)
 	// but will return the longjmp 2nd parameter (here 1)
@@ -729,6 +731,7 @@ static void recExecute()
 	{
 		pthread_setcancelstate( PTHREAD_CANCEL_ENABLE, &oldstate );
 	}
+	SIGNPOST_END(EERec);
 
 	if(m_cpuException)	m_cpuException->Rethrow();
 	if(m_Exception)		m_Exception->Rethrow();
@@ -1619,6 +1622,7 @@ void doPlace0Patches()
 
 static void __fastcall recRecompile( const u32 startpc )
 {
+	SIGNPOST_START(EERecCompile, startpc);
 	u32 i = 0;
 	u32 willbranch3 = 0;
 	u32 usecop2;
@@ -2119,6 +2123,7 @@ StartRecomp:
 
 	s_pCurBlock = NULL;
 	s_pCurBlockEx = NULL;
+	SIGNPOST_END(EERecCompile, startpc);
 }
 
 // The only *safe* way to throw exceptions from the context of recompiled code.

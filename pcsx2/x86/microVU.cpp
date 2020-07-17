@@ -19,6 +19,7 @@
 #include "microVU.h"
 
 #include "Utilities/Perf.h"
+#include "DebugTools/Signposts.h"
 
 //------------------------------------------------------------------
 // Micro VU - Main Functions
@@ -352,6 +353,7 @@ void recMicroVU0::Execute(u32 cycles) {
 	pxAssert(m_Reserved); // please allocate me first! :|
 
 	if(!(VU0.VI[REG_VPU_STAT].UL & 1)) return;
+	SIGNPOST_START(VU0Rec);
 	VU0.VI[REG_TPC].UL <<= 3;
 	// Sometimes games spin on vu0, so be careful with this value
 	// woody hangs if too high on sVU (untested on mVU)
@@ -363,6 +365,7 @@ void recMicroVU0::Execute(u32 cycles) {
 		microVU0.regs().flags &= ~0x4;
 		hwIntcIrq(6);
 	}
+	SIGNPOST_END(VU0Rec);
 }
 void recMicroVU1::Execute(u32 cycles) {
 	pxAssert(m_Reserved); // please allocate me first! :|
@@ -370,6 +373,7 @@ void recMicroVU1::Execute(u32 cycles) {
 	if (!THREAD_VU1) {
 		if(!(VU0.VI[REG_VPU_STAT].UL & 0x100)) return;
 	}
+	SIGNPOST_START(VU1Rec);
 	VU1.VI[REG_TPC].UL <<= 3;
 	((mVUrecCall)microVU1.startFunct)(VU1.VI[REG_TPC].UL, cycles);
 	VU1.VI[REG_TPC].UL >>= 3;
@@ -378,6 +382,7 @@ void recMicroVU1::Execute(u32 cycles) {
 		microVU1.regs().flags &= ~0x4;
 		hwIntcIrq(7);
 	}
+	SIGNPOST_END(VU1Rec);
 }
 
 void recMicroVU0::Clear(u32 addr, u32 size) {

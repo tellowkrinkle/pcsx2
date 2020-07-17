@@ -36,6 +36,7 @@
 #include "AppConfig.h"
 
 #include "Utilities/Perf.h"
+#include "DebugTools/Signposts.h"
 
 using namespace x86Emitter;
 
@@ -782,7 +783,9 @@ static __noinline s32 recExecuteBlock( s32 eeCycles )
 // 	mov         edx,dword ptr [iopCycleEE (832A84h)]
 // 	lea         eax,[edx+ecx]
 
+	SIGNPOST_START(IOPRec);
 	iopEnterRecompiledCode();
+	SIGNPOST_END(IOPRec);
 
 	return iopBreak + iopCycleEE;
 }
@@ -1070,6 +1073,7 @@ static void __fastcall  PreBlockCheck( u32 blockpc )
 
 static void __fastcall iopRecRecompile( const u32 startpc )
 {
+	SIGNPOST_START(IOPRecCompile, startpc);
 	u32 i;
 	u32 willbranch3 = 0;
 
@@ -1298,6 +1302,7 @@ StartRecomp:
 
 	s_pCurBlock = NULL;
 	s_pCurBlockEx = NULL;
+	SIGNPOST_END(IOPRecCompile, startpc);
 }
 
 static void recSetCacheReserve( uint reserveInMegs )

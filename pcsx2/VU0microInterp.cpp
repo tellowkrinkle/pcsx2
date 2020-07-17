@@ -19,6 +19,8 @@
 
 #include "VUmicro.h"
 
+#include "DebugTools/Signposts.h"
+
 extern void _vuFlushAll(VURegs* VU);
 
 static void _vu0ExecUpper(VURegs* VU, u32 *ptr) {
@@ -205,6 +207,7 @@ void InterpVU0::Step()
 
 void InterpVU0::Execute(u32 cycles)
 {
+	SIGNPOST_START(VU0Int);
 	VU0.VI[REG_TPC].UL <<= 3;
 	for (int i = (int)cycles; i > 0 ; i--) {
 		if (!(VU0.VI[REG_VPU_STAT].UL & 0x1)) {
@@ -216,5 +219,6 @@ void InterpVU0::Execute(u32 cycles)
 		vu0Exec(&VU0);
 	}
 	VU0.VI[REG_TPC].UL >>= 3;
+	SIGNPOST_END(VU0Int);
 }
 

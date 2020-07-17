@@ -17,6 +17,7 @@
 #include "PrecompiledHeader.h"
 #include "IopCommon.h"
 #include "App.h" // For host irx injection hack
+#include "DebugTools/Signposts.h"
 
 using namespace R3000A;
 
@@ -185,6 +186,7 @@ static s32 intExecuteBlock( s32 eeCycles )
 	iopBreak = 0;
 	iopCycleEE = eeCycles;
 
+	SIGNPOST_START(IOPInt);
 	while (iopCycleEE > 0){
 		if ((psxHu32(HW_ICFG) & 8) && ((psxRegs.pc & 0x1fffffffU) == 0xa0 || (psxRegs.pc & 0x1fffffffU) == 0xb0 || (psxRegs.pc & 0x1fffffffU) == 0xc0))
 			psxBiosCall();
@@ -194,6 +196,7 @@ static s32 intExecuteBlock( s32 eeCycles )
 			execI();
         }
 	}
+	SIGNPOST_END(IOPInt);
 	return iopBreak + iopCycleEE;
 }
 

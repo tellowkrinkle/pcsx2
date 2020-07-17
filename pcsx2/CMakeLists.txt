@@ -217,6 +217,7 @@ set(pcsx2CDVDHeaders
 
 # DebugTools sources
 set(pcsx2DebugToolsSources
+	DebugTools/Signposts.cpp
 	DebugTools/DebugInterface.cpp
 	DebugTools/DisassemblyManager.cpp
 	DebugTools/ExpressionParser.cpp
@@ -234,6 +235,7 @@ set(pcsx2DebugToolsSources
 
 # DebugTools headers
 set(pcsx2DebugToolsHeaders
+	DebugTools/Signposts.h
 	DebugTools/DebugInterface.h
 	DebugTools/DisassemblyManager.h
 	DebugTools/ExpressionParser.h
@@ -608,6 +610,7 @@ set(Common
 	${pcsx2CDVDSources}
 	${pcsx2CDVDHeaders}
 	${pcsx2DebugToolsSources}
+	${pcsx2DebugToolsHeaders}
 	${pcsx2GuiSources}
 	${pcsx2GuiResources}
 	${pcsx2GuiHeaders}

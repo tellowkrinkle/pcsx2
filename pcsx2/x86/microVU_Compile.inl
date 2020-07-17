@@ -14,6 +14,7 @@
  */
 
 #pragma once
+#include "DebugTools/Signposts.h"
 
 //------------------------------------------------------------------
 // Messages Called at Execution Time...
@@ -669,7 +670,18 @@ perf_and_return:
 __fi void* mVUentryGet(microVU& mVU, microBlockManager* block, u32 startPC, uptr pState) {
 	microBlock* pBlock = block->search((microRegInfo*)pState);
 	if (pBlock) return pBlock->x86ptrStart;
-	else	 {  return mVUcompile(mVU, startPC, pState);}
+	else	 {
+		if (mVU.index)
+			SIGNPOST_START(VU1RecCompile, startPC);
+		else
+			SIGNPOST_START(VU0RecCompile, startPC);
+		auto out = mVUcompile(mVU, startPC, pState);
+		if (mVU.index)
+			SIGNPOST_END(VU1RecCompile, startPC);
+		else
+			SIGNPOST_END(VU0RecCompile, startPC);
+		return out;
+	}
 }
 
  // Search for Existing Compiled Block (if found, return x86ptr; else, compile and return x86ptr)

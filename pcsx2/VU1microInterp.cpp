@@ -20,6 +20,8 @@
 #include "VUmicro.h"
 #include "MTVU.h"
 
+#include "DebugTools/Signposts.h"
+
 extern void _vuFlushAll(VURegs* VU);
 
 void _vu1ExecUpper(VURegs* VU, u32 *ptr) {
@@ -210,6 +212,7 @@ void InterpVU1::Step()
 
 void InterpVU1::Execute(u32 cycles)
 {
+	SIGNPOST_START(VU1Int);
 	VU1.VI[REG_TPC].UL <<= 3;
 	for (int i = (int)cycles; i > 0; i--) {
 		if (!(VU0.VI[REG_VPU_STAT].UL & 0x100)) {
@@ -221,5 +224,6 @@ void InterpVU1::Execute(u32 cycles)
 		Step();
 	}
 	VU1.VI[REG_TPC].UL >>= 3;
+	SIGNPOST_END(VU1Int);
 }
 
