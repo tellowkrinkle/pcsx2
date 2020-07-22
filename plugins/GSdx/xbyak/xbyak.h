@@ -205,6 +205,10 @@ enum {
 	ERR_INVALID_OPMASK_WITH_MEMORY,
 	ERR_INVALID_ZERO,
 	ERR_INVALID_RIP_IN_AUTO_GROW,
+	ERR_64_BIT_REG_IN_32,
+	ERR_64_INSTR_IN_32,
+	ERR_SSE_INSTR_IN_AVX,
+	ERR_AVX_INSTR_IN_SSE,
 	ERR_INTERNAL
 };
 
@@ -265,6 +269,10 @@ public:
 			"invalid opmask with memory",
 			"invalid zero",
 			"invalid rip in AutoGrow",
+			"used 64-bit register in 32-bit code",
+			"used 64-bit only instruction in 32-bit code",
+			"used SSE instruction in AVX code",
+			"used AVX instruction in SSE code",
 			"internal error",
 		};
 		assert((size_t)err_ < sizeof(errTbl) / sizeof(*errTbl));
@@ -396,19 +404,19 @@ public:
 		OPMASK = 1 << 7
 	};
 	enum Code {
-#ifdef XBYAK64
+//#ifdef XBYAK64 // These are made always available for the convenience of cross-platform code generation
 		RAX = 0, RCX, RDX, RBX, RSP, RBP, RSI, RDI, R8, R9, R10, R11, R12, R13, R14, R15,
 		R8D = 8, R9D, R10D, R11D, R12D, R13D, R14D, R15D,
 		R8W = 8, R9W, R10W, R11W, R12W, R13W, R14W, R15W,
 		R8B = 8, R9B, R10B, R11B, R12B, R13B, R14B, R15B,
 		SPL = 4, BPL, SIL, DIL,
-#endif
+//#endif
 		EAX = 0, ECX, EDX, EBX, ESP, EBP, ESI, EDI,
 		AX = 0, CX, DX, BX, SP, BP, SI, DI,
 		AL = 0, CL, DL, BL, AH, CH, DH, BH
 	};
-	Operand() : idx_(0), kind_(0), bit_(0), zero_(0), mask_(0), rounding_(0) { }
-	Operand(int idx, Kind kind, int bit, bool ext8bit = 0)
+	constexpr Operand() : idx_(0), kind_(0), bit_(0), zero_(0), mask_(0), rounding_(0) { }
+	constexpr Operand(int idx, Kind kind, int bit, bool ext8bit = 0)
 		: idx_(static_cast<uint8>(idx | (ext8bit ? EXT8BIT : 0)))
 		, kind_(static_cast<uint8>(kind))
 		, bit_(bit)
@@ -533,7 +541,7 @@ struct Reg64;
 class Reg : public Operand {
 public:
 	Reg() { }
-	Reg(int idx, Kind kind, int bit = 0, bool ext8bit = false) : Operand(idx, kind, bit, ext8bit) { }
+	constexpr Reg(int idx, Kind kind, int bit = 0, bool ext8bit = false) : Operand(idx, kind, bit, ext8bit) { }
 	Reg changeBit(int bit) const { return Reg(getIdx(), getKind(), bit, isExt8bit()); }
 	uint8 getRexW() const { return isREG(64) ? 8 : 0; }
 	uint8 getRexR() const { return isExtIdx() ? 4 : 0; }
@@ -554,15 +562,15 @@ public:
 };
 
 struct Reg8 : public Reg {
-	explicit Reg8(int idx = 0, bool ext8bit = false) : Reg(idx, Operand::REG, 8, ext8bit) { }
+	constexpr explicit Reg8(int idx = 0, bool ext8bit = false) : Reg(idx, Operand::REG, 8, ext8bit) { }
 };
 
 struct Reg16 : public Reg {
-	explicit Reg16(int idx = 0) : Reg(idx, Operand::REG, 16) { }
+	constexpr explicit Reg16(int idx = 0) : Reg(idx, Operand::REG, 16) { }
 };
 
 struct Mmx : public Reg {
-	explicit Mmx(int idx = 0, Kind kind = Operand::MMX, int bit = 64) : Reg(idx, kind, bit) { }
+	constexpr explicit Mmx(int idx = 0, Kind kind = Operand::MMX, int bit = 64) : Reg(idx, kind, bit) { }
 };
 
 struct EvexModifierRounding {
@@ -572,7 +580,7 @@ struct EvexModifierRounding {
 struct EvexModifierZero{};
 
 struct Xmm : public Mmx {
-	explicit Xmm(int idx = 0, Kind kind = Operand::XMM, int bit = 128) : Mmx(idx, kind, bit) { }
+	constexpr explicit Xmm(int idx = 0, Kind kind = Operand::XMM, int bit = 128) : Mmx(idx, kind, bit) { }
 	Xmm(Kind kind, int idx) : Mmx(idx, kind, kind == XMM ? 128 : kind == YMM ? 256 : 512) { }
 	Xmm operator|(const EvexModifierRounding& emr) const { Xmm r(*this); r.setRounding(emr.rounding); return r; }
 	Xmm copyAndSetIdx(int idx) const { Xmm ret(*this); ret.setIdx(idx); return ret; }
@@ -615,7 +623,7 @@ struct RegRip {
 	sint64 disp_;
 	Label* label_;
 	bool isAddr_;
-	explicit RegRip(sint64 disp = 0, Label* label = 0, bool isAddr = false) : disp_(disp), label_(label), isAddr_(isAddr) {}
+	constexpr explicit RegRip(sint64 disp = 0, Label* label = 0, bool isAddr = false) : disp_(disp), label_(label), isAddr_(isAddr) {}
 	friend const RegRip operator+(const RegRip& r, sint64 disp) {
 		return RegRip(r.disp_ + disp, r.label_, r.isAddr_);
 	}
@@ -1038,7 +1046,7 @@ class AddressFrame {
 public:
 	const uint32 bit_;
 	const bool broadcast_;
-	explicit AddressFrame(uint32 bit, bool broadcast = false) : bit_(bit), broadcast_(broadcast) { }
+	constexpr explicit AddressFrame(uint32 bit, bool broadcast = false) : bit_(bit), broadcast_(broadcast) { }
 	Address operator[](const RegExp& e) const
 	{
 		return Address(bit_, broadcast_, e);
