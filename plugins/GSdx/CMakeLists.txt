@@ -154,6 +154,7 @@ set(GSdxHeaders
     Renderers/HW/GSTextureCache.h
     Renderers/HW/GSVertexHW.h
     Renderers/SW/GSDrawScanlineCodeGenerator.h
+    Renderers/SW/GSDrawScanlineCodeGenerator.all.h
     Renderers/SW/GSDrawScanline.h
     Renderers/SW/GSRasterizer.h
     Renderers/SW/GSRendererSW.h
@@ -177,6 +178,7 @@ set(GSdxHeaders
     Window/GSSettingsDlg.h
     Window/GSWnd.h
     xbyak/xbyak.h
+    xbyak/xbyak_smart.h
     xbyak/xbyak_mnemonic.h
     xbyak/xbyak_util.h
     )
