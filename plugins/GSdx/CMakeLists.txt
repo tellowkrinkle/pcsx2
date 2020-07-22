@@ -177,6 +177,7 @@ set(GSdxHeaders
     Window/GSSettingsDlg.h
     Window/GSWnd.h
     xbyak/xbyak.h
+    xbyak/xbyak_smart.h
     xbyak/xbyak_mnemonic.h
     xbyak/xbyak_util.h
     )
