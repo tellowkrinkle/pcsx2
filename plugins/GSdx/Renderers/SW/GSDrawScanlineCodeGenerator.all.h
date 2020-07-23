@@ -43,7 +43,8 @@
 #define _64_m_local__gd__vm a1
 #define _64_m_local__gd__vm a1
 #define _64_m_local__gd__clut r11
-#define _64_m_local__gd__tex a3
+// If m_sel.mmin, m_local.gd->tex, else m_local.gd->tex[0]
+#define _64_m_local__gd__tex r14
 
 #define _rip_local(field) ((Target::is32 || m_rip) ? (RegExp)(rip + (size_t)&m_local.field) : (RegExp)(_m_local + offsetof(GSScanlineLocalData, field)))
 #define _rip_global(field) ((Target::is32 || m_rip) ? (RegExp)(rip + (size_t)&m_local.gd->field) : (RegExp)(_m_local__gd + offsetof(GSScanlineGlobalData, field)))
@@ -84,6 +85,7 @@ class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator<Target, Ta
 
 	constexpr static bool is64 = Target::is64;
 	constexpr static bool is32 = Target::is32;
+	constexpr static int wordsize = is64 ? 8 : 4;
 
 // MARK: - Constants
 
@@ -120,7 +122,7 @@ class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator<Target, Ta
 
 	/// Note: a2 is only available on x86-64
 	AddressReg a0, a1, a2, a3, t0, t1;
-	LocalAddr m_test, _m_local, _m_local__gd, _m_local__gd__vm, _m_local__gd__clut, _m_local__gd__tex;
+	LocalAddr m_test, _m_local, _m_local__gd, _m_local__gd__vm, _m_local__gd__clut;
 	/// All but _test are only available on x86-64
 	Xmm _rb, _ga, _fm, _zm, _fd, _z, _f, _s, _t, _q, _f_rb, _f_ga, _test;
 
@@ -154,7 +156,6 @@ public:
 		, _m_local(chooseLocal(&m_local, _64_m_local))
 		, _m_local__gd(chooseLocal(m_local.gd, _64_m_local__gd))
 		, _m_local__gd__vm(chooseLocal(m_local.gd->vm, _64_m_local__gd__vm))
-		, _m_local__gd__tex(chooseLocal(m_local.gd->tex, _64_m_local__gd__tex))
 		, _rb(block32(2)), _ga(block32(3)), _fm(block32(4)), _zm(block32(5)), _fd(block32(6))
 		, _z(8), _f(9), _s(10), _t(11), _q(12), _f_rb(13), _f_ga(14), _test(is64 ? 15 : 7)
 	{
@@ -606,7 +607,12 @@ private:
 
 			mov(_64_m_local__gd__vm, ptr[_rip_global(vm)]);
 			if(m_sel.fb && m_sel.tfx != TFX_NONE)
-				mov(_64_m_local__gd__tex, ptr[_rip_global(tex)]);
+			{
+				if (m_sel.mmin)
+					lea(_64_m_local__gd__tex, ptr[_rip_global(tex)]);
+				else
+					mov(_64_m_local__gd__tex, ptr[_rip_global(tex)]);
+			}
 		}
 	}
 
@@ -890,7 +896,9 @@ private:
 	}
 
 	/// Input[x86]: xmm4=q, xmm2=s, xmm3=t
-	/// Destroys[x86]: xmm0
+	/// Output[x86]: xmm5=rb, xmm6=ga
+	/// Output[x64]: xmm2=rb, xmm3=ga
+	/// Destroys everything except xmm7[x86]
 	void SampleTexture()
 	{
 		if(!m_sel.fb || m_sel.tfx == TFX_NONE)
@@ -898,23 +906,46 @@ private:
 			return;
 		}
 
+
+		if (is32)
+		{
+			mov(a3.cvt32(), ptr[&m_local.gd->tex[0]]);
+
+			if(m_sel.tlu)
+			{
+				mov(a1.cvt32(), ptr[&m_local.gd->clut]);
+			}
+		}
+
+		// x86-64 and i386 want the output of this function in different places :(
+		// Solve by remapping registers
+		const Xmm
+			&xtm0 = xmm0, // Temp register
+			&xtm1 = xmm1, // Temp register
+			&xtm2 = is64 ? xmm5 : xmm2, // Input register for s on i386
+			&xtm3 = is64 ? xmm6 : xmm3, // Input register for t on i386
+			&xtm4 = xmm4, // Temp register
+			&xtm5 = is64 ? xmm2 : xmm5, // Output register for rb
+			&xtm6 = is64 ? xmm3 : xmm6, // Output register for ga
+			&xtm7 = xmm7; // Available on x64 only
+
 		if(!m_sel.fst)
 		{
-			rcpps(xmm0, is64 ? _q : xmm4);
+			rcpps(xtm0, is64 ? _q : xtm4);
 
 			if (is64)
 			{
-				vmulps(xmm2, _s, xmm0);
-				vmulps(xmm3, _t, xmm0);
+				vmulps(xtm2, _s, xtm0);
+				vmulps(xtm3, _t, xtm0);
 			}
 			else
 			{
-				mulps(xmm2, xmm0);
-				mulps(xmm3, xmm0);
+				mulps(xtm2, xtm0);
+				mulps(xtm3, xtm0);
 			}
 
-			cvttps2dq(xmm2, xmm2);
-			cvttps2dq(xmm3, xmm3);
+			cvttps2dq(xtm2, xtm2);
+			cvttps2dq(xtm3, xtm3);
 
 			if(m_sel.ltf)
 			{
@@ -922,35 +953,35 @@ private:
 				// v -= 0x8000;
 
 				mov(eax, 0x8000);
-				movd(xmm4, eax);
-				pshufd(xmm4, xmm4, _MM_SHUFFLE(0, 0, 0, 0));
+				movd(xtm2, eax);
+				pshufd(xtm1, xtm1, _MM_SHUFFLE(0, 0, 0, 0));
 
-				psubd(xmm2, xmm4);
-				psubd(xmm3, xmm4);
+				psubd(xtm2, xtm1);
+				psubd(xtm3, xtm1);
 			}
 		}
 		else
 		{
-			ONLY64(movdqa(xmm2, _s));
-			ONLY64(movdqa(xmm3, _t));
+			ONLY64(movdqa(xtm2, _s));
+			ONLY64(movdqa(xtm3, _t));
 		}
 
 		if(m_sel.ltf)
 		{
-			Xmm uf = is64 ? xmm6 : xmm0, vf = is64 ? xmm7 : xmm0;
+			Xmm vf = is64 ? xtm7 : xtm0;
 
 			// GSVector4i uf = u.xxzzlh().srl16(12);
 
-			pshuflw(uf, xmm2, _MM_SHUFFLE(2, 2, 0, 0));
-			pshufhw(uf, uf, _MM_SHUFFLE(2, 2, 0, 0));
-			psrlw(uf, 12);
-			ONLY32(movdqa(ptr[_rip_local(temp.uf)], uf));
+			pshuflw(xtm4, xtm2, _MM_SHUFFLE(2, 2, 0, 0));
+			pshufhw(xtm4, xtm4, _MM_SHUFFLE(2, 2, 0, 0));
+			psrlw(xtm4, 12);
+			ONLY32(movdqa(ptr[_rip_local(temp.uf)], xtm4));
 
 			if(m_sel.prim != GS_SPRITE_CLASS)
 			{
 				// GSVector4i vf = v.xxzzlh().srl16(12);
 
-				pshuflw(vf, xmm3, _MM_SHUFFLE(2, 2, 0, 0));
+				pshuflw(vf, xtm3, _MM_SHUFFLE(2, 2, 0, 0));
 				pshufhw(vf, vf, _MM_SHUFFLE(2, 2, 0, 0));
 				psrlw(vf, 12);
 				ONLY32(movdqa(ptr[_rip_local(temp.vf)], vf));
@@ -959,197 +990,327 @@ private:
 
 		// GSVector4i uv0 = u.sra32(16).ps32(v.sra32(16));
 
-		psrad(xmm2, 16);
-		psrad(xmm3, 16);
-		packssdw(xmm2, xmm3);
+		psrad(xtm2, 16);
+		psrad(xtm3, 16);
+		packssdw(xtm2, xtm3);
 
 		if(m_sel.ltf)
 		{
 			// GSVector4i uv1 = uv0.add16(GSVector4i::x0001());
 
-			pcmpeqd(xmm0, xmm0);
-			psrlw(xmm0, 15);
-			vpaddw(xmm3, xmm2, xmm0);
+			pcmpeqd(xtm0, xtm0);
+			psrlw(xtm0, 15);
+			vpaddw(xtm3, xtm2, xtm0);
 
 			// uv0 = Wrap(uv0);
 			// uv1 = Wrap(uv1);
 
-			Wrap(xmm2, xmm3);
+			Wrap(xtm2, xtm3);
 		}
 		else
 		{
 			// uv0 = Wrap(uv0);
 
-			Wrap(xmm2);
+			Wrap(xtm2);
 		}
 
-		// xmm2 = uv0
-		// xmm3 = uv1
-		// xmm6 = free[x86] uf[x64]
-		// xmm7 = used[x86] vf[x64]
-		// Free: xmm0, xmm1, xmm4, xmm5, xmm6[x86]
+		// xtm2 = uv0
+		// xtm3 = uv1
+		// xtm4 = uf
+		// xtm7 = used[x86] vf[x64]
+		// Free: xtm0, xtm1, xtm5, xtm6
 
 		// GSVector4i x0 = uv0.upl16();
 		// GSVector4i y0 = uv0.uph16() << tw;
 
-		pxor(xmm0, xmm0);
+		pxor(xtm0, xtm0);
 
-		vpunpcklwd(xmm4, xmm2, xmm0);
-		vpunpckhwd(xmm2, xmm2, xmm0);
-		pslld(xmm2, static_cast<uint8>(m_sel.tw + 3));
+		vpunpcklwd(xtm5, xtm2, xtm0);
+		vpunpckhwd(xtm2, xtm2, xtm0);
+		pslld(xtm2, static_cast<uint8>(m_sel.tw + 3));
 
-		// xmm0 = 0
-		// xmm2 = y0
-		// xmm3 = uv1 (ltf)
-		// xmm4 = x0
-		// xmm6 = free[x86] uf[x64]
-		// xmm7 = used[x86] vf[x64]
-		// Free: xmm1, xmm5, xmm6[x86]
+		// xtm0 = 0
+		// xtm2 = y0
+		// xtm3 = uv1 (ltf)
+		// xtm4 = uf
+		// xtm5 = x0
+		// xtm7 = used[x86] vf[x64]
+		// Free: xtm1, xtm6
 
 		if(m_sel.ltf)
 		{
 			// GSVector4i x1 = uv1.upl16();
 			// GSVector4i y1 = uv1.uph16() << tw;
 
-			vpunpcklwd(xmm5, xmm3, xmm0);
-			vpunpckhwd(xmm3, xmm3, xmm0);
-			pslld(xmm3, static_cast<uint8>(m_sel.tw + 3));
+			vpunpcklwd(xtm1, xtm3, xtm0);
+			vpunpckhwd(xtm3, xtm3, xtm0);
+			pslld(xtm3, static_cast<uint8>(m_sel.tw + 3));
 
-			// xmm2 = y0
-			// xmm3 = y1
-			// xmm4 = x0
-			// xmm5 = x1
-			// xmm6 = free[x86] uf[x64]
-			// xmm7 = used[x86] vf[x64]
-			// Free: xmm0, xmm1, xmm6[x86]
+			// xtm1 = x1
+			// xtm2 = y0
+			// xtm3 = y1
+			// xtm4 = uf
+			// xtm5 = x0
+			// xtm7 = used[x86] vf[x64]
+			// Free: xtm0, xtm6
 
 			// GSVector4i addr00 = y0 + x0;
 			// GSVector4i addr01 = y0 + x1;
 			// GSVector4i addr10 = y1 + x0;
 			// GSVector4i addr11 = y1 + x1;
 
-			vpaddd(xmm0, xmm2, xmm4);
-			vpaddd(xmm1, xmm2, xmm5);
-			vpaddd(xmm2, xmm3, xmm4);
-			vpaddd(xmm3, xmm3, xmm5);
+			vpaddd(xtm0, xtm3, xtm1); // addr11
+			vpaddd(xtm1, xtm2, xtm1); // addr01
+			vpaddd(xtm2, xtm2, xtm5); // addr00
+			vpaddd(xtm3, xtm3, xtm5); // addr10
 
-			// xmm0 = addr00
-			// xmm1 = addr01
-			// xmm2 = addr10
-			// xmm3 = addr11
-			// xmm6 = free[x86] uf[x64]
-			// xmm7 = used[x86] vf[x64]
-			// Free: xmm4, xmm5, xmm6[x86]
+			// xtm0 = addr11
+			// xtm1 = addr01
+			// xtm2 = addr00
+			// xtm3 = addr10
+			// xtm6 = uf
+			// xtm7 = used[x86] vf[x64]
+			// Free: xtm4, xtm5
 
 			// c00 = addr00.gather32_32((const uint32/uint8*)tex[, clut]);
 			// c01 = addr01.gather32_32((const uint32/uint8*)tex[, clut]);
 			// c10 = addr10.gather32_32((const uint32/uint8*)tex[, clut]);
 			// c11 = addr11.gather32_32((const uint32/uint8*)tex[, clut]);
 
-			ReadTexel(4, 0);
+			Xmm regIn[]  = { xtm0, xtm2, xtm1, xtm3 };
+			Xmm regOut[] = { xtm5, xtm6, xtm0, xtm2 };
 
-			// xmm0 = c10
-			// xmm1 = c11
-			// xmm4 = c00
-			// xmm5 = c01
-			// xmm6 = uf
-			// xmm7 = vf
+			ReadTexel(regOut, regIn, 4, 0);
+
+			// xtm0 = c01
+			// xtm2 = c10
+			// xtm4 = uf
+			// xtm5 = c11
+			// xtm6 = c00
+			// xtm7 = used[x86] vf[x64]
 
 
 
 			// GSVector4i rb00 = c00 & mask;
 			// GSVector4i ga00 = (c00 >> 8) & mask;
 
-			split16_2x8(xmm2, xmm3, xmm4);
+			split16_2x8(xtm3, xtm6, xtm6);
 
 			// GSVector4i rb01 = c01 & mask;
 			// GSVector4i ga01 = (c01 >> 8) & mask;
 
-			split16_2x8(xmm4, xmm5, xmm5);
+			split16_2x8(xtm0, xtm1, xtm0);
 
-			// xmm0 = c10
-			// xmm1 = c11
-			// xmm2 = rb00
-			// xmm3 = ga00
-			// xmm4 = rb01
-			// xmm5 = ga01
-			// xmm6 = uf
-			// xmm7 = vf
+			// xtm0 = rb01
+			// xtm1 = ga01
+			// xtm2 = c10
+			// xtm3 = rb00
+			// xtm4 = uf
+			// xtm5 = c11
+			// xtm6 = ga00
+			// xtm7 = used[x86] vf[x64]
 
 			// rb00 = rb00.lerp16_4(rb01, uf);
 			// ga00 = ga00.lerp16_4(ga01, uf);
 
-			lerp16_4(xmm4, xmm2, xmm6);
-			lerp16_4(xmm5, xmm3, xmm6);
+			lerp16_4(xtm0, xtm3, xtm4);
+			lerp16_4(xtm1, xtm6, xtm4);
 
-			// xmm0 = c10
-			// xmm1 = c11
-			// xmm4 = rb00
-			// xmm5 = ga00
-			// xmm6 = uf
-			// xmm7 = vf
+			// xtm0 = rb00
+			// xtm1 = ga00
+			// xtm2 = c10
+			// xtm4 = uf
+			// xtm5 = c11
+			// xtm7 = used[x86] vf[x64]
 
 			// GSVector4i rb10 = c10 & mask;
 			// GSVector4i ga10 = (c10 >> 8) & mask;
 
-			split16_2x8(xmm2, xmm3, xmm0);
+			split16_2x8(xtm2, xtm3, xtm2);
 
 			// GSVector4i rb11 = c11 & mask;
 			// GSVector4i ga11 = (c11 >> 8) & mask;
 
-			split16_2x8(xmm0, xmm1, xmm1);
+			split16_2x8(xtm5, xtm6, xtm5);
 
-			// xmm0 = rb11
-			// xmm1 = ga11
-			// xmm2 = rb10
-			// xmm3 = ga10
-			// xmm4 = rb00
-			// xmm5 = ga00
-			// xmm6 = uf
-			// xmm7 = vf
+			// xtm0 = rb00
+			// xtm1 = ga00
+			// xtm2 = rb10
+			// xtm3 = ga10
+			// xtm4 = uf
+			// xtm5 = rb11
+			// xtm6 = ga11
+			// xtm7 = used[x86] vf[x64]
 
 			// rb10 = rb10.lerp16_4(rb11, uf);
 			// ga10 = ga10.lerp16_4(ga11, uf);
 
-			lerp16_4(xmm0, xmm2, xmm6);
-			lerp16_4(xmm1, xmm3, xmm6);
+			lerp16_4(xtm5, xtm2, xtm4);
+			lerp16_4(xtm6, xtm3, xtm4);
 
-			// xmm0 = rb10
-			// xmm1 = ga10
-			// xmm4 = rb00
-			// xmm5 = ga00
-			// xmm7 = vf
+			// xtm0 = rb00
+			// xtm1 = ga00
+			// xtm5 = rb10
+			// xtm6 = ga10
+			// xtm7 = used[x86] vf[x64]
 
 			// rb00 = rb00.lerp16_4(rb10, vf);
 			// ga00 = ga00.lerp16_4(ga10, vf);
 
-			lerp16_4(xmm0, xmm4, xmm7);
-			lerp16_4(xmm1, xmm5, xmm7);
+			Xmm vf = is64 ? xtm7 : xtm6;
+			ONLY32(movdqa(vf, ptr[_rip_local(temp.vf)]));
 
-			// FIXME not ideal (but allow different source in ReadTexel and less register dependency)
-			vmovdqa(xmm2, xmm0);
-			vmovdqa(xmm3, xmm1);
+			lerp16_4(xtm5, xtm0, vf);
+			lerp16_4(xtm6, xtm1, vf);
 		}
 		else
 		{
 			// GSVector4i addr00 = y0 + x0;
 
-			vpaddd(xmm0, xmm3, xmm2);
+			vpaddd(xtm2, xtm2, xtm5);
 
 			// c00 = addr00.gather32_32((const uint32/uint8*)tex[, clut]);
 
-			ReadTexel_AVX(1, 0);
+			ReadTexel(&xtm5, &xtm2, 1, 0);
 
 			// GSVector4i mask = GSVector4i::x00ff();
 
 			// c[0] = c00 & mask;
 			// c[1] = (c00 >> 8) & mask;
 
-			split16_2x8(_rb, _ga, xmm4);
+			split16_2x8(xtm5, xtm6, xtm5);
 		}
 
-		// xmm2 = rb
-		// xmm3 = ga
+		// xtm5 = rb (xmm5[x86], xmm2[x64])
+		// xtm6 = ga (xmm6[x86], xmm3[x64])
+	}
+
+	void Wrap(const Xmm& uv)
+	{
+		// Registers free from SampleTexture
+		const Xmm
+			&mask = xmm0,
+			&min = xmm1,
+			&max = is64 ? xmm2 : xmm5,
+			&tmp = is64 ? xmm3 : xmm6;
+
+		int wms_clamp = ((m_sel.wms + 1) >> 1) & 1;
+		int wmt_clamp = ((m_sel.wmt + 1) >> 1) & 1;
+
+		int region = ((m_sel.wms | m_sel.wmt) >> 1) & 1;
+
+		if(wms_clamp == wmt_clamp)
+		{
+			if(wms_clamp)
+			{
+				if(region)
+				{
+					pmaxsw(uv, ptr[_rip_global(t.min)]);
+				}
+				else
+				{
+					pxor(tmp, tmp);
+					pmaxsw(uv, tmp);
+				}
+
+				pminsw(uv, ptr[_rip_global(t.max)]);
+			}
+			else
+			{
+				pand(uv, ptr[_rip_global(t.min)]);
+
+				if(region)
+				{
+					por(uv, ptr[_rip_global(t.max)]);
+				}
+			}
+		}
+		else
+		{
+			movdqa(min, ptr[_rip_global(t.min)]);
+			movdqa(max, ptr[_rip_global(t.max)]);
+			movdqa(mask, ptr[_rip_global(t.mask)]);
+
+			// GSVector4i repeat = (t & m_local.gd->t.min) | m_local.gd->t.max;
+			vpand(tmp, uv, min);
+			if(region)
+				por(tmp, max);
+			// GSVector4i clamp = t.sat_i16(m_local.gd->t.min, m_local.gd->t.max);
+			pmaxsw(uv, min);
+			pminsw(uv, max);
+			// clamp.blend8(repeat, m_local.gd->t.mask);
+			vpblendvb(uv, uv, tmp, mask);
+		}
+	}
+
+	void Wrap(const Xmm& uv0, const Xmm& uv1)
+	{
+		// Registers free from SampleTexture
+		const Xmm
+			&mask = xmm0,
+			&min = xmm1,
+			&max = is64 ? xmm2 : xmm5,
+			&tmp = is64 ? xmm3 : xmm6;
+
+		int wms_clamp = ((m_sel.wms + 1) >> 1) & 1;
+		int wmt_clamp = ((m_sel.wmt + 1) >> 1) & 1;
+
+		int region = ((m_sel.wms | m_sel.wmt) >> 1) & 1;
+
+		if(wms_clamp == wmt_clamp)
+		{
+			if(wms_clamp)
+			{
+				if(region)
+				{
+					movdqa(min, ptr[_rip_global(t.min)]);
+					pmaxsw(uv0, min);
+					pmaxsw(uv1, min);
+				}
+				else
+				{
+					pxor(tmp, tmp);
+					pmaxsw(uv0, tmp);
+					pmaxsw(uv1, tmp);
+				}
+
+				movdqa(max, ptr[_rip_global(t.max)]);
+				pminsw(uv0, max);
+				pminsw(uv1, max);
+			}
+			else
+			{
+				movdqa(min, ptr[_rip_global(t.min)]);
+				pand(uv0, min);
+				pand(uv1, min);
+
+				if(region)
+				{
+					movdqa(max, ptr[_rip_global(t.max)]);
+					por(uv0, max);
+					por(uv1, max);
+				}
+			}
+		}
+		else
+		{
+			movdqa(min, ptr[_rip_global(t.min)]);
+			movdqa(max, ptr[_rip_global(t.max)]);
+			movdqa(mask, ptr[_rip_global(t.mask)]);
+
+			for (const Xmm& uv : {uv0, uv1})
+			{
+				// GSVector4i repeat = (t & m_local.gd->t.min) | m_local.gd->t.max;
+				vpand(tmp, uv, min);
+				if(region)
+					por(tmp, max);
+				// GSVector4i clamp = t.sat_i16(m_local.gd->t.min, m_local.gd->t.max);
+				pmaxsw(uv, min);
+				pminsw(uv, max);
+				// clamp.blend8(repeat, m_local.gd->t.mask);
+				vpblendvb(uv, uv, tmp, mask);
+			}
+		}
 	}
 
 	void ReadPixel(const Xmm& dst, const AddressReg& addr)
@@ -1158,53 +1319,68 @@ private:
 		movhps(dst, qword[_m_local__gd__vm + addr*2 + 8*2]);
 	}
 
+	/// Will move from regIn into regOut *in order*
 	/// Input:
-	///  xmm0 = addr00
-	///  xmm1[pixels>1] = addr01
-	///  xmm2[pixels>2] = addr10
-	///  xmm3[pixels>3] = addr11
-	///  ebx[x86] = m_local.tex
-	///  edx[x86] = m_local.clut (m_sel.tlu)
-	/// Output:
-	///  xmm2 = c00
-	///  xmm3[pixels > 1] = c01
-	///  xmm4[pixels > 2] = c10
-	///  xmm5[pixels > 3] = c11
-	/// Destroys: rax, xmm0, xmm1[pixels > 1]
-	void ReadTexel(int pixels, int mip_offset)
+	///  rbx = m_local.tex[0]  (x86 && !m_sel.mmin)
+	///  a3  = m_local.tex (x86 && m_sel.mmin)
+	///  a1  = m_local.clut (x86 && m_sel.tlu)
+	/// Destroys: rax, xmm0
+	/// Destroys a3 (!m_sel.mmin)
+	void ReadTexel(const Xmm* regOut, const Xmm* regIn, int pixels, int mip_offset)
 	{
-		ASSERT(pixels > 0 && pixels <= 4);
-		mip_offset *= is64 ? 8 : 4;
+		mip_offset *= wordsize;
 
+		AddressReg texIn = is64 ? _64_m_local__gd__tex : rbp;
 		RegExp lod_i = m_sel.lcm ? _rip_global(lod.i) : _rip_local(temp.lod.i);
 
 		if (m_sel.mmin && !m_sel.lcm)
 		{
-			const int regIn[]  = { 0, 1, 2, 3 };
-			const int regOut[] = { 2, 3, 4, 5 };
+			bool preserve = false;
+			for (int i = 0; i < pixels; i++)
+				for (int j = 0; j < pixels; j++)
+					if (regIn[i] == regOut[j])
+						preserve = true;
+			bool texInA3 = true;
+			for (int j = 0; j < 4; j++)
+			{
+				mov(a3.cvt32(), ptr[lod_i + offsetof(GSVector4i, u32[j])]);
+				mov(a3.cvt32(), ptr[texIn + a3*wordsize + mip_offset]);
 
-			for (int outer = 2; outer >= 0; outer -= 2)
+				for (int i = 0; i < pixels; i++)
+				{
+					ReadTexel(regOut[i], regIn[i], j, texInA3, preserve);
+				}
+			}
+		}
+		else
+		{
+			bool preserve = false;
+			bool texInA3 = is32;
+
+			if (m_sel.mmin && m_sel.lcm)
+			{
+				mov(a3.cvt32(), ptr[lod_i + offsetof(GSVector4i, u32[0])]);
+				mov(a3.cvt32(), ptr[texIn + a3*wordsize + mip_offset]);
+				texInA3 = true;
+			}
+
+			for (int i = 0; i < pixels; i++)
 			{
 				for (int j = 0; j < 4; j++)
 				{
-					for (int inner = 0; inner < 2; inner++)
-					{
-						int i = outer + inner;
-						if (i >= pixels) continue;
-						ReadTexel(Xmm(regOut[i]), Xmm(regIn[i]), j);
-					}
+					ReadTexel(regOut[i], regIn[i], j, texInA3, preserve);
 				}
 			}
 		}
 	}
 
-	void ReadTexel(const Xmm& dst, const Xmm& addr, uint8 i)
+	void ReadTexel(const Xmm& dst, const Xmm& addr, uint8 i, bool texInA3, bool preserveDst)
 	{
 		ASSERT(i < 4);
 
-		AddressReg clut = is64 ? _64_m_local__gd__clut : rdx;
-		AddressReg tex  = is64 ? _64_m_local__gd__tex  : rbx;
-		const Address& src = m_sel.tlu ? ptr[clut + rax*4] : ptr[tex + rax*4];
+		AddressReg clut = is64 ? _64_m_local__gd__clut : a1;
+		AddressReg tex  = texInA3 ? a3 : _64_m_local__gd__tex;
+		Address src = m_sel.tlu ? ptr[clut + rax*4] : ptr[tex + rax*4];
 
 		// Extract address offset
 		if (i == 0) movd(eax, addr);
@@ -1213,7 +1389,7 @@ private:
 		// If clut, load the value as a byte index
 		if (m_sel.tlu) movzx(eax, byte[tex + rax]);
 
-		if (i == 0) movd(dst, src);
-		else vpinsrd(dst, src, i);
+		if (i == 0 && !preserveDst) movd(dst, src);
+		else pinsrd(dst, src, i);
 	}
 };
