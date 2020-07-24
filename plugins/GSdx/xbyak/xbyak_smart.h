@@ -133,6 +133,11 @@ namespace Xbyak
 			if (!Target::is64)
 				throw Error(ERR_64_INSTR_IN_32);
 		}
+		void requireAVX()
+		{
+			if (!TargetVec::hasAVX)
+				throw Error(ERR_AVX_INSTR_IN_SSE);
+		}
 	public:
 		using AddressReg = typename Target::AddressReg;
 
@@ -159,10 +164,6 @@ namespace Xbyak
 			, al(Operand::AL), cl(Operand::CL), dl(Operand::DL), bl(Operand::BL), ah(Operand::AH), ch(Operand::CH), dh(Operand::DH), bh(Operand::BH)
 		{
 		}
-
-		void L(const std::string& label) { actual.L(label); }
-		void db(int code) { actual.db(code); }
-
 
 		// FORWARD: Forward things to
 		// SFORWARD: Forward vector ops to the actual generator, for ops that are the same in SSE and AVX (automatically adds the v prefix for AVX)
@@ -284,7 +285,15 @@ namespace Xbyak
 # define REQUIRE64(action) require64()
 #endif
 
+		const uint8 *getCurr() { return actual.getCurr(); }
+		void align(int x = 16) { return actual.align(x); }
+		void db(int code) { actual.db(code); }
+		void L(const std::string& label) { actual.L(label); }
+
 		void cdqe() { REQUIRE64(actual.cdqe()); }
+		void ret(int imm = 0) { actual.ret(imm); }
+		void vzeroupper() { requireAVX(); actual.vzeroupper(); }
+		void vzeroall() { requireAVX(); actual.vzeroall(); }
 
 		FORWARD_OO_OI(add)
 		FORWARD_OO_OI(and)
@@ -309,6 +318,8 @@ namespace Xbyak
 		FORWARD(2, BASE, test,  ARGS_OI);
 
 		FORWARD_JUMP(je)
+		FORWARD_JUMP(jle)
+		FORWARD_JUMP(jmp)
 
 		AFORWARD(2, addps,     ARGS_XO)
 		SFORWARD(2, cvtdq2ps,  ARGS_XO)
@@ -380,11 +391,11 @@ namespace Xbyak
 
 		FORWARD_SSE_XMM0(pblendvb)
 
-		FORWARD(2, AVX,    vbroadcastss, ARGS_XO)
-		FORWARD(3, FMA,    vfmadd213ps,  ARGS_XXO)
-		FORWARD(3, AVX2,   vpermq,       ARGS_YOI)
-		FORWARD(3, AVX2,   vpsravd,      ARGS_XXO)
-		FORWARD(3, AVX2,   vpsrlvd,      ARGS_XXO)
+		FORWARD(2, AVX,  vbroadcastss, ARGS_XO)
+		FORWARD(3, FMA,  vfmadd213ps,  ARGS_XXO)
+		FORWARD(3, AVX2, vpermq,       ARGS_YOI)
+		FORWARD(3, AVX2, vpsravd,      ARGS_XXO)
+		FORWARD(3, AVX2, vpsrlvd,      ARGS_XXO)
 
 #undef REQUIRE64
 #undef ARGS_OI
