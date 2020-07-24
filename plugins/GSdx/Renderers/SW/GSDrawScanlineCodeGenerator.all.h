@@ -131,10 +131,12 @@ class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator<Target, Ta
 	bool m_rip;
 
 	/// Note: a2 is only available on x86-64
-	AddressReg a0, a1, a2, a3, t0, t1;
-	LocalAddr m_test, _m_local, _m_local__gd, _m_local__gd__vm;
-	/// All but _test are only available on x86-64
-	Xmm _rb, _ga, _fm, _zm, _fd, _z, _f, _s, _t, _q, _f_rb, _f_ga, _test;
+	const AddressReg a0, a1, a2, a3, t0, t1;
+	const LocalAddr m_test, _m_local, _m_local__gd, _m_local__gd__vm;
+	/// Available on both x86 and x64, not always valid
+	const Xmm _rb, _ga, _fm, _zm, _fd, _test;
+	/// Always valid, x64 only
+	const Xmm _z, _f, _s, _t, _q, _f_rb, _f_ga;
 
 	/// Marks a register as unavailable in x86-32 by remapping it to a high register
 	static int block32(int regID)
@@ -166,8 +168,8 @@ public:
 		, _m_local(chooseLocal(&m_local, _64_m_local))
 		, _m_local__gd(chooseLocal(m_local.gd, _64_m_local__gd))
 		, _m_local__gd__vm(chooseLocal(m_local.gd->vm, _64_m_local__gd__vm))
-		, _rb(block32(2)), _ga(block32(3)), _fm(block32(4)), _zm(block32(5)), _fd(block32(6))
-		, _z(8), _f(9), _s(10), _t(11), _q(12), _f_rb(13), _f_ga(14), _test(is64 ? 15 : 7)
+		, _rb(is64 ? xmm2 : xmm5), _ga(is64 ? xmm3 : xmm6), _fm(is64 ? xmm4 : xmm3), _zm(is64 ? xmm5 : xmm4), _fd(is64 ? xmm6 : xmm2), _test(is64 ? xmm15 : xmm7)
+		, _z(xmm8), _f(xmm9), _s(xmm10), _t(xmm11), _q(xmm12), _f_rb(xmm13), _f_ga(xmm14)
 	{
 		m_sel.key = key;
 
@@ -2345,20 +2347,17 @@ private:
 		}
 	}
 
-	/// Output[x86]: xmm3=fm, xmm4=zm
+	/// Output: _fm, _zm
 	void ReadMask()
 	{
-		const Xmm& fm = is64 ? _fm : xmm3;
-		const Xmm& zm = is64 ? _zm : xmm4;
-
 		if(m_sel.fwrite)
 		{
-			movdqa(fm, _rip_global(fm));
+			movdqa(_fm, _rip_global(fm));
 		}
 
 		if(m_sel.zwrite)
 		{
-			movdqa(zm, _rip_global(zm));
+			movdqa(_zm, _rip_global(zm));
 		}
 	}
 
@@ -2408,9 +2407,6 @@ private:
 				break;
 		}
 
-		const Xmm& zm = is64 ? _zm : xmm4;
-		const Xmm& fm = is64 ? _fm : xmm3;
-
 		switch(m_sel.afail)
 		{
 			case AFAIL_KEEP:
@@ -2421,21 +2417,21 @@ private:
 
 			case AFAIL_FB_ONLY:
 				// zm |= t;
-				por(zm, xmm1);
+				por(_zm, xmm1);
 				break;
 
 			case AFAIL_ZB_ONLY:
 				// fm |= t;
-				por(fm, xmm1);
+				por(_fm, xmm1);
 				break;
 
 			case AFAIL_RGB_ONLY:
 				// zm |= t;
-				por(zm, xmm1);
+				por(_zm, xmm1);
 				// fm |= t & GSVector4i::xff000000();
 				psrld(xmm1, 24);
 				pslld(xmm1, 24);
-				por(fm, xmm1);
+				por(_fm, xmm1);
 				break;
 		}
 	}
@@ -2447,17 +2443,15 @@ private:
 			return;
 		}
 
-		const Xmm& rb    = is64 ? _rb   : xmm5;
-		const Xmm& ga    = is64 ? _ga   : xmm6;
 		const Xmm& f_ga  = is64 ? _f_ga : xmm2;
 		const Xmm& tmpga = is64 ? xmm6  : f_ga;
 
 		auto modulate16_1_rb = [&]{
 			// GSVector4i rb = iip ? rbf : m_local.c.rb;
 			if (is64)
-				modulate16(rb, _f_rb, 1);
+				modulate16(_rb, _f_rb, 1);
 			else
-				modulate16(rb, m_sel.iip ? _rip_local(temp.rb) : _rip_local(c.rb), 1);
+				modulate16(_rb, m_sel.iip ? _rip_local(temp.rb) : _rip_local(c.rb), 1);
 		};
 
 		switch(m_sel.tfx)
@@ -2470,7 +2464,7 @@ private:
 
 				modulate16_1_rb();
 
-				clamp16(rb, xmm0);
+				clamp16(_rb, xmm0);
 
 				break;
 
@@ -2490,27 +2484,27 @@ private:
 
 				// gat = gat.modulate16<1>(ga).add16(af).clamp8().mix16(gat);
 
-				movdqa(xmm1, ga);
+				movdqa(xmm1, _ga);
 
-				modulate16(ga, f_ga, 1);
+				modulate16(_ga, f_ga, 1);
 
 				pshuflw(tmpga, f_ga, _MM_SHUFFLE(3, 3, 1, 1));
 				pshufhw(tmpga, tmpga, _MM_SHUFFLE(3, 3, 1, 1));
 				psrlw(tmpga, 7);
 
-				paddw(ga, tmpga);
+				paddw(_ga, tmpga);
 
-				clamp16(ga, xmm0);
+				clamp16(_ga, xmm0);
 
-				mix16(ga, xmm1, xmm0);
+				mix16(_ga, xmm1, xmm0);
 
 				// rbt = rbt.modulate16<1>(rb).add16(af).clamp8();
 
 				modulate16_1_rb();
 
-				paddw(rb, tmpga);
+				paddw(_rb, tmpga);
 
-				clamp16(rb, xmm0);
+				clamp16(_rb, xmm0);
 
 				break;
 
@@ -2520,7 +2514,7 @@ private:
 
 				if(m_sel.iip)
 				{
-					MOVE_IF_64(psrlw, rb, _f_rb, 7);
+					MOVE_IF_64(psrlw, _rb, _f_rb, 7);
 				}
 
 				break;
@@ -2539,24 +2533,23 @@ private:
 
 		const Xmm& f   = is64 ? _f   : xmm0;
 		const Xmm& tmp = is64 ? xmm0 : xmm2;
-		const Xmm& rb  = is64 ? _rb  : xmm5;
-		const Xmm& ga  = is64 ? _ga  : xmm6;
 
 		// rb = m_local.gd->frb.lerp16<0>(rb, f);
 		// ga = m_local.gd->fga.lerp16<0>(ga, f).mix16(ga);
 
 		ONLY32(movdqa(f, m_sel.prim != GS_SPRITE_CLASS ? _rip_local(temp.f) : _rip_local(p.f)));
-		movdqa(xmm1, ga);
+		movdqa(xmm1, _ga);
 
 		movdqa(tmp, _rip_global(frb));
-		lerp16(rb, tmp, f, 0);
+		lerp16(_rb, tmp, f, 0);
 
 		movdqa(tmp, _rip_global(fga));
-		lerp16(ga, tmp, f, 0);
+		lerp16(_ga, tmp, f, 0);
 
-		mix16(ga, xmm1, f);
+		mix16(_ga, xmm1, f);
 	}
 
+	/// Outputs: _fd, ebx=???
 	void ReadFrame()
 	{
 		if(!m_sel.fb)
@@ -2573,8 +2566,7 @@ private:
 			return;
 		}
 
-		const Xmm& fd = is64 ? _fd : xmm2;
-		ReadPixel(fd, rbx);
+		ReadPixel(_fd, rbx);
 	}
 
 	/// Input: _fd
@@ -2586,8 +2578,6 @@ private:
 			return;
 		}
 
-		const Xmm& fd = is64 ? _fd : xmm2;
-
 		// test |= ((fd [<< 16]) ^ m_local.gd->datm).sra32(31);
 
 		if(m_sel.datm)
@@ -2595,15 +2585,15 @@ private:
 			if(m_sel.fpsm == 2)
 			{
 				pxor(xmm0, xmm0);
-				//vpsrld(xmm1, fd, 15);
-				vpslld(xmm1, fd, 16);
+				//vpsrld(xmm1, _fd, 15);
+				vpslld(xmm1, _fd, 16);
 				psrad(xmm1, 31);
 				pcmpeqd(xmm1, xmm0);
 			}
 			else
 			{
 				pcmpeqd(xmm0, xmm0);
-				vpxor(xmm1, fd, xmm0);
+				vpxor(xmm1, _fd, xmm0);
 				psrad(xmm1, 31);
 			}
 		}
@@ -2611,12 +2601,12 @@ private:
 		{
 			if(m_sel.fpsm == 2)
 			{
-				vpslld(xmm1, fd, 16);
+				vpslld(xmm1, _fd, 16);
 				psrad(xmm1, 31);
 			}
 			else
 			{
-				vpsrad(xmm1, fd, 31);
+				vpsrad(xmm1, _fd, 31);
 			}
 		}
 
@@ -2635,20 +2625,17 @@ private:
 			return;
 		}
 
-		const Xmm& fm = is64 ? _fm : xmm3;
-		const Xmm& zm = is64 ? _zm : xmm4;
-
 		// fm |= test;
 		// zm |= test;
 
 		if(m_sel.fwrite)
 		{
-			por(fm, _test);
+			por(_fm, _test);
 		}
 
 		if(m_sel.zwrite)
 		{
-			por(zm, _test);
+			por(_zm, _test);
 		}
 
 		// int fzm = ~(fm == GSVector4i::xffffffff()).ps32(zm == GSVector4i::xffffffff()).mask();
@@ -2657,18 +2644,18 @@ private:
 
 		if(m_sel.fwrite && m_sel.zwrite)
 		{
-			vpcmpeqd(xmm0, xmm1, zm);
-			pcmpeqd(xmm1, fm);
+			vpcmpeqd(xmm0, xmm1, _zm);
+			pcmpeqd(xmm1, _fm);
 			packssdw(xmm1, xmm0);
 		}
 		else if(m_sel.fwrite)
 		{
-			pcmpeqd(xmm1, fm);
+			pcmpeqd(xmm1, _fm);
 			packssdw(xmm1, xmm1);
 		}
 		else if(m_sel.zwrite)
 		{
-			pcmpeqd(xmm1, zm);
+			pcmpeqd(xmm1, _zm);
 			packssdw(xmm1, xmm1);
 		}
 
@@ -2684,8 +2671,6 @@ private:
 			return;
 		}
 
-		const Xmm& zm = is64 ? _zm : xmm4;
-
 		if (m_sel.prim != GS_SPRITE_CLASS)
 //#ifdef _WIN64
 			movdqa(xmm1, _rip_local(temp.zs));
@@ -2700,7 +2685,7 @@ private:
 			// zs = zs.blend8(zd, zm);
 
 //#ifdef _WIN64
-			vpblendvb(xmm1, xmm1, _rip_local(temp.zd), zm);
+			vpblendvb(xmm1, xmm1, _rip_local(temp.zd), _zm);
 //#else
 //			pblendvb(xmm1, ptr[rsp + _rz_zd], _zm);
 //#endif
@@ -2739,7 +2724,6 @@ private:
 
 		const Xmm& _dst_rb = xmm0;
 		const Xmm& _dst_ga = xmm1;
-		const Xmm& fd = is64 ? _fd : xmm2;
 		const Xmm& tmp1 = _test;
 		const Xmm& tmp2 = is64 ? xmm5 : xmm4;
 
@@ -2753,7 +2737,7 @@ private:
 					// c[2] = fd & mask;
 					// c[3] = (fd >> 8) & mask;
 
-					split16_2x8(_dst_rb, _dst_ga, fd);
+					split16_2x8(_dst_rb, _dst_ga, _fd);
 
 					break;
 
@@ -2765,21 +2749,21 @@ private:
 					pcmpeqd(tmp1, tmp1);
 
 					psrld(tmp1, 27); // 0x0000001f
-					vpand(_dst_rb, fd, tmp1);
+					vpand(_dst_rb, _fd, tmp1);
 					pslld(_dst_rb, 3);
 
 					pslld(tmp1, 10); // 0x00007c00
-					vpand(tmp2, fd, tmp1);
+					vpand(tmp2, _fd, tmp1);
 					pslld(tmp2, 9);
 
 					por(_dst_rb, tmp2);
 
 					psrld(tmp1, 5); // 0x000003e0
-					vpand(_dst_ga, fd, tmp1);
+					vpand(_dst_ga, _fd, tmp1);
 					psrld(_dst_ga, 2);
 
 					psllw(tmp1, 10); // 0x00008000
-					vpand(tmp2, fd, tmp1);
+					vpand(tmp2, _fd, tmp1);
 					pslld(tmp2, 8);
 
 					por(_dst_ga, tmp2);
@@ -2788,16 +2772,13 @@ private:
 			}
 		}
 
-		const Xmm& rb = is64 ? _rb : xmm5;
-		const Xmm& ga = is64 ? _ga : xmm6;
-
 		// rb,   ga   = src rb, ga
 		// xmm0, xmm1 = dst rb, ga
 		// tmp1, tmp2 = free
 
 		if(m_sel.pabe || (m_sel.aba != m_sel.abb) && (m_sel.abb == 0 || m_sel.abd == 0))
 		{
-			movdqa(tmp2, rb);
+			movdqa(tmp2, _rb);
 		}
 
 		if(m_sel.aba != m_sel.abb)
@@ -2807,16 +2788,16 @@ private:
 			switch(m_sel.aba)
 			{
 				case 0: break;
-				case 1: movdqa(rb, _dst_rb); break;
-				case 2: pxor(rb, rb); break;
+				case 1: movdqa(_rb, _dst_rb); break;
+				case 2: pxor(_rb, _rb); break;
 			}
 
 			// rb = rb.sub16(c[abb * 2 + 0]);
 
 			switch(m_sel.abb)
 			{
-				case 0: psubw(rb, tmp2); break;
-				case 1: psubw(rb, _dst_rb); break;
+				case 0: psubw(_rb, tmp2); break;
+				case 1: psubw(_rb, _dst_rb); break;
 				case 2: break;
 			}
 
@@ -2828,7 +2809,7 @@ private:
 				{
 					case 0:
 					case 1:
-						pshuflw(tmp1, m_sel.abc ? _dst_ga : ga, _MM_SHUFFLE(3, 3, 1, 1));
+						pshuflw(tmp1, m_sel.abc ? _dst_ga : _ga, _MM_SHUFFLE(3, 3, 1, 1));
 						pshufhw(tmp1, tmp1, _MM_SHUFFLE(3, 3, 1, 1));
 						psllw(tmp1, 7);
 						break;
@@ -2839,15 +2820,15 @@ private:
 
 				// rb = rb.modulate16<1>(a);
 
-				modulate16(rb, tmp1, 1);
+				modulate16(_rb, tmp1, 1);
 			}
 
 			// rb = rb.add16(c[abd * 2 + 0]);
 
 			switch(m_sel.abd)
 			{
-				case 0: paddw(rb, tmp2); break;
-				case 1: paddw(rb, _dst_rb); break;
+				case 0: paddw(_rb, tmp2); break;
+				case 1: paddw(_rb, _dst_rb); break;
 				case 2: break;
 			}
 		}
@@ -2858,8 +2839,8 @@ private:
 			switch(m_sel.abd)
 			{
 				case 0: break;
-				case 1: movdqa(rb, _dst_rb); break;
-				case 2: pxor(rb, rb); break;
+				case 1: movdqa(_rb, _dst_rb); break;
+				case 2: pxor(_rb, _rb); break;
 			}
 		}
 
@@ -2867,12 +2848,12 @@ private:
 		{
 			// mask = (c[1] << 8).sra32(31);
 
-			vpslld(xmm0, ga, 8);
+			vpslld(xmm0, _ga, 8);
 			psrad(xmm0, 31);
 
 			// rb = c[0].blend8(rb, mask);
 
-			vpblendvb(rb, tmp1, rb, xmm0);
+			vpblendvb(_rb, tmp1, _rb, xmm0);
 		}
 
 		// xmm0 = pabe mask
@@ -2882,7 +2863,7 @@ private:
 		// tmp1 = a
 		// tmp2 = free
 
-		movdqa(tmp2, ga);
+		movdqa(tmp2, _ga);
 
 		if(m_sel.aba != m_sel.abb)
 		{
@@ -2891,16 +2872,16 @@ private:
 			switch(m_sel.aba)
 			{
 				case 0: break;
-				case 1: movdqa(ga, _dst_ga); break;
-				case 2: pxor(ga, ga); break;
+				case 1: movdqa(_ga, _dst_ga); break;
+				case 2: pxor(_ga, _ga); break;
 			}
 
 			// ga = ga.sub16(c[abeb * 2 + 1]);
 
 			switch(m_sel.abb)
 			{
-				case 0: psubw(ga, tmp2); break;
-				case 1: psubw(ga, _dst_ga); break;
+				case 0: psubw(_ga, tmp2); break;
+				case 1: psubw(_ga, _dst_ga); break;
 				case 2: break;
 			}
 
@@ -2908,15 +2889,15 @@ private:
 			{
 				// ga = ga.modulate16<1>(a);
 
-				modulate16(ga, tmp1, 1);
+				modulate16(_ga, tmp1, 1);
 			}
 
 			// ga = ga.add16(c[abd * 2 + 1]);
 
 			switch(m_sel.abd)
 			{
-				case 0: paddw(ga, tmp2); break;
-				case 1: paddw(ga, _dst_ga); break;
+				case 0: paddw(_ga, tmp2); break;
+				case 1: paddw(_ga, _dst_ga); break;
 				case 2: break;
 			}
 		}
@@ -2927,8 +2908,8 @@ private:
 			switch(m_sel.abd)
 			{
 				case 0: break;
-				case 1: movdqa(ga, _dst_ga); break;
-				case 2: pxor(ga, ga); break;
+				case 1: movdqa(_ga, _dst_ga); break;
+				case 2: pxor(_ga, _ga); break;
 			}
 		}
 
@@ -2944,13 +2925,13 @@ private:
 
 			// ga = c[1].blend8(ga, mask).mix16(c[1]);
 
-			vpblendvb(ga, tmp2, ga, xmm0);
+			vpblendvb(_ga, tmp2, _ga, xmm0);
 		}
 		else
 		{
 			if(m_sel.fpsm != 1) // TODO: fm == 0xffxxxxxx
 			{
-				mix16(ga, tmp2, tmp1);
+				mix16(_ga, tmp2, tmp1);
 			}
 		}
 	}
@@ -3014,9 +2995,6 @@ private:
 		// tmp1 = fs
 		// xmm4 = fm
 		// xmm6 = fd
-
-		const Xmm& fm = is64 ? _fm : xmm3;
-		const Xmm& fd = is64 ? _fd : xmm2;
 
 		if(m_sel.fpsm == 2)
 		{
@@ -3082,7 +3060,7 @@ private:
 		{
 			// fs = fs.blend(fd, fm);
 
-			blend(tmp1, fd, fm); // TODO: could be skipped in certain cases, depending on fpsm and fm
+			blend(tmp1, _fd, _fm); // TODO: could be skipped in certain cases, depending on fpsm and fm
 		}
 
 		bool fast = m_sel.rfb ? m_sel.fpsm < 2 : m_sel.fpsm == 0 && m_sel.notest;
