@@ -143,7 +143,8 @@ namespace Xbyak
 		const Ymm ymm0, ymm1, ymm2, ymm3, ymm4, ymm5, ymm6, ymm7, ymm8, ymm9, ymm10, ymm11, ymm12, ymm13, ymm14, ymm15;
 		const AddressReg rax, rcx, rdx, rbx, rsp, rbp, rsi, rdi, r8,  r9,  r10,  r11,  r12,  r13,  r14,  r15;
 		const Reg32      eax, ecx, edx, ebx, esp, ebp, esi, edi, r8d, r9d, r10d, r11d, r12d, r13d, r14d, r15d;
-		const Reg8        al,  cl,  dl,  bl;
+		const Reg16       ax,  cx,  dx,  bx,  sp,  bp,  si,  di;
+		const Reg8        al,  cl,  dl,  bl,  ah,  ch,  dh,  bh;
 
 		constexpr static Target::RipType rip{};
 		constexpr static AddressFrame ptr{0}, byte{8}, word{16}, dword{32}, qword{64}, xword{128}, yword{256}, zword{512};
@@ -154,10 +155,12 @@ namespace Xbyak
 			, ymm0(0), ymm1(1), ymm2(2), ymm3(3), ymm4(4), ymm5(5), ymm6(6), ymm7(7), ymm8(8), ymm9(9), ymm10(10), ymm11(11), ymm12(12), ymm13(13), ymm14(14), ymm15(15)
 			, rax(Operand::RAX), rcx(Operand::RCX), rdx(Operand::RDX), rbx(Operand::RBX), rsp(Operand::RSP), rbp(Operand::RBP), rsi(Operand::RSI), rdi(Operand::RDI), r8(8), r9(9), r10(10), r11(11), r12(12), r13(13), r14(14), r15(15)
 			, eax(Operand::EAX), ecx(Operand::ECX), edx(Operand::EDX), ebx(Operand::EBX), esp(Operand::ESP), ebp(Operand::EBP), esi(Operand::ESI), edi(Operand::EDI), r8d(8), r9d(9), r10d(10), r11d(11), r12d(12), r13d(13), r14d(14), r15d(15)
-			, al(Operand::AL), cl(Operand::CL), dl(Operand::DL), bl(Operand::BL)
+			, ax(Operand::AX), cx(Operand::CX), dx(Operand::DX), bx(Operand::BX), sp(Operand::SP), bp(Operand::BP), si(Operand::SI), di(Operand::DI)
+			, al(Operand::AL), cl(Operand::CL), dl(Operand::DL), bl(Operand::BL), ah(Operand::AH), ch(Operand::CH), dh(Operand::DH), bh(Operand::BH)
 		{
 		}
 
+		void L(const std::string& label) { actual.L(label); }
 		void db(int code) { actual.db(code); }
 
 
@@ -236,6 +239,18 @@ namespace Xbyak
 // Gets the macro evaluator to evaluate in the right order
 #define FORWARD(...) FORWARD_(__VA_ARGS__)
 
+#define FORWARD_SSE_XMM0(name) \
+	void name(const Xmm& a, const Operand& b) \
+	{ \
+		validateRegister(a); \
+		validateRegister(b); \
+		if (TargetVec::hasAVX) \
+			actual.v##name(a, b, Xmm(0)); \
+		else \
+			actual.name(a, b); \
+	} \
+	FORWARD(4, AVX, v##name, const Xmm&, const Xmm&, const Operand&, const Xmm&)
+
 #define FORWARD_JUMP(name) \
 		void name(const void *addr) { actual.name(addr); } \
 		void name(const Label& label, CodeGenerator::LabelType type = CodeGenerator::T_AUTO) { actual.name(label, type); } \
@@ -261,7 +276,6 @@ namespace Xbyak
 #define ARGS_XO const Xmm&, const Operand&
 #define ARGS_XOI const Xmm&, const Operand&, uint8
 #define ARGS_XXO const Xmm&, const Xmm&, const Operand&
-#define ARGS_XXOX const Xmm&, const Xmm&, const Operand&, const Xmm&
 #define ARGS_YOI const Ymm&, const Operand&, uint8
 
 #ifdef XBYAK64
@@ -275,7 +289,6 @@ namespace Xbyak
 		FORWARD_OO_OI(add)
 		FORWARD_OO_OI(and)
 		FORWARD_OO_OI(cmp)
-
 		FORWARD_OO_OI(or)
 		FORWARD_OO_OI(sub)
 		FORWARD_OO_OI(xor)
@@ -283,6 +296,7 @@ namespace Xbyak
 		FORWARD(2, BASE, mov,   const Operand&, size_t)
 		FORWARD(2, BASE, mov,   ARGS_OO)
 		FORWARD(2, BASE, movzx, const Reg&, const Operand&)
+		FORWARD(1, BASE, not,   const Operand&)
 		FORWARD(1, BASE, pop,   const Operand&)
 		FORWARD(1, BASE, push,  const Operand&)
 		FORWARD(2, BASE, sar,   const Operand&, const Reg8&)
@@ -291,6 +305,8 @@ namespace Xbyak
 		FORWARD(2, BASE, shl,   ARGS_OI)
 		FORWARD(2, BASE, shr,   const Operand&, const Reg8&)
 		FORWARD(2, BASE, shr,   ARGS_OI)
+		FORWARD(2, BASE, test,  const Operand&, const Reg&);
+		FORWARD(2, BASE, test,  ARGS_OI);
 
 		FORWARD_JUMP(je)
 
@@ -302,14 +318,14 @@ namespace Xbyak
 		AFORWARD(2, minps,     ARGS_XO)
 		SFORWARD(2, movaps,    ARGS_XO)
 		SFORWARD(2, movaps,    const Address&, const Xmm&)
-		SFORWARD(2, movdqa,    ARGS_XO)
-		SFORWARD(2, movdqa,    const Address&, const Xmm&)
-		SFORWARD(2, movhps,    ARGS_XO)
-		SFORWARD(2, movhps,    const Address&, const Xmm&)
 		SFORWARD(2, movd,      const Address&, const Xmm&)
 		SFORWARD(2, movd,      const Reg32&, const Xmm&)
 		SFORWARD(2, movd,      const Xmm&, const Address&)
 		SFORWARD(2, movd,      const Xmm&, const Reg32&)
+		SFORWARD(2, movdqa,    ARGS_XO)
+		SFORWARD(2, movdqa,    const Address&, const Xmm&)
+		SFORWARD(2, movhps,    ARGS_XO)
+		SFORWARD(2, movhps,    const Address&, const Xmm&)
 		SFORWARD(2, movq,      const Address&, const Xmm&)
 		SFORWARD(2, movq,      const Xmm&, const Address&)
 		AFORWARD(2, mulps,     ARGS_XO)
@@ -318,13 +334,16 @@ namespace Xbyak
 		AFORWARD(2, packusdw,  ARGS_XO)
 		AFORWARD(2, packuswb,  ARGS_XO)
 		AFORWARD(2, paddd,     ARGS_XO)
+		AFORWARD(2, paddusb,   ARGS_XO)
 		AFORWARD(2, paddw,     ARGS_XO)
 		AFORWARD(2, pand,      ARGS_XO)
 		AFORWARD(2, pandn,     ARGS_XO)
 		AFORWARD(3, pblendw,   ARGS_XOI)
 		AFORWARD(2, pcmpeqd,   ARGS_XO)
+		AFORWARD(2, pcmpeqw,   ARGS_XO)
 		AFORWARD(2, pcmpgtd,   ARGS_XO)
 		SFORWARD(3, pextrd,    const Operand&, const Xmm&, uint8)
+		SFORWARD(3, pextrw,    const Operand&, const Xmm&, uint8)
 		AFORWARD(3, pinsrd,    ARGS_XOI)
 		AFORWARD(2, pmaxsw,    ARGS_XO)
 		AFORWARD(2, pminsd,    ARGS_XO)
@@ -359,10 +378,10 @@ namespace Xbyak
 		AFORWARD(2, subps,     ARGS_XO)
 		AFORWARD(2, xorps,     ARGS_XO)
 
+		FORWARD_SSE_XMM0(pblendvb)
+
 		FORWARD(2, AVX,    vbroadcastss, ARGS_XO)
 		FORWARD(3, FMA,    vfmadd213ps,  ARGS_XXO)
-		FORWARD(2, SSEONLY, pblendvb,    ARGS_XO)
-		FORWARD(4, AVX,    vpblendvb,    ARGS_XXOX)
 		FORWARD(3, AVX2,   vpermq,       ARGS_YOI)
 		FORWARD(3, AVX2,   vpsravd,      ARGS_XXO)
 		FORWARD(3, AVX2,   vpsrlvd,      ARGS_XXO)
@@ -374,7 +393,6 @@ namespace Xbyak
 #undef ARGS_XO
 #undef ARGS_XOI
 #undef ARGS_XXO
-#undef ARGS_XXOX
 #undef ARGS_YOI
 #undef FORWARD_OO_OI
 #undef AFORWARD
@@ -382,6 +400,7 @@ namespace Xbyak
 #undef SFORWARD
 #undef ADD_ONE_2
 #undef ADD_ONE_3
+#undef FORWARD_SSE_XMM0
 #undef FORWARD_JUMP
 #undef FORWARD
 #undef FORWARD_
