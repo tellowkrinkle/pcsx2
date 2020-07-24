@@ -47,10 +47,10 @@
 #define _64_m_local__gd__tex r14
 
 // Careful with rip-based regexps, you can only add constants to them, not registers
-#define _rip_local_regexp(field) ((Target::is32 || m_rip) ? (RegExp)(rip + (size_t)&m_local.field) : (RegExp)(_m_local + offsetof(GSScanlineLocalData, field)))
-#define _rip_global_regexp(field) ((Target::is32 || m_rip) ? (RegExp)(rip + (size_t)&m_local.gd->field) : (RegExp)(_m_local__gd + offsetof(GSScanlineGlobalData, field)))
-#define _rip_local(field) ptr[_rip_local_regexp(field)]
-#define _rip_global(field) ptr[_rip_global_regexp(field)]
+#define _rip_local_regexp(field) ((is32 || m_rip) ? (RegExp)(rip + (size_t)&m_local.field) : (RegExp)(_m_local + offsetof(GSScanlineLocalData, field)))
+#define _rip_global_regexp(field) ((is32 || m_rip) ? (RegExp)(rip + (size_t)&m_local.gd->field) : (RegExp)(_m_local__gd + offsetof(GSScanlineGlobalData, field)))
+#define _rip_local(field) ((is32 || m_rip) ? ptr[rip + (size_t)&m_local.field] : ptr[_m_local + offsetof(GSScanlineLocalData, field)])
+#define _rip_global(field) ((is32 || m_rip) ? ptr[rip + (size_t)&m_local.gd->field] : ptr[_m_local__gd + offsetof(GSScanlineGlobalData, field)])
 
 /// Executes the given code only if targeting 32-bit
 #define ONLY32(code) if (is32) (code)
@@ -76,25 +76,15 @@ enum class RegsUsed {
 
 using namespace Xbyak;
 
-#ifdef XBYAK_ONE_TRUE_TARGET
 class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator
 {
-	using Target = XBYAK_ONE_TRUE_TARGET;
-	using TargetVec = XBYAK_ONE_TRUE_TARGET_VEC;
 	using _parent = Xbyak::SmartCodeGenerator;
-#else
-template <typename Target, typename TargetVec>
-class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator<Target, TargetVec>
-{
-	using _parent = Xbyak::SmartCodeGenerator<Target, TargetVec>;
-#endif
+	using AddressReg = _parent::AddressReg;
 
 	/// On x86-64 we reserve a bunch of GPRs for holding addresses of locals that would otherwise be hard to reach
 	/// On x86-32 the same values are just raw 32-bit addresses
-	using LocalAddr = typename Target::Choose3264<size_t, AddressReg>::type;
+	using LocalAddr = Choose3264<size_t, AddressReg>::type;
 
-	constexpr static bool is64 = Target::is64;
-	constexpr static bool is32 = Target::is32;
 	constexpr static int wordsize = is64 ? 8 : 4;
 
 // MARK: - Constants
@@ -147,12 +137,12 @@ class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator<Target, Ta
 	/// Returns the first arg on 32-bit, second on 64-bit
 	static LocalAddr chooseLocal(const void *addr32, AddressReg reg64)
 	{
-		return Target::choose3264((size_t)addr32, reg64);
+		return choose3264((size_t)addr32, reg64);
 	}
 
 public:
-	GSDrawScanlineCodeGenerator2(Xbyak::CodeGenerator* base, bool hasFMA, void* param, uint64 key)
-		: _parent(base, hasFMA)
+	GSDrawScanlineCodeGenerator2(Xbyak::CodeGenerator* base, SSEVersion::SSEVersion sseVersion, bool hasFMA, void* param, uint64 key)
+		: _parent(base, sseVersion, hasFMA)
 		, m_local(*(GSScanlineLocalData*)param)
 		, m_rip(false)
 #ifdef _WIN32
@@ -171,16 +161,6 @@ public:
 		, _rb(is64 ? xmm2 : xmm5), _ga(is64 ? xmm3 : xmm6), _fm(is64 ? xmm4 : xmm3), _zm(is64 ? xmm5 : xmm4), _fd(is64 ? xmm6 : xmm2), _test(is64 ? xmm15 : xmm7)
 		, _z(xmm8), _f(xmm9), _s(xmm10), _t(xmm11), _q(xmm12), _f_rb(xmm13), _f_ga(xmm14)
 	{
-		m_sel.key = key;
-
-		if(m_sel.breakpoint)
-			db(0xCC);
-
-		try {
-			Generate();
-		} catch (std::exception& e) {
-			fprintf(stderr, "ERR:GSDrawScanlineCodeGenerator %s\n", e.what());
-		}
 	}
 
 private:
@@ -192,12 +172,12 @@ private:
 	{
 		if (is64)
 			mov(reg, (size_t)addr);
-		return Target::choose3264((size_t)addr, reg);
+		return choose3264((size_t)addr, reg);
 	}
 
 	void modulate16(const Xmm& a, const Operand& f, uint8 shift)
 	{
-		if (shift == 0 && TargetVec::hasSSE3)
+		if (shift == 0 && hasSSE3)
 		{
 			pmulhrsw(a, f);
 		}
@@ -225,7 +205,7 @@ private:
 
 	void mix16(const Xmm& a, const Xmm& b, const Xmm& temp)
 	{
-		if(TargetVec::hasSSE41)
+		if(hasSSE41)
 		{
 			pblendw(a, b, 0xaa);
 		}
@@ -241,10 +221,10 @@ private:
 
 	void clamp16(const Xmm& a, const Xmm& temp)
 	{
-		if (TargetVec::hasSSE41)
+		if (hasSSE41)
 		{
 			packuswb(a, a);
-			if (TargetVec::hasAVX2)
+			if (hasAVX2)
 			{
 				// Greg: why ?
 				ASSERT(a.isYMM());
@@ -272,7 +252,7 @@ private:
 	{
 		pand(b, mask);
 		pandn(mask, a);
-		if (TargetVec::hasAVX)
+		if (hasAVX)
 		{
 			vpor(a, b, mask);
 		}
@@ -292,7 +272,7 @@ private:
 
 	void blend8(const Xmm& a, const Xmm& b)
 	{
-		if (TargetVec::hasSSE41)
+		if (hasSSE41)
 			pblendvb(a, b /*, xmm0 */);
 		else
 			blend(a, b, xmm0);
@@ -300,11 +280,11 @@ private:
 
 	void blend8r(const Xmm& b, const Xmm& a)
 	{
-		if (TargetVec::hasAVX)
+		if (hasAVX)
 		{
 			vpblendvb(b, a, b, xmm0);
 		}
-		else if (TargetVec::hasSSE41)
+		else if (hasSSE41)
 		{
 			pblendvb(a, b);
 			movdqa(b, a);
@@ -320,7 +300,7 @@ private:
 		// l = src & 0xFF; (1 left shift + 1 right shift)
 		// h = (src >> 8) & 0xFF; (1 right shift)
 
-		if (TargetVec::hasAVX)
+		if (hasAVX)
 		{
 			if (src == h) {
 				vpsllw(l, src, 8);
@@ -351,6 +331,7 @@ private:
 	}
 
 // MARK: - Main Implementation
+public:
 	void Generate()
 	{
 		bool need_tex = m_sel.fb && m_sel.tfx != TFX_NONE;
@@ -664,6 +645,8 @@ private:
 		}
 	}
 
+private:
+
 	/// Inputs: a0=pixels, a1=left, a2[x64]=top, a3[x64]=v
 	void Init()
 	{
@@ -724,7 +707,7 @@ private:
 			lea(t1, ptr[rax * 8 + (size_t)&m_local.gd->fzbr]);
 
 			// GSVector2i* fza_offset = &m_local.gd->fzbc[left >> 2];
-			lea(t0, ptr[_rip_global_regexp(fzbc) + rbx * 2]);
+			lea(t0, ptr[(size_t)&m_local.gd->fzbc + rbx * 2]);
 		}
 
 		if(m_sel.prim != GS_SPRITE_CLASS && (m_sel.fwrite && m_sel.fge || m_sel.zb) || m_sel.fb && (m_sel.edge || m_sel.tfx != TFX_NONE || m_sel.iip))
@@ -1753,7 +1736,7 @@ private:
 
 			// shift u/v/minmax by (int)lod
 
-			if(TargetVec::hasAVX2)
+			if(hasAVX2)
 			{
 				vpsravd(xmm2, xmm2, xmm0);
 				vpsravd(xmm3, xmm3, xmm0);
@@ -3462,7 +3445,10 @@ private:
 		mip_offset *= wordsize;
 
 		AddressReg texIn = is64 ? _64_m_local__gd__tex : rbp;
-		RegExp lod_i = m_sel.lcm ? _rip_global_regexp(lod.i) : _rip_local_regexp(temp.lod.i);
+		auto lod_i = [this](int j) -> Address
+		{
+			return m_sel.lcm ? _rip_global(lod.i.u32[j]) : _rip_local(temp.lod.i.u32[j]);
+		};
 
 		if (m_sel.mmin && !m_sel.lcm)
 		{
@@ -3474,7 +3460,7 @@ private:
 			bool texInA3 = true;
 			for (int j = 0; j < 4; j++)
 			{
-				mov(a3.cvt32(), ptr[lod_i + offsetof(GSVector4i, u32[j])]);
+				mov(a3.cvt32(), lod_i(j));
 				mov(a3.cvt32(), ptr[texIn + a3*wordsize + mip_offset]);
 
 				for (int i = 0; i < pixels; i++)
@@ -3490,7 +3476,7 @@ private:
 
 			if (m_sel.mmin && m_sel.lcm)
 			{
-				mov(a3.cvt32(), ptr[lod_i + offsetof(GSVector4i, u32[0])]);
+				mov(a3.cvt32(), lod_i(0));
 				mov(a3.cvt32(), ptr[texIn + a3*wordsize + mip_offset]);
 				texInA3 = true;
 			}

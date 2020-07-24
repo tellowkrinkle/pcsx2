@@ -30,93 +30,26 @@
 
 #include "xbyak.h"
 
-// If your IDE autocomplete breaks with all the templating, uncomment this to unbreak it
-#define XBYAK_ONE_TRUE_TARGET     Xbyak::Targets::X86
-#define XBYAK_ONE_TRUE_TARGET_VEC Xbyak::Targets::AVX
-
 namespace Xbyak
 {
 
-	namespace Targets
+	namespace SSEVersion
 	{
-		struct SSE2
-		{
-			constexpr static bool hasSSE3  = false;
-			constexpr static bool hasSSE41 = false;
-			constexpr static bool hasAVX   = false;
-			constexpr static bool hasAVX2  = false;
+		enum SSEVersion {
+			AVX2  = 0x501,
+			AVX   = 0x500,
+			SSE41 = 0x401,
+			SSE3  = 0x301,
+			SSE2  = 0x200,
 		};
-		struct SSE3
-		{
-			constexpr static bool hasSSE3  = true;
-			constexpr static bool hasSSE41 = false;
-			constexpr static bool hasAVX   = false;
-			constexpr static bool hasAVX2  = false;
-		};
-		struct SSE41
-		{
-			constexpr static bool hasSSE3  = true;
-			constexpr static bool hasSSE41 = true;
-			constexpr static bool hasAVX   = false;
-			constexpr static bool hasAVX2  = false;
-		};
-		struct AVX
-		{
-			constexpr static bool hasSSE3  = true;
-			constexpr static bool hasSSE41 = true;
-			constexpr static bool hasAVX   = true;
-			constexpr static bool hasAVX2  = false;
-		};
-		struct AVX2
-		{
-			constexpr static bool hasSSE3  = true;
-			constexpr static bool hasSSE41 = true;
-			constexpr static bool hasAVX   = true;
-			constexpr static bool hasAVX2  = true;
-		};
-		struct X86
-		{
-			constexpr static bool is32 = true;
-			constexpr static bool is64 = false;
-			using AddressReg = Reg32;
-			using RipType = int;
-
-			template <typename T32, typename T64>
-			struct Choose3264 { using type = T32; };
-
-			template <typename T32, typename T64>
-			static T32 choose3264(T32 t32, T64 t64) { return t32; }
-		};
-#ifdef XBYAK64
-		struct X64
-		{
-			constexpr static bool is32 = false;
-			constexpr static bool is64 = true;
-			using AddressReg = Reg64;
-			using RipType = RegRip;
-
-			template <typename T32, typename T64>
-			struct Choose3264 { using type = T64; };
-
-			template <typename T32, typename T64>
-			static T64 choose3264(T32 t32, T64 t64) { return t64; }
-		};
-#endif
 	}
 
-#ifndef XBYAK_ONE_TRUE_TARGET
-	template <typename Target, typename TargetVec>
-#endif
 	class SmartCodeGenerator
 	{
-#ifdef XBYAK_ONE_TRUE_TARGET
-		using Target = XBYAK_ONE_TRUE_TARGET;
-		using TargetVec = XBYAK_ONE_TRUE_TARGET_VEC;
-#endif
 		/// Make sure the register is okay to use
 		void validateRegister(const Operand& op)
 		{
-			if (Target::is64)
+			if (is64)
 				return;
 			if (op.isREG() && (op.isExtIdx() || op.isExt8bit()))
 				throw Error(ERR_64_BIT_REG_IN_32);
@@ -130,19 +63,42 @@ namespace Xbyak
 
 		void require64()
 		{
-			if (!Target::is64)
+			if (!is64)
 				throw Error(ERR_64_INSTR_IN_32);
 		}
 		void requireAVX()
 		{
-			if (!TargetVec::hasAVX)
+			if (!hasAVX)
 				throw Error(ERR_AVX_INSTR_IN_SSE);
 		}
 	public:
-		using AddressReg = typename Target::AddressReg;
-
 		CodeGenerator& actual;
-		bool hasFMA;
+
+#if defined(_M_AMD64) || defined(_WIN64)
+		constexpr static bool is32 = false;
+		constexpr static bool is64 = true;
+		using AddressReg = Reg64;
+		using RipType = RegRip;
+
+		template <typename T32, typename T64>
+		struct Choose3264 { using type = T64; };
+
+		template <typename T32, typename T64>
+		static T64 choose3264(T32 t32, T64 t64) { return t64; }
+#else
+		constexpr static bool is32 = true;
+		constexpr static bool is64 = false;
+		using AddressReg = Reg32;
+		using RipType = int;
+
+		template <typename T32, typename T64>
+		struct Choose3264 { using type = T32; };
+
+		template <typename T32, typename T64>
+		static T32 choose3264(T32 t32, T64 t64) { return t32; }
+#endif
+
+		const bool hasSSE2, hasSSE3, hasSSE41, hasAVX, hasAVX2, hasFMA;
 
 		const Xmm xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10, xmm11, xmm12, xmm13, xmm14, xmm15;
 		const Ymm ymm0, ymm1, ymm2, ymm3, ymm4, ymm5, ymm6, ymm7, ymm8, ymm9, ymm10, ymm11, ymm12, ymm13, ymm14, ymm15;
@@ -151,11 +107,11 @@ namespace Xbyak
 		const Reg16       ax,  cx,  dx,  bx,  sp,  bp,  si,  di;
 		const Reg8        al,  cl,  dl,  bl,  ah,  ch,  dh,  bh;
 
-		constexpr static Target::RipType rip{};
+		constexpr static RipType rip{};
 		constexpr static AddressFrame ptr{0}, byte{8}, word{16}, dword{32}, qword{64}, xword{128}, yword{256}, zword{512};
 
-		SmartCodeGenerator(CodeGenerator* actual, bool hasFMA)
-			: actual(*actual), hasFMA(hasFMA)
+		SmartCodeGenerator(CodeGenerator* actual, SSEVersion::SSEVersion sse, bool hasFMA)
+			: actual(*actual), hasSSE2(sse >= SSEVersion::SSE2), hasSSE3(sse >= SSEVersion::SSE3), hasSSE41(sse >= SSEVersion::SSE41), hasAVX(sse >= SSEVersion::AVX), hasAVX2(sse >= SSEVersion::AVX2), hasFMA(hasFMA)
 			, xmm0(0), xmm1(1), xmm2(2), xmm3(3), xmm4(4), xmm5(5), xmm6(6), xmm7(7), xmm8(8), xmm9(9), xmm10(10), xmm11(11), xmm12(12), xmm13(13), xmm14(14), xmm15(15)
 			, ymm0(0), ymm1(1), ymm2(2), ymm3(3), ymm4(4), ymm5(5), ymm6(6), ymm7(7), ymm8(8), ymm9(9), ymm10(10), ymm11(11), ymm12(12), ymm13(13), ymm14(14), ymm15(15)
 			, rax(Operand::RAX), rcx(Operand::RCX), rdx(Operand::RDX), rbx(Operand::RBX), rsp(Operand::RSP), rbp(Operand::RBP), rsi(Operand::RSI), rdi(Operand::RDI), r8(8), r9(9), r10(10), r11(11), r12(12), r13(13), r14(14), r15(15)
@@ -173,25 +129,25 @@ namespace Xbyak
 	actual.name(__VA_ARGS__);
 
 #define ACTUAL_FORWARD_SSE(name, ...) \
-	if (TargetVec::hasAVX) \
+	if (hasAVX) \
 		actual.v##name(__VA_ARGS__); \
 	else \
 		actual.name(__VA_ARGS__); \
 
 #define ACTUAL_FORWARD_SSEONLY(name, ...) \
-	if (TargetVec::hasAVX) \
+	if (hasAVX) \
 		throw Error(ERR_SSE_INSTR_IN_AVX); \
 	else \
 		actual.name(__VA_ARGS__); \
 
 #define ACTUAL_FORWARD_AVX(name, ...) \
-	if (TargetVec::hasAVX) \
+	if (hasAVX) \
 		actual.name(__VA_ARGS__); \
 	else \
 		throw Error(ERR_AVX_INSTR_IN_SSE); \
 
 #define ACTUAL_FORWARD_AVX2(name, ...) \
-	if (TargetVec::hasAVX2) \
+	if (hasAVX2) \
 		actual.name(__VA_ARGS__); \
 	else \
 		throw Error(ERR_AVX_INSTR_IN_SSE); \
@@ -245,7 +201,7 @@ namespace Xbyak
 	{ \
 		validateRegister(a); \
 		validateRegister(b); \
-		if (TargetVec::hasAVX) \
+		if (hasAVX) \
 			actual.v##name(a, b, Xmm(0)); \
 		else \
 			actual.name(a, b); \
