@@ -46,8 +46,12 @@
 // If m_sel.mmin, m_local.gd->tex, else m_local.gd->tex[0]
 #define _64_m_local__gd__tex r14
 
-#define _rip_local(field) ((Target::is32 || m_rip) ? (RegExp)(rip + (size_t)&m_local.field) : (RegExp)(_m_local + offsetof(GSScanlineLocalData, field)))
-#define _rip_global(field) ((Target::is32 || m_rip) ? (RegExp)(rip + (size_t)&m_local.gd->field) : (RegExp)(_m_local__gd + offsetof(GSScanlineGlobalData, field)))
+// Careful with rip-based regexps, you can only add constants to them, not registers
+#define _rip_local_regexp(field) ((Target::is32 || m_rip) ? (RegExp)(rip + (size_t)&m_local.field) : (RegExp)(_m_local + offsetof(GSScanlineLocalData, field)))
+#define _rip_global_regexp(field) ((Target::is32 || m_rip) ? (RegExp)(rip + (size_t)&m_local.gd->field) : (RegExp)(_m_local__gd + offsetof(GSScanlineGlobalData, field)))
+#define _rip_local(field) ptr[_rip_local_regexp(field)]
+#define _rip_global(field) ptr[_rip_global_regexp(field)]
+
 /// Executes the given code only if targeting 32-bit
 #define ONLY32(code) if (is32) (code)
 /// Executes the given code only if targeting 64-bit
@@ -56,7 +60,7 @@
 /// Follow up with an ONLY32 save back to src32
 #define COMBINE(operation, dst64, temporary, src32) \
 	if (is32) \
-		operation(temporary, ptr[src32]); \
+		operation(temporary, src32); \
 	else \
 		operation(dst64, temporary)
 /// On x64, does a 3-operand move, on x86 uses a two-operand SSE-style
@@ -128,7 +132,7 @@ class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator<Target, Ta
 
 	/// Note: a2 is only available on x86-64
 	AddressReg a0, a1, a2, a3, t0, t1;
-	LocalAddr m_test, _m_local, _m_local__gd, _m_local__gd__vm, _m_local__gd__clut;
+	LocalAddr m_test, _m_local, _m_local__gd, _m_local__gd__vm;
 	/// All but _test are only available on x86-64
 	Xmm _rb, _ga, _fm, _zm, _fd, _z, _f, _s, _t, _q, _f_rb, _f_ga, _test;
 
@@ -419,32 +423,41 @@ private:
 		// a1 = skip
 		// rbx = left
 
-
-		// GSVector2i* fza_base = &m_local.gd->fzbr[top];
-
 		if (is64)
 		{
-			lea(t1, ptr[_rip_global(fzbr) + a2 * 8]);
+			// GSVector2i* fza_base = &m_local.gd->fzbr[top];
+			mov(rax, _rip_global(fzbr));
+			lea(t1, ptr[rax + a2 * 8]);
+
+			// GSVector2i* fza_offset = &m_local.gd->fzbc[left >> 2];
+			mov(rax, _rip_global(fzbc));
+			lea(t0, ptr[rax + rbx * 2]);
 		}
 		else
 		{
+			// GSVector2i* fza_base = &m_local.gd->fzbr[top];
 			mov(rax, ptr[rsp + _top]);
 			lea(t1, ptr[rax * 8 + (size_t)&m_local.gd->fzbr]);
+
+			// GSVector2i* fza_offset = &m_local.gd->fzbc[left >> 2];
+			lea(t0, ptr[_rip_global_regexp(fzbc) + rbx * 2]);
 		}
-
-		// GSVector2i* fza_offset = &m_local.gd->fzbc[left >> 2];
-
-		lea(t0, ptr[_rip_global(fzbc) + rbx * 2]);
 
 		if(m_sel.prim != GS_SPRITE_CLASS && (m_sel.fwrite && m_sel.fge || m_sel.zb) || m_sel.fb && (m_sel.edge || m_sel.tfx != TFX_NONE || m_sel.iip))
 		{
 			// a1 = &m_local.d[skip] // note a1 was (skip << 4)
 
-			lea(a1, ptr[_rip_local(d) + a1 * 8]);
-
-			// a3 starts on the stack in x86, we want it in a register
-			if (Target::is32)
+			if (is64)
+			{
+				lea(rax, _rip_local(d));
+				lea(a1, ptr[rax + a1 * 8]);
+			}
+			else
+			{
+				lea(a1, ptr[(size_t)m_local.d + a1 * 8]);
+				// a3 starts on the stack in x86, we want it in a register
 				mov(a3, ptr[rsp + _v]);
+			}
 		}
 
 		Xmm f = is64 ? _f : xmm1;
@@ -492,11 +505,11 @@ private:
 		{
 			if(m_sel.ztest)
 			{
-				movdqa(is64 ? _z : xmm0, ptr[_rip_local(p.z)]);
+				movdqa(is64 ? _z : xmm0, _rip_local(p.z));
 			}
 
 			if(m_sel.fwrite && m_sel.fge && is64)
-				movdqa(_f, ptr[_rip_local(p.f)]);
+				movdqa(_f, _rip_local(p.f));
 		}
 
 		Xmm xt0 = is64 ? xmm0 : xmm4, xt1 = is64 ? xmm1 : xmm3;
@@ -516,7 +529,7 @@ private:
 				pshufd(xt1, xt1, _MM_SHUFFLE(3, 3, 3, 3));
 				psrlw(xt1, 9);
 
-				movdqa(ptr[_rip_local(temp.cov)], xt1);
+				movdqa(_rip_local(temp.cov), xt1);
 //	#ifdef _WIN64
 //				vmovdqa(_rip_local(temp.cov), xmm1);
 //	#else
@@ -620,8 +633,8 @@ private:
 				}
 				else if (is64 || m_sel.tfx == TFX_NONE)
 				{
-					movdqa(f_rb, ptr[_rip_local(c.rb)]);
-					movdqa(f_ga, ptr[_rip_local(c.ga)]);
+					movdqa(f_rb, _rip_local(c.rb));
+					movdqa(f_ga, _rip_local(c.ga));
 				}
 
 				ONLY64(movdqa(_rb, _f_rb));
@@ -638,13 +651,13 @@ private:
 				mov(ptr[rsp + _top], a2);
 			}
 
-			mov(_64_m_local__gd__vm, ptr[_rip_global(vm)]);
+			mov(_64_m_local__gd__vm, _rip_global(vm));
 			if(m_sel.fb && m_sel.tfx != TFX_NONE)
 			{
 				if (m_sel.mmin)
-					lea(_64_m_local__gd__tex, ptr[_rip_global(tex)]);
+					lea(_64_m_local__gd__tex, _rip_global(tex));
 				else
-					mov(_64_m_local__gd__tex, ptr[_rip_global(tex)]);
+					mov(_64_m_local__gd__tex, _rip_global(tex));
 			}
 		}
 	}
@@ -670,26 +683,26 @@ private:
 
 			if(m_sel.zb)
 			{
-				ONLY32(movaps(z, ptr[_rip_local(temp.zo)]));
-				addps(z, ptr[_rip_local(d4.z)]);
-				ONLY32(movaps(ptr[_rip_local(temp.zo)], z));
-				ONLY32(addps(z, ptr[_rip_local(temp.z)]));
+				ONLY32(movaps(z, _rip_local(temp.zo)));
+				addps(z, _rip_local(d4.z));
+				ONLY32(movaps(_rip_local(temp.zo), z));
+				ONLY32(addps(z, _rip_local(temp.z)));
 			}
 
 			// f = f.add16(m_local.d4.f);
 
 			if(m_sel.fwrite && m_sel.fge)
 			{
-				ONLY32(movdqa(f, ptr[_rip_local(temp.f)]));
-				paddw(f, ptr[_rip_local(d4.f)]);
-				ONLY32(movdqa(ptr[_rip_local(temp.f)], f));
+				ONLY32(movdqa(f, _rip_local(temp.f)));
+				paddw(f, _rip_local(d4.f));
+				ONLY32(movdqa(_rip_local(temp.f), f));
 			}
 		}
 		else
 		{
 			if(m_sel.ztest)
 			{
-				ONLY32(movdqa(z, ptr[_rip_local(p.z)]));
+				ONLY32(movdqa(z, _rip_local(p.z)));
 			}
 		}
 
@@ -705,23 +718,23 @@ private:
 					// s += stq.xxxx();
 					// if(!sprite) t += st.yyyy();
 
-					movdqa(stq, ptr[_rip_local(d4.stq)]);
+					movdqa(stq, _rip_local(d4.stq));
 
 					Xmm s = is64 ? xmm1 : xmm2;
 					pshufd(s, stq, _MM_SHUFFLE(0, 0, 0, 0));
 					COMBINE(paddd, _s, s, _rip_local(temp.s));
-					ONLY32(movdqa(ptr[_rip_local(temp.s)], s));
+					ONLY32(movdqa(_rip_local(temp.s), s));
 
 					Xmm t = is64 ? xmm1 : xmm3;
 					if(m_sel.prim != GS_SPRITE_CLASS || m_sel.mmin)
 					{
 						pshufd(t, stq, _MM_SHUFFLE(1, 1, 1, 1));
 						COMBINE(paddd, _t, t, _rip_local(temp.t));
-						ONLY32(movdqa(ptr[_rip_local(temp.t)], t));
+						ONLY32(movdqa(_rip_local(temp.t), t));
 					}
 					else
 					{
-						ONLY32(movdqa(t, ptr[_rip_local(temp.t)]));
+						ONLY32(movdqa(t, _rip_local(temp.t)));
 					}
 				}
 				else
@@ -733,7 +746,7 @@ private:
 					// t += stq.yyyy();
 					// q += stq.zzzz();
 
-					movaps(stq, ptr[_rip_local(d4.stq)]);
+					movaps(stq, _rip_local(d4.stq));
 
 					vshufps(s, stq, stq, _MM_SHUFFLE(0, 0, 0, 0));
 					vshufps(t, stq, stq, _MM_SHUFFLE(1, 1, 1, 1));
@@ -743,9 +756,9 @@ private:
 					COMBINE(addps, _t, t, _rip_local(temp.t));
 					COMBINE(addps, _q, q, _rip_local(temp.q));
 
-					ONLY32(movaps(ptr[_rip_local(temp.s)], s));
-					ONLY32(movaps(ptr[_rip_local(temp.t)], t));
-					ONLY32(movaps(ptr[_rip_local(temp.q)], q));
+					ONLY32(movaps(_rip_local(temp.s), s));
+					ONLY32(movaps(_rip_local(temp.t), t));
+					ONLY32(movaps(_rip_local(temp.q), q));
 				}
 			}
 
@@ -760,7 +773,7 @@ private:
 					// rb = rb.add16(c.xxxx());
 					// ga = ga.add16(c.yyyy());
 
-					movdqa(c, ptr[_rip_local(d4.c)]);
+					movdqa(c, _rip_local(d4.c));
 
 					pshufd(rb, c, _MM_SHUFFLE(0, 0, 0, 0));
 					pshufd(ga, c, _MM_SHUFFLE(1, 1, 1, 1));
@@ -774,8 +787,8 @@ private:
 					pmaxsw(is64 ? _f_rb : rb, c);
 					pmaxsw(is64 ? _f_ga : ga, c);
 
-					ONLY32(movdqa(ptr[_rip_local(temp.rb)], rb));
-					ONLY32(movdqa(ptr[_rip_local(temp.ga)], ga));
+					ONLY32(movdqa(_rip_local(temp.rb), rb));
+					ONLY32(movdqa(_rip_local(temp.ga), ga));
 				}
 				else
 				{
@@ -861,7 +874,7 @@ private:
 			if(m_sel.zwrite)
 			{
 //	#ifdef _WIN64
-				movdqa(ptr[_rip_local(temp.zs)], xmm0);
+				movdqa(_rip_local(temp.zs), xmm0);
 //	#else
 //				movdqa(ptr[rsp + _rz_zs], ztmp);
 //	#endif
@@ -879,7 +892,7 @@ private:
 			if(m_sel.zwrite && m_sel.zpsm < 2)
 			{
 //	#ifdef _WIN64
-				movdqa(ptr[_rip_local(temp.zd)], temp2);
+				movdqa(_rip_local(temp.zd), temp2);
 //	#else
 //				movdqa(ptr[rsp + _rz_zd], xmm1);
 //	#endif
@@ -1000,7 +1013,7 @@ private:
 			pshuflw(xtm4, xtm2, _MM_SHUFFLE(2, 2, 0, 0));
 			pshufhw(xtm4, xtm4, _MM_SHUFFLE(2, 2, 0, 0));
 			psrlw(xtm4, 12);
-			ONLY32(movdqa(ptr[_rip_local(temp.uf)], xtm4));
+			ONLY32(movdqa(_rip_local(temp.uf), xtm4));
 
 			if(m_sel.prim != GS_SPRITE_CLASS)
 			{
@@ -1009,7 +1022,7 @@ private:
 				pshuflw(vf, xtm3, _MM_SHUFFLE(2, 2, 0, 0));
 				pshufhw(vf, vf, _MM_SHUFFLE(2, 2, 0, 0));
 				psrlw(vf, 12);
-				ONLY32(movdqa(ptr[_rip_local(temp.vf)], vf));
+				ONLY32(movdqa(_rip_local(temp.vf), vf));
 			}
 		}
 
@@ -1183,7 +1196,7 @@ private:
 			// ga00 = ga00.lerp16_4(ga10, vf);
 
 			Xmm vf = is64 ? xtm7 : xtm6;
-			ONLY32(movdqa(vf, ptr[_rip_local(temp.vf)]));
+			ONLY32(movdqa(vf, _rip_local(temp.vf)));
 
 			lerp16_4(xtm5, xtm0, vf);
 			lerp16_4(xtm6, xtm1, vf);
@@ -1230,7 +1243,7 @@ private:
 			{
 				if(region)
 				{
-					pmaxsw(uv, ptr[_rip_global(t.min)]);
+					pmaxsw(uv, _rip_global(t.min));
 				}
 				else
 				{
@@ -1238,23 +1251,23 @@ private:
 					pmaxsw(uv, tmp);
 				}
 
-				pminsw(uv, ptr[_rip_global(t.max)]);
+				pminsw(uv, _rip_global(t.max));
 			}
 			else
 			{
-				pand(uv, ptr[_rip_global(t.min)]);
+				pand(uv, _rip_global(t.min));
 
 				if(region)
 				{
-					por(uv, ptr[_rip_global(t.max)]);
+					por(uv, _rip_global(t.max));
 				}
 			}
 		}
 		else
 		{
-			movdqa(min, ptr[_rip_global(t.min)]);
-			movdqa(max, ptr[_rip_global(t.max)]);
-			movdqa(mask, ptr[_rip_global(t.mask)]);
+			movdqa(min, _rip_global(t.min));
+			movdqa(max, _rip_global(t.max));
+			movdqa(mask, _rip_global(t.mask));
 
 			// GSVector4i repeat = (t & m_local.gd->t.min) | m_local.gd->t.max;
 			vpand(tmp, uv, min);
@@ -1288,7 +1301,7 @@ private:
 			{
 				if(region)
 				{
-					movdqa(min, ptr[_rip_global(t.min)]);
+					movdqa(min, _rip_global(t.min));
 					pmaxsw(uv0, min);
 					pmaxsw(uv1, min);
 				}
@@ -1299,19 +1312,19 @@ private:
 					pmaxsw(uv1, tmp);
 				}
 
-				movdqa(max, ptr[_rip_global(t.max)]);
+				movdqa(max, _rip_global(t.max));
 				pminsw(uv0, max);
 				pminsw(uv1, max);
 			}
 			else
 			{
-				movdqa(min, ptr[_rip_global(t.min)]);
+				movdqa(min, _rip_global(t.min));
 				pand(uv0, min);
 				pand(uv1, min);
 
 				if(region)
 				{
-					movdqa(max, ptr[_rip_global(t.max)]);
+					movdqa(max, _rip_global(t.max));
 					por(uv0, max);
 					por(uv1, max);
 				}
@@ -1319,9 +1332,9 @@ private:
 		}
 		else
 		{
-			movdqa(min, ptr[_rip_global(t.min)]);
-			movdqa(max, ptr[_rip_global(t.max)]);
-			movdqa(mask, ptr[_rip_global(t.mask)]);
+			movdqa(min, _rip_global(t.min));
+			movdqa(max, _rip_global(t.max));
+			movdqa(mask, _rip_global(t.mask));
 
 			for (const Xmm& uv : {uv0, uv1})
 			{
@@ -2182,7 +2195,7 @@ private:
 		const Xmm& f_ga  = is64 ? _f_ga : xmm4;
 		const Xmm& tmpga = is64 ? xmm1  : f_ga;
 		const Xmm& tmp   = is64 ? xmm0  : xmm3;
-		Address _32_gaptr = ptr[m_sel.iip ? _rip_local(temp.ga) : _rip_local(c.ga)];
+		Address _32_gaptr = m_sel.iip ? _rip_local(temp.ga) : _rip_local(c.ga);
 
 		switch(m_sel.tfx)
 		{
@@ -2288,7 +2301,7 @@ private:
 				if(m_sel.edge)
 				{
 //#ifdef _WIN64
-					movdqa(xmm0, ptr[_rip_local(temp.cov)]);
+					movdqa(xmm0, _rip_local(temp.cov));
 //#else
 //					movdqa(xmm0, ptr[rsp + _rz_cov]);
 //#endif
@@ -2313,7 +2326,7 @@ private:
 				if(m_sel.edge)
 				{
 //#ifdef _WIN64
-					movdqa(xmm1, ptr[_rip_local(temp.cov)]);
+					movdqa(xmm1, _rip_local(temp.cov));
 //#else
 //					vmovdqa(xmm1, ptr[rsp + _rz_cov]);
 //#endif
@@ -2340,12 +2353,12 @@ private:
 
 		if(m_sel.fwrite)
 		{
-			movdqa(fm, ptr[_rip_global(fm)]);
+			movdqa(fm, _rip_global(fm));
 		}
 
 		if(m_sel.zwrite)
 		{
-			movdqa(zm, ptr[_rip_global(zm)]);
+			movdqa(zm, _rip_global(zm));
 		}
 	}
 
@@ -2369,13 +2382,13 @@ private:
 			case ATST_LEQUAL:
 				// t = (ga >> 16) > m_local.gd->aref;
 				vpsrld(xmm1, ga, 16);
-				pcmpgtd(xmm1, ptr[_rip_global(aref)]);
+				pcmpgtd(xmm1, _rip_global(aref));
 				break;
 
 			case ATST_EQUAL:
 				// t = (ga >> 16) != m_local.gd->aref;
 				vpsrld(xmm1, ga, 16);
-				pcmpeqd(xmm1, ptr[_rip_global(aref)]);
+				pcmpeqd(xmm1, _rip_global(aref));
 				pcmpeqd(xmm0, xmm0);
 				pxor(xmm1, xmm0);
 				break;
@@ -2384,14 +2397,14 @@ private:
 			case ATST_GREATER:
 				// t = (ga >> 16) < m_local.gd->aref;
 				vpsrld(xmm0, ga, 16);
-				movdqa(xmm1, ptr[_rip_global(aref)]);
+				movdqa(xmm1, _rip_global(aref));
 				pcmpgtd(xmm1, xmm0);
 				break;
 
 			case ATST_NOTEQUAL:
 				// t = (ga >> 16) == m_local.gd->aref;
 				vpsrld(xmm1, ga, 16);
-				pcmpeqd(xmm1, ptr[_rip_global(aref)]);
+				pcmpeqd(xmm1, _rip_global(aref));
 				break;
 		}
 
@@ -2444,7 +2457,7 @@ private:
 			if (is64)
 				modulate16(rb, _f_rb, 1);
 			else
-				modulate16(rb, ptr[m_sel.iip ? _rip_local(temp.rb) : _rip_local(c.rb)], 1);
+				modulate16(rb, m_sel.iip ? _rip_local(temp.rb) : _rip_local(c.rb), 1);
 		};
 
 		switch(m_sel.tfx)
@@ -2472,7 +2485,7 @@ private:
 				{
 					// GSVector4i ga = iip ? gaf : m_local.c.ga;
 
-					ONLY32(movdqa(f_ga, ptr[m_sel.iip ? _rip_local(temp.ga) : _rip_local(c.ga)]));
+					ONLY32(movdqa(f_ga, m_sel.iip ? _rip_local(temp.ga) : _rip_local(c.ga)));
 				}
 
 				// gat = gat.modulate16<1>(ga).add16(af).clamp8().mix16(gat);
@@ -2532,13 +2545,13 @@ private:
 		// rb = m_local.gd->frb.lerp16<0>(rb, f);
 		// ga = m_local.gd->fga.lerp16<0>(ga, f).mix16(ga);
 
-		ONLY32(movdqa(f, ptr[m_sel.prim != GS_SPRITE_CLASS ? _rip_local(temp.f) : _rip_local(p.f)]));
+		ONLY32(movdqa(f, m_sel.prim != GS_SPRITE_CLASS ? _rip_local(temp.f) : _rip_local(p.f)));
 		movdqa(xmm1, ga);
 
-		movdqa(tmp, ptr[_rip_global(frb)]);
+		movdqa(tmp, _rip_global(frb));
 		lerp16(rb, tmp, f, 0);
 
-		movdqa(tmp, ptr[_rip_global(fga)]);
+		movdqa(tmp, _rip_global(fga));
 		lerp16(ga, tmp, f, 0);
 
 		mix16(ga, xmm1, f);
@@ -2675,19 +2688,19 @@ private:
 
 		if (m_sel.prim != GS_SPRITE_CLASS)
 //#ifdef _WIN64
-			movdqa(xmm1, ptr[_rip_local(temp.zs)]);
+			movdqa(xmm1, _rip_local(temp.zs));
 //#else
 //			movdqa(xmm1, ptr[rsp + _rz_zs]);
 //#endif
 		else
-			movdqa(xmm1, ptr[_rip_local(p.z)]);
+			movdqa(xmm1, _rip_local(p.z));
 
 		if(m_sel.ztest && m_sel.zpsm < 2)
 		{
 			// zs = zs.blend8(zd, zm);
 
 //#ifdef _WIN64
-			vpblendvb(xmm1, xmm1, ptr[_rip_local(temp.zd)], zm);
+			vpblendvb(xmm1, xmm1, _rip_local(temp.zd), zm);
 //#else
 //			pblendvb(xmm1, ptr[rsp + _rz_zd], _zm);
 //#endif
@@ -2820,7 +2833,7 @@ private:
 						psllw(tmp1, 7);
 						break;
 					case 2:
-						movdqa(tmp1, ptr[_rip_global(afix)]);
+						movdqa(tmp1, _rip_global(afix));
 						break;
 				}
 
@@ -2965,7 +2978,7 @@ private:
 			// rb = rb.add16(m_global.dimx[0 + y]);
 			// ga = ga.add16(m_global.dimx[1 + y]);
 
-			add(rax, ptr[_rip_global(dimx)]);
+			add(rax, _rip_global(dimx));
 
 			paddw(tmp1, ptr[rax + sizeof(GSVector4i) * 0]);
 			paddw(tmp2, ptr[rax + sizeof(GSVector4i) * 1]);
@@ -3188,7 +3201,7 @@ private:
 		mip_offset *= wordsize;
 
 		AddressReg texIn = is64 ? _64_m_local__gd__tex : rbp;
-		RegExp lod_i = m_sel.lcm ? _rip_global(lod.i) : _rip_local(temp.lod.i);
+		RegExp lod_i = m_sel.lcm ? _rip_global_regexp(lod.i) : _rip_local_regexp(temp.lod.i);
 
 		if (m_sel.mmin && !m_sel.lcm)
 		{
