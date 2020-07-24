@@ -132,10 +132,10 @@ class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator<Target, Ta
 
 	/// Note: a2 is only available on x86-64
 	const AddressReg a0, a1, a2, a3, t0, t1;
-	const LocalAddr m_test, _m_local, _m_local__gd, _m_local__gd__vm;
+	const LocalAddr _m_test, _m_local, _m_local__gd, _m_local__gd__vm;
 	/// Available on both x86 and x64, not always valid
 	const Xmm _rb, _ga, _fm, _zm, _fd, _test;
-	/// Always valid, x64 only
+	/// Always valid if needed, x64 only
 	const Xmm _z, _f, _s, _t, _q, _f_rb, _f_ga;
 
 	/// Marks a register as unavailable in x86-32 by remapping it to a high register
@@ -164,7 +164,7 @@ public:
 		, a2(is64 ? rdx : r8),  a3(is64 ? rcx : rbx)
 		, t0(is64 ? r8  : rdi), t1(is64 ? r9  : rsi)
 #endif
-		, m_test(chooseLocal(g_const->m_test_128b[0], _64_m_test))
+		, _m_test(chooseLocal(g_const->m_test_128b[0], _64_m_test))
 		, _m_local(chooseLocal(&m_local, _64_m_local))
 		, _m_local__gd(chooseLocal(m_local.gd, _64_m_local__gd))
 		, _m_local__gd__vm(chooseLocal(m_local.gd->vm, _64_m_local__gd__vm))
@@ -353,6 +353,12 @@ private:
 // MARK: - Main Implementation
 	void Generate()
 	{
+		bool need_tex = m_sel.fb && m_sel.tfx != TFX_NONE;
+		bool need_clut = need_tex && m_sel.tlu;
+		m_rip = (size_t)getCurr() < 0x80000000;
+		m_rip &= (size_t)&m_local < 0x80000000;
+		m_rip &= (size_t)&m_local.gd < 0x80000000;
+
 		if (is32)
 		{
 			push(rbx);
@@ -363,12 +369,14 @@ private:
 		else
 		{
 			push(rbp);
-#ifdef _WIN64
+#ifdef _WIN32
 			push(rbx);
 			push(rsi);
 			push(rdi);
 			push(r12);
 			push(r13);
+			push(r14);
+			push(r15);
 
 			sub(rsp, _64_win_stack_size);
 
@@ -378,7 +386,281 @@ private:
 			}
 #else
 			mov(ptr[rsp + _64_rz_rbx], rbx);
+			if (!m_rip)
+			{
+				mov(ptr[rsp + _64_rz_r12], r12);
+				mov(ptr[rsp + _64_rz_r13], r13);
+			}
+			mov(ptr[rsp + _64_rz_r14], r14);
+			mov(ptr[rsp + _64_rz_r15], r15);
 #endif
+			mov(_64_m_test, (size_t)g_const->m_test_128b[0]);
+			if (!m_rip)
+			{
+				mov(_64_m_local, (size_t)&m_local);
+				mov(_64_m_local__gd, _rip_local(gd));
+			}
+
+			if(need_clut)
+				mov(_64_m_local__gd__clut, _rip_global(clut));
+		}
+
+		Init();
+
+		if(!m_sel.edge)
+		{
+			align(16);
+		}
+
+	L("loop");
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// xmm0 = z/zi      |
+		// xmm2 = s/u (tme) | free
+		// xmm3 = t/v (tme) | free
+		// xmm4 = q (tme)   | free
+		// xmm5 = rb (!tme) | free
+		// xmm6 = ga (!tme) | free
+		// xmm7 = test      | free
+		// xmm15 =          | test
+
+		bool tme = m_sel.tfx != TFX_NONE;
+		
+		TestZ(tme ? xmm5 : xmm2, tme ? xmm6 : xmm3);
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// ebp = za
+		// xmm2 = s/u (tme) | free
+		// xmm3 = t/v (tme) | free
+		// xmm4 = q (tme)   | free
+		// xmm5 = rb (!tme) | free
+		// xmm6 = ga (!tme) | free
+		// xmm7 = test      | free
+		// xmm15 =          | test
+
+		// FIXME: Currently x86 only
+		if(m_sel.mmin && is32)
+		{
+			SampleTextureLOD();
+		}
+		else
+		{
+			SampleTexture();
+		}
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// ebp = za
+		// xmm2 = free | rb
+		// xmm3 = free | ga
+		// xmm4 = free | free
+		// xmm5 = rb   | free
+		// xmm6 = ga   | free
+		// xmm7 = test | free
+		// xmm15 =     | test
+
+		AlphaTFX();
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// ebp = za
+		// xmm2 = gaf (TFX_HIGHLIGHT || TFX_HIGHLIGHT2 && !tcc) | rb
+		// xmm3 = free | ga
+		// xmm4 = free | free
+		// xmm5 = rb   | free
+		// xmm6 = ga   | free
+		// xmm7 = test | free
+		// xmm15 =     | test
+
+		ReadMask();
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// ebp = za
+		// xmm2 = gaf (TFX_HIGHLIGHT || TFX_HIGHLIGHT2 && !tcc) | rb
+		// xmm3 = fm   | ga
+		// xmm4 = zm   | fm
+		// xmm5 = rb   | zm
+		// xmm6 = ga   | free
+		// xmm7 = test | free
+		// xmm15 =     | test
+
+		TestAlpha();
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// ebp = za
+		// xmm2 = gaf (TFX_HIGHLIGHT || TFX_HIGHLIGHT2 && !tcc) | rb
+		// xmm3 = fm   | ga
+		// xmm4 = zm   | fm
+		// xmm5 = rb   | zm
+		// xmm6 = ga   | free
+		// xmm7 = test | free
+		// xmm15 =     | test
+
+		ColorTFX();
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// ebp = za
+		// xmm2 = free | rb
+		// xmm3 = fm   | ga
+		// xmm4 = zm   | fm
+		// xmm5 = rb   | zm
+		// xmm6 = ga   | free
+		// xmm7 = test | free
+		// xmm15 =     | test
+
+		Fog();
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// ebp = za
+		// xmm2 = free | rb
+		// xmm3 = fm   | ga
+		// xmm4 = zm   | fm
+		// xmm5 = rb   | zm
+		// xmm6 = ga   | free
+		// xmm7 = test | free
+		// xmm15 =     | test
+
+		ReadFrame();
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// ebp = za
+		// ebx = fa
+		// xmm2 = fd   | rb
+		// xmm3 = fm   | ga
+		// xmm4 = zm   | fm
+		// xmm5 = rb   | zm
+		// xmm6 = ga   | fd
+		// xmm7 = test | free
+		// xmm15 =     | test
+
+		TestDestAlpha();
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// ebp = za
+		// ebx = fa
+		// xmm2 = fd   | rb
+		// xmm3 = fm   | ga
+		// xmm4 = zm   | fm
+		// xmm5 = rb   | zm
+		// xmm6 = ga   | fd
+		// xmm7 = test | free
+		// xmm15 =     | test
+
+		WriteMask();
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// edx = fzm
+		// ebp = za
+		// ebx = fa
+		// xmm2 = fd   | rb
+		// xmm3 = fm   | ga
+		// xmm4 = zm   | fm
+		// xmm5 = rb   | zm
+		// xmm6 = ga   | fd
+
+		WriteZBuf();
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// edx = fzm
+		// ebx = fa
+		// xmm2 = fd   | rb
+		// xmm3 = fm   | ga
+		// xmm4 = free | fm
+		// xmm5 = rb   | free
+		// xmm6 = ga   | fd
+
+		AlphaBlend();
+
+		// a0 = steps
+		// t1 = fza_base
+		// t0 = fza_offset
+		// edx = fzm
+		// ebx = fa
+		// xmm2 = fd   | rb
+		// xmm3 = fm   | ga
+		// xmm4 = free | fm
+		// xmm5 = rb   | free
+		// xmm6 = ga   | fd
+
+		WriteFrame();
+
+	L("step");
+
+		// if(steps <= 0) break;
+
+		if (!m_sel.edge)
+		{
+			test(a0.cvt32(), a0.cvt32());
+
+			jle("exit", CodeGenerator::T_NEAR);
+
+			Step();
+
+			jmp("loop", CodeGenerator::T_NEAR);
+		}
+
+	L("exit");
+
+
+
+		if (is32)
+		{
+			pop(ebp);
+			pop(edi);
+			pop(esi);
+			pop(ebx);
+
+			ret(8);
+		}
+		else
+		{
+#ifdef _WIN32
+			for (int i = 0; i < 10; i++)
+			{
+				movdqa(ptr[rsp + _64_win_xmm_start + 16*i], Xmm(i+6));
+			}
+			add(rsp, _64_win_stack_size);
+
+			pop(r15);
+			pop(r14);
+			pop(r13);
+			pop(r12);
+			pop(rdi);
+			pop(rsi);
+			pop(rbx);
+#else
+			mov(rbx, ptr[rsp + _64_rz_rbx]);
+			if (!m_rip)
+			{
+				mov(r12, ptr[rsp + _64_rz_r12]);
+				mov(r13, ptr[rsp + _64_rz_r13]);
+			}
+			mov(r14, ptr[rsp + _64_rz_r14]);
+			mov(r15, ptr[rsp + _64_rz_r15]);
+#endif
+			pop(rbp);
 		}
 	}
 
@@ -404,7 +686,7 @@ private:
 
 			shl(a1.cvt32(), 4); // * sizeof(m_test[0])
 
-			movdqa(_test, ptr[a1 + m_test]);
+			movdqa(_test, ptr[a1 + _m_test]);
 
 			mov(eax, a0.cvt32());
 			sar(eax, 31); // GH: 31 to extract the sign of the register
@@ -412,7 +694,7 @@ private:
 			shl(eax, 4); // * sizeof(m_test[0])
 			ONLY64(cdqe());
 
-			por(_test, ptr[rax + (m_test + 7 * 16)]);
+			por(_test, ptr[rax + (_m_test + 7 * 16)]);
 		}
 		else
 		{
@@ -462,43 +744,42 @@ private:
 			}
 		}
 
-		Xmm f = is64 ? _f : xmm1;
+		const Xmm& f = is64 ? _f : xmm1;
+		const Xmm& z = is64 ? _z : xmm0;
 
 		if(m_sel.prim != GS_SPRITE_CLASS)
 		{
 			if(m_sel.fwrite && m_sel.fge || m_sel.zb)
 			{
-				movaps(xmm0, ptr[a3 + offsetof(GSVertexSW, p)]); // v.p
+				movaps(z, ptr[a3 + offsetof(GSVertexSW, p)]); // v.p
 
 				if(m_sel.fwrite && m_sel.fge)
 				{
 					// f = GSVector4i(vp).zzzzh().zzzz().add16(m_local.d[skip].f);
 
-					cvttps2dq(f, xmm0);
+					cvttps2dq(f, z);
 					pshufhw(f, f, _MM_SHUFFLE(2, 2, 2, 2));
 					pshufd(f, f, _MM_SHUFFLE(2, 2, 2, 2));
 					paddw(f, ptr[a1 + offsetof(GSScanlineLocalData::skip, f)]);
 
-					if (Target::is32) // _f is shared on x86
+					if (is32) // _f is shared on x86
 						movdqa(ptr[&m_local.temp.f], f);
 				}
 
 				if(m_sel.zb)
 				{
 					// z = vp.zzzz() + m_local.d[skip].z;
-					if (Target::is64)
+					shufps(z, z, _MM_SHUFFLE(2, 2, 2, 2));
+					ONLY32(movaps(ptr[&m_local.temp.z], z));
+					if (is64)
 					{
-						// TODO: x64 non-avx
-						vshufps(_z, xmm0, xmm0, _MM_SHUFFLE(2, 2, 2, 2));
-						addps(_z, ptr[a1]);
+						addps(z, ptr[a1 + offsetof(GSScanlineLocalData::skip, z)]);
 					}
 					else
 					{
-						shufps(xmm0, xmm0, _MM_SHUFFLE(2, 2, 2, 2));
-						movaps(ptr[&m_local.temp.z], xmm0);
-						movaps(xmm2, ptr[edx + offsetof(GSScanlineLocalData::skip, z)]);
+						movaps(xmm2, ptr[a1 + offsetof(GSScanlineLocalData::skip, z)]);
 						movaps(ptr[&m_local.temp.zo], xmm2);
-						addps(xmm0, xmm2);
+						addps(z, xmm2);
 					}
 				}
 			}
@@ -507,35 +788,35 @@ private:
 		{
 			if(m_sel.ztest)
 			{
-				movdqa(is64 ? _z : xmm0, _rip_local(p.z));
+				movdqa(z, _rip_local(p.z));
 			}
 
 			if(m_sel.fwrite && m_sel.fge && is64)
 				movdqa(_f, _rip_local(p.f));
 		}
 
-		Xmm xt0 = is64 ? xmm0 : xmm4, xt1 = is64 ? xmm1 : xmm3;
+		const Xmm& vt = xmm4;
 
 		if(m_sel.fb)
 		{
 			if(m_sel.edge || m_sel.tfx != TFX_NONE)
 			{
-				movaps(xt0, ptr[a3 + offsetof(GSVertexSW, t)]); // v.t
+				movaps(vt, ptr[a3 + offsetof(GSVertexSW, t)]); // v.t
 			}
 
 			if(m_sel.edge)
 			{
 				// m_local.temp.cov = GSVector4i::cast(v.t).zzzzh().wwww().srl16(9);
 
-				pshufhw(xt1, xt0, _MM_SHUFFLE(2, 2, 2, 2));
-				pshufd(xt1, xt1, _MM_SHUFFLE(3, 3, 3, 3));
-				psrlw(xt1, 9);
+				pshufhw(xmm3, vt, _MM_SHUFFLE(2, 2, 2, 2));
+				pshufd(xmm3, xmm3, _MM_SHUFFLE(3, 3, 3, 3));
+				psrlw(xmm3, 9);
 
-				movdqa(_rip_local(temp.cov), xt1);
+				movdqa(_rip_local(temp.cov), xmm3);
 //	#ifdef _WIN64
-//				vmovdqa(_rip_local(temp.cov), xmm1);
+//				vmovdqa(_rip_local(temp.cov), xmm3);
 //	#else
-//				vmovdqa(ptr[rsp + _rz_cov], xmm1);
+//				vmovdqa(ptr[rsp + _rz_cov], xmm3);
 //	#endif
 			}
 
@@ -543,20 +824,20 @@ private:
 			{
 				// a1 = &m_local.d[skip]
 
+				const Xmm& s = is64 ? _s   : xmm2;
+				const Xmm& t = is64 ? _t   : xmm3;
+
 				if(m_sel.fst)
 				{
 					// GSVector4i vti(vt);
 
-					Xmm vti = is64 ? xmm0 : xmm6;
-					Xmm s = is64 ? _s : xmm2, t = is64 ? _t : xmm3;
-
-					cvttps2dq(vti, xt0);
+					cvttps2dq(xmm6, vt);
 
 					// s = vti.xxxx() + m_local.d[skip].s;
 					// t = vti.yyyy(); if(!sprite) t += m_local.d[skip].t;
 
-					pshufd(s, vti, _MM_SHUFFLE(0, 0, 0, 0));
-					pshufd(t, vti, _MM_SHUFFLE(1, 1, 1, 1));
+					pshufd(s, xmm6, _MM_SHUFFLE(0, 0, 0, 0));
+					pshufd(t, xmm6, _MM_SHUFFLE(1, 1, 1, 1));
 
 					paddd(s, ptr[a1 + offsetof(GSScanlineLocalData::skip, s)]);
 
@@ -582,15 +863,15 @@ private:
 				}
 				else
 				{
-					Xmm s = is64 ? _s : xmm2, t = is64 ? _t : xmm3, q = is64 ? _q : xmm4;
+					const Xmm& q = is64 ? _q : vt;
 
 					// s = vt.xxxx() + m_local.d[skip].s;
 					// t = vt.yyyy() + m_local.d[skip].t;
 					// q = vt.zzzz() + m_local.d[skip].q;
 
-					vshufps(s, xt0, xt0, _MM_SHUFFLE(0, 0, 0, 0));
-					vshufps(t, xt0, xt0, _MM_SHUFFLE(1, 1, 1, 1));
-					vshufps(q, xt0, xt0, _MM_SHUFFLE(2, 2, 2, 2));
+					vshufps(s, vt, vt, _MM_SHUFFLE(0, 0, 0, 0));
+					vshufps(t, vt, vt, _MM_SHUFFLE(1, 1, 1, 1));
+					vshufps(q, vt, vt, _MM_SHUFFLE(2, 2, 2, 2));
 
 					addps(s, ptr[a1 + offsetof(GSScanlineLocalData::skip, s)]);
 					addps(t, ptr[a1 + offsetof(GSScanlineLocalData::skip, t)]);
@@ -607,25 +888,24 @@ private:
 
 			if(!(m_sel.tfx == TFX_DECAL && m_sel.tcc))
 			{
-				Xmm f_rb = is64 ? _f_rb : xmm5, f_ga = is64 ? _f_ga : xmm6;
+				const Xmm& f_rb = is64 ? _f_rb : xmm5;
+				const Xmm& f_ga = is64 ? _f_ga : xmm6;
 				if(m_sel.iip)
 				{
 					// GSVector4i vc = GSVector4i(v.c);
-					Xmm vc = is64 ? xmm0 : xmm6, tmp = is64 ? xmm1 : xmm5;
 
-
-					cvttps2dq(vc, ptr[a3 + offsetof(GSVertexSW, c)]); // v.c
+					cvttps2dq(xmm6, ptr[a3 + offsetof(GSVertexSW, c)]); // v.c
 
 					// vc = vc.upl16(vc.zwxy());
 
-					pshufd(tmp, vc, _MM_SHUFFLE(1, 0, 3, 2));
-					punpcklwd(vc, tmp);
+					pshufd(xmm5, xmm6, _MM_SHUFFLE(1, 0, 3, 2));
+					punpcklwd(xmm6, xmm5);
 
 					// rb = vc.xxxx().add16(m_local.d[skip].rb);
 					// ga = vc.zzzz().add16(m_local.d[skip].ga);
 
-					pshufd(f_rb, vc, _MM_SHUFFLE(0, 0, 0, 0));
-					pshufd(f_ga, vc, _MM_SHUFFLE(2, 2, 2, 2));
+					pshufd(f_rb, xmm6, _MM_SHUFFLE(0, 0, 0, 0));
+					pshufd(f_ga, xmm6, _MM_SHUFFLE(2, 2, 2, 2));
 
 					paddw(f_rb, ptr[a1 + offsetof(GSScanlineLocalData::skip, rb)]);
 					paddw(f_ga, ptr[a1 + offsetof(GSScanlineLocalData::skip, ga)]);
@@ -677,7 +957,8 @@ private:
 
 		add(t0, 8);
 
-		Xmm z = is64 ? _z : xmm0, f = is64 ? _f : xmm1;
+		const Xmm& z = is64 ? _z : xmm0;
+		const Xmm& f = is64 ? _f : xmm1;
 
 		if(m_sel.prim != GS_SPRITE_CLASS)
 		{
@@ -816,12 +1097,13 @@ private:
 			shl(eax, 4);
 			ONLY64(cdqe());
 
-			movdqa(_test, ptr[rax + m_test + 7 * 16]);
+			movdqa(_test, ptr[rax + _m_test + 7 * 16]);
 		}
 	}
 
 	/// Inputs: xmm0[x86]=z, t1=fza_base, t0=fza_offset
-	/// Destroys: eax, ebp, xmm0, temp1, temp2
+	/// Outputs: rbp=za
+	/// Destroys: rax, xmm0, temp1, temp2
 	void TestZ(const Xmm& temp1, const Xmm& temp2)
 	{
 		if(!m_sel.zb)
@@ -829,7 +1111,7 @@ private:
 			return;
 		}
 
-		Xmm z = is64 ? _z : xmm0;
+		const Xmm& z = is64 ? _z : xmm0;
 
 		// int za = fza_base.y + fza_offset->y;
 
@@ -944,8 +1226,7 @@ private:
 	}
 
 	/// Input[x86]: xmm4=q, xmm2=s, xmm3=t
-	/// Output[x86]: xmm5=rb, xmm6=ga
-	/// Output[x64]: xmm2=rb, xmm3=ga
+	/// Output: _rb, _ga
 	/// Destroys everything except xmm7[x86]
 	void SampleTexture()
 	{
@@ -2183,9 +2464,9 @@ private:
 		}
 	}
 
-	/// Output: xmm6[x86]=ga, _ga[x64]=ga
-	/// Destroys[x86]: xmm3, xmm4
-	/// Destroys[x64]: xmm0, xmm1
+	/// Input: _ga
+	/// Output: xmm2[x86]=gaf (TFX_HIGHLIGHT || TFX_HIGHLIGHT2 && !tcc)
+	/// Destroys: xmm0, xmm1, xmm3[x86], xmm4[x86]
 	void AlphaTFX()
 	{
 		if(!m_sel.fb)
@@ -2193,7 +2474,6 @@ private:
 			return;
 		}
 
-		const Xmm& ga    = is64 ? _ga   : xmm6;
 		const Xmm& f_ga  = is64 ? _f_ga : xmm4;
 		const Xmm& tmpga = is64 ? xmm1  : f_ga;
 		const Xmm& tmp   = is64 ? xmm0  : xmm3;
@@ -2209,9 +2489,9 @@ private:
 
 				// gat = gat.modulate16<1>(ga).clamp8();
 
-				modulate16(ga, f_ga, 1);
+				modulate16(_ga, f_ga, 1);
 
-				clamp16(ga, tmp);
+				clamp16(_ga, tmp);
 
 				// if(!tcc) gat = gat.mix16(ga.srl16(7));
 
@@ -2253,10 +2533,10 @@ private:
 
 				if(m_sel.tcc)
 				{
-					paddusb(tmpga, ga);
+					paddusb(tmpga, _ga);
 				}
 
-				mix16(ga, tmpga, tmp);
+				mix16(_ga, tmpga, tmp);
 
 				break;
 
@@ -2273,7 +2553,7 @@ private:
 
 					MOVE_IF_64(psrlw, tmpga, f_ga, 7);
 
-					mix16(ga, tmpga, tmp);
+					mix16(_ga, tmpga, tmp);
 				}
 
 				break;
@@ -2284,7 +2564,7 @@ private:
 
 				if(m_sel.iip)
 				{
-					MOVE_IF_64(psrlw, ga, f_ga, 7);
+					MOVE_IF_64(psrlw, _ga, f_ga, 7);
 				}
 
 				break;
@@ -2315,7 +2595,7 @@ private:
 					psrlw(xmm0, 8);
 				}
 
-				mix16(ga, xmm0, xmm1);
+				mix16(_ga, xmm0, xmm1);
 			}
 			else
 			{
@@ -2338,11 +2618,11 @@ private:
 					movdqa(xmm1, xmm0);
 				}
 
-				pcmpeqw(xmm0, ga);
+				pcmpeqw(xmm0, _ga);
 				psrld(xmm0, 16);
 				pslld(xmm0, 16);
 
-				pblendvb(ga, xmm1 /*, xmm0 */);
+				pblendvb(_ga, xmm1 /*, xmm0 */);
 			}
 		}
 	}
@@ -2436,6 +2716,8 @@ private:
 		}
 	}
 
+	/// Input: xmm2[x86]=gaf, _rb, _ga
+	/// Destroys: xmm0, xmm1, xmm2[x86]
 	void ColorTFX()
 	{
 		if(!m_sel.fwrite)
@@ -2521,9 +2803,8 @@ private:
 		}
 	}
 
-	/// Input[x86] xmm5=rb, xmm6=ga
-	/// Input[x64] _rb, _ga
-	/// Destroys: xmm0[x86], xmm1, xmm2
+	/// Input: _rb, _ga
+	/// Destroys: xmm0, xmm1, xmm2[x86]
 	void Fog()
 	{
 		if(!m_sel.fwrite || !m_sel.fge)
@@ -2549,7 +2830,7 @@ private:
 		mix16(_ga, xmm1, f);
 	}
 
-	/// Outputs: _fd, ebx=???
+	/// Outputs: _fd, rbx=fa
 	void ReadFrame()
 	{
 		if(!m_sel.fb)
@@ -2569,7 +2850,7 @@ private:
 		ReadPixel(_fd, rbx);
 	}
 
-	/// Input: _fd
+	/// Input: _fd, _test
 	/// Destroys: xmm0, xmm1
 	void TestDestAlpha()
 	{
@@ -2616,7 +2897,7 @@ private:
 	}
 
 	/// Input: _fm, _zm, _test
-	/// Output: edx=???
+	/// Output: edx=fzm
 	/// Destroys: xmm0, xmm1
 	void WriteMask()
 	{
@@ -2664,6 +2945,8 @@ private:
 		not(edx);
 	}
 
+	/// Inputs: rbp=za, edx=fzm, _zm
+	/// Destroys: xmm1, xmm7
 	void WriteZBuf()
 	{
 		if(!m_sel.zwrite)
@@ -2705,11 +2988,8 @@ private:
 		WritePixel(xmm1, rbp, dh, fast, m_sel.zpsm, 1);
 	}
 
-	/// Input[x86]: xmm2=fd, xmm5=rb, xmm6=ga
-	/// Input[x64]: _fd, _rb, _ga
-	/// Output: xmm0=rb, xmm1=ga
-	/// Destroys[x86]: xmm4, xmm7
-	/// Destroys[x64]: xmm5, xmm15
+	/// Input: _fd, _rb, _ga
+	/// Destroys: xmm0, xmm1, xmm4[x86], xmm5[x64], xmm7[x86], xmm15[x64]
 	void AlphaBlend()
 	{
 		if(!m_sel.fwrite)
@@ -2936,6 +3216,9 @@ private:
 		}
 	}
 
+	/// Input: rbx=fa, rdx=fzm, _fd, _fm
+	/// Destroys[x86]: rax, xmm4, xmm5, xmm6, xmm7
+	/// Destroys[x64]: rax, xmm0, xmm1, xmm2, xmm3, xmm15
 	void WriteFrame()
 	{
 		if(!m_sel.fwrite)
