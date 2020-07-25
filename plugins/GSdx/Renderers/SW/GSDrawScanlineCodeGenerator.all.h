@@ -41,7 +41,6 @@
 #define _64_m_local r12
 #define _64_m_local__gd r13
 #define _64_m_local__gd__vm a1
-#define _64_m_local__gd__vm a1
 #define _64_m_local__gd__clut r11
 // If m_sel.mmin, m_local.gd->tex, else m_local.gd->tex[0]
 #define _64_m_local__gd__tex r14
@@ -161,6 +160,7 @@ public:
 		, _rb(is64 ? xmm2 : xmm5), _ga(is64 ? xmm3 : xmm6), _fm(is64 ? xmm4 : xmm3), _zm(is64 ? xmm5 : xmm4), _fd(is64 ? xmm6 : xmm2), _test(is64 ? xmm15 : xmm7)
 		, _z(xmm8), _f(xmm9), _s(xmm10), _t(xmm11), _q(xmm12), _f_rb(xmm13), _f_ga(xmm14)
 	{
+		m_sel.key = key;
 	}
 
 private:
@@ -642,6 +642,7 @@ public:
 			mov(r15, ptr[rsp + _64_rz_r15]);
 #endif
 			pop(rbp);
+			ret();
 		}
 	}
 
@@ -919,7 +920,7 @@ private:
 			mov(_64_m_local__gd__vm, _rip_global(vm));
 			if(m_sel.fb && m_sel.tfx != TFX_NONE)
 			{
-				if (m_sel.mmin)
+				if (m_sel.mmin && is32) // TODO: LOD on 64
 					lea(_64_m_local__gd__tex, _rip_global(tex));
 				else
 					mov(_64_m_local__gd__tex, _rip_global(tex));
@@ -1143,7 +1144,7 @@ private:
 //	#ifdef _WIN64
 				movdqa(_rip_local(temp.zs), xmm0);
 //	#else
-//				movdqa(ptr[rsp + _rz_zs], ztmp);
+//				movdqa(ptr[rsp + _rz_zs], xmm0);
 //	#endif
 			}
 		}
@@ -1257,7 +1258,7 @@ private:
 				// v -= 0x8000;
 
 				mov(eax, 0x8000);
-				movd(xtm2, eax);
+				movd(xtm1, eax);
 				pshufd(xtm1, xtm1, _MM_SHUFFLE(0, 0, 0, 0));
 
 				psubd(xtm2, xtm1);
@@ -3450,7 +3451,7 @@ private:
 			return m_sel.lcm ? _rip_global(lod.i.u32[j]) : _rip_local(temp.lod.i.u32[j]);
 		};
 
-		if (m_sel.mmin && !m_sel.lcm)
+		if (m_sel.mmin && !m_sel.lcm && is32) // TODO: x64 LOD
 		{
 			bool preserve = false;
 			for (int i = 0; i < pixels; i++)
@@ -3474,7 +3475,7 @@ private:
 			bool preserve = false;
 			bool texInA3 = is32;
 
-			if (m_sel.mmin && m_sel.lcm)
+			if (m_sel.mmin && m_sel.lcm && is32) // TODO: x64 LOD
 			{
 				mov(a3.cvt32(), lod_i(0));
 				mov(a3.cvt32(), ptr[texIn + a3*wordsize + mip_offset]);
