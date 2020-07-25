@@ -43,6 +43,8 @@ class GSDrawScanlineCodeGenerator : public GSCodeGenerator
 
 	void Generate();
 
+	void GenerateNew();
+
 	#if _M_SSE >= 0x501
 
 	void Init();
