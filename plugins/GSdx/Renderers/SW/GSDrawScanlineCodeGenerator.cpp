@@ -21,6 +21,7 @@
 
 #include "stdafx.h"
 #include "GSDrawScanlineCodeGenerator.h"
+#include "GSDrawScanlineCodeGenerator.all.h"
 
 #if _M_SSE >= 0x501
 #else
@@ -33,6 +34,21 @@ void GSDrawScanlineCodeGenerator::Generate()
 }
 #endif
 
+void GSDrawScanlineCodeGenerator::GenerateNew()
+{
+	auto version = SSEVersion::SSE2;
+	if (m_cpu.has(util::Cpu::tSSE3))
+		version = SSEVersion::SSE3;
+	if (m_cpu.has(util::Cpu::tSSE41))
+		version = SSEVersion::SSE41;
+	if (m_cpu.has(util::Cpu::tAVX))
+		version = SSEVersion::AVX;
+	if (m_cpu.has(util::Cpu::tAVX2))
+		version = SSEVersion::AVX2;
+
+	GSDrawScanlineCodeGenerator2(this, version, m_cpu.has(util::Cpu::tFMA), (void*)&m_local, m_sel.key).Generate();
+}
+
 GSDrawScanlineCodeGenerator::GSDrawScanlineCodeGenerator(void* param, uint64 key, void* code, size_t maxsize)
 	: GSCodeGenerator(code, maxsize)
 	, m_local(*(GSScanlineLocalData*)param)
@@ -44,7 +60,7 @@ GSDrawScanlineCodeGenerator::GSDrawScanlineCodeGenerator(void* param, uint64 key
 		db(0xCC);
 
 	try {
-		Generate();
+		GenerateNew();
 	} catch (std::exception& e) {
 		fprintf(stderr, "ERR:GSDrawScanlineCodeGenerator %s\n", e.what());
 	}
