@@ -62,12 +62,28 @@
 		operation(temporary, src32); \
 	else \
 		operation(dst64, temporary)
+/// On AVX, does a v-prefixed separate destination operation
+/// On SSE, moves src1 into dst using movdqa, then does the operation
+#define THREEARG(operation, dst, src1, ...) \
+	if (hasAVX) \
+	{ \
+		v##operation(dst, src1, __VA_ARGS__); \
+	} \
+	else \
+	{ \
+		movdqa(dst, src1); \
+		operation(dst, __VA_ARGS__);\
+	}
 /// On x64, does a 3-operand move, on x86 uses a two-operand SSE-style
 #define MOVE_IF_64(operation, dst, src64, ...) \
 	if (is64) \
-		v##operation(dst, src64, __VA_ARGS__); \
+	{ \
+		THREEARG(operation, dst, src64, __VA_ARGS__); \
+	} \
 	else \
-		operation(dst, __VA_ARGS__)
+	{ \
+		operation(dst, __VA_ARGS__); \
+	}
 
 enum class RegsUsed {
 	A0, A1, A2, A3, T0, T1
@@ -224,12 +240,13 @@ private:
 		if (hasSSE41)
 		{
 			packuswb(a, a);
-			if (hasAVX2)
-			{
-				// Greg: why ?
-				ASSERT(a.isYMM());
-				vpermq(Ymm(a.getIdx()), Ymm(a.getIdx()), _MM_SHUFFLE(3, 1, 2, 0)); // this sucks
-			}
+			// TODO: AVX2 YMM
+//			if (hasAVX2)
+//			{
+//				// Greg: why ?
+//				ASSERT(a.isYMM());
+//				vpermq(Ymm(a.getIdx()), Ymm(a.getIdx()), _MM_SHUFFLE(3, 1, 2, 0)); // this sucks
+//			}
 			pmovzxbw(a, a);
 		}
 		else
@@ -835,15 +852,11 @@ private:
 						pshuflw(vf, t, _MM_SHUFFLE(2, 2, 0, 0));
 						pshufhw(vf, vf, _MM_SHUFFLE(2, 2, 0, 0));
 						psrlw(vf, 12);
-						if (is32)
-							movdqa(ptr[&m_local.temp.vf], vf);
+						ONLY32(movdqa(_rip_local(temp.vf), vf));
 					}
 
-					if (is32)
-					{
-						movdqa(ptr[&m_local.temp.s], s);
-						movdqa(ptr[&m_local.temp.t], t);
-					}
+					ONLY32(movdqa(_rip_local(temp.s), s));
+					ONLY32(movdqa(_rip_local(temp.t), t));
 				}
 				else
 				{
@@ -853,9 +866,22 @@ private:
 					// t = vt.yyyy() + m_local.d[skip].t;
 					// q = vt.zzzz() + m_local.d[skip].q;
 
-					vshufps(s, vt, vt, _MM_SHUFFLE(0, 0, 0, 0));
-					vshufps(t, vt, vt, _MM_SHUFFLE(1, 1, 1, 1));
-					vshufps(q, vt, vt, _MM_SHUFFLE(2, 2, 2, 2));
+					if (hasAVX)
+					{
+						vshufps(s, vt, vt, _MM_SHUFFLE(0, 0, 0, 0));
+						vshufps(t, vt, vt, _MM_SHUFFLE(1, 1, 1, 1));
+						vshufps(q, vt, vt, _MM_SHUFFLE(2, 2, 2, 2));
+					}
+					else
+					{
+						movaps(s, vt);
+						movaps(t, vt);
+						ONLY64(movaps(q, vt));
+
+						shufps(s, s, _MM_SHUFFLE(0, 0, 0, 0));
+						shufps(t, t, _MM_SHUFFLE(1, 1, 1, 1));
+						shufps(q, q, _MM_SHUFFLE(2, 2, 2, 2));
+					}
 
 					addps(s, ptr[a1 + offsetof(GSScanlineLocalData::skip, s)]);
 					addps(t, ptr[a1 + offsetof(GSScanlineLocalData::skip, t)]);
@@ -929,6 +955,7 @@ private:
 	}
 
 	/// Inputs: a0=steps, t0=fza_offset
+	/// Outputs[x86]: xmm0=z xmm2=s, xmm3=t, xmm4=q, xmm5=rb, xmm6=ga, xmm7=test
 	/// Destroys[x86]: all
 	/// Destroys[x64]: xmm0, xmm1, xmm2, xmm3
 	void Step()
@@ -977,9 +1004,9 @@ private:
 		{
 			if(m_sel.tfx != TFX_NONE)
 			{
-				Xmm stq = is64 ? xmm0 : xmm4;
 				if(m_sel.fst)
 				{
+					const Xmm& stq = is64 ? xmm0 : xmm4;
 					// GSVector4i stq = m_local.d4.stq;
 
 					// s += stq.xxxx();
@@ -1006,18 +1033,33 @@ private:
 				}
 				else
 				{
-					Xmm s = xmm2, t = xmm3, q = is64 ? xmm1 : xmm4;
+					const Xmm& s = xmm2;
+					const Xmm& t = xmm3;
+					const Xmm& q = is64 ? xmm1 : xmm4;
 					// GSVector4 stq = m_local.d4.stq;
 
 					// s += stq.xxxx();
 					// t += stq.yyyy();
 					// q += stq.zzzz();
 
-					movaps(stq, _rip_local(d4.stq));
+					if (hasAVX)
+					{
+						movaps(q, _rip_local(d4.stq));
 
-					vshufps(s, stq, stq, _MM_SHUFFLE(0, 0, 0, 0));
-					vshufps(t, stq, stq, _MM_SHUFFLE(1, 1, 1, 1));
-					vshufps(q, stq, stq, _MM_SHUFFLE(2, 2, 2, 2));
+						vshufps(s, q, q, _MM_SHUFFLE(0, 0, 0, 0));
+						vshufps(t, q, q, _MM_SHUFFLE(1, 1, 1, 1));
+						vshufps(q, q, q, _MM_SHUFFLE(2, 2, 2, 2));
+					}
+					else
+					{
+						movaps(q, _rip_local(d4.stq));
+						movaps(s, q);
+						movaps(t, q);
+
+						shufps(s, s, _MM_SHUFFLE(0, 0, 0, 0));
+						shufps(t, t, _MM_SHUFFLE(1, 1, 1, 1));
+						shufps(q, q, _MM_SHUFFLE(2, 2, 2, 2));
+					}
 
 					COMBINE(addps, _s, s, _rip_local(temp.s));
 					COMBINE(addps, _t, t, _rip_local(temp.t));
@@ -1085,7 +1127,7 @@ private:
 		}
 	}
 
-	/// Inputs: xmm0[x86]=z, t1=fza_base, t0=fza_offset
+	/// Inputs: xmm0[x86]=z, t1=fza_base, t0=fza_offset, _test
 	/// Outputs: rbp=za
 	/// Destroys: rax, xmm0, temp1, temp2
 	void TestZ(const Xmm& temp1, const Xmm& temp2)
@@ -1113,7 +1155,10 @@ private:
 
 				auto m_half = loadAddress(rax, &GSVector4::m_half);
 
-				vbroadcastss(temp1, ptr[m_half]);
+				if (hasAVX)
+					vbroadcastss(temp1, ptr[m_half]);
+				else
+					movaps(temp1, ptr[m_half]);
 				mulps(temp1, z);
 				cvttps2dq(temp1, temp1);
 				pslld(temp1, 1);
@@ -1132,11 +1177,26 @@ private:
 				cvttps2dq(xmm0, z);
 			}
 
-			if (is32 && m_sel.zclamp) // TODO:TKR: Why only 32?
+			if (m_sel.zclamp)
 			{
-				pcmpeqd(temp1, temp1);
-				psrld(temp1, (uint8)((m_sel.zpsm & 0x3) * 8));
-				pminsd(xmm0, temp1);
+				const uint8 amt = (uint8)((m_sel.zpsm & 0x3) * 8);
+				if (hasSSE41)
+				{
+					pcmpeqd(temp1, temp1);
+					psrld(temp1, amt);
+					pminsd(xmm0, temp1);
+				}
+				else
+				{
+					pcmpeqd(temp1, temp1);
+					psrld(temp1, amt);
+					pcmpgtd(temp1, xmm0);
+					pand(xmm0, temp1);
+					pcmpeqd(temp2, temp2);
+					pxor(temp1, temp2);
+					psrld(temp1, amt);
+					por(xmm0, temp1);
+				}
 			}
 
 			if(m_sel.zwrite)
@@ -1162,7 +1222,7 @@ private:
 //	#ifdef _WIN64
 				movdqa(_rip_local(temp.zd), temp2);
 //	#else
-//				movdqa(ptr[rsp + _rz_zd], xmm1);
+//				movdqa(ptr[rsp + _rz_zd], temp2);
 //	#endif
 			}
 
@@ -1280,7 +1340,8 @@ private:
 			pshuflw(xtm4, xtm2, _MM_SHUFFLE(2, 2, 0, 0));
 			pshufhw(xtm4, xtm4, _MM_SHUFFLE(2, 2, 0, 0));
 			psrlw(xtm4, 12);
-			ONLY32(movdqa(_rip_local(temp.uf), xtm4));
+			if (is32 && !hasSSE41)
+				movdqa(_rip_local(temp.uf), xtm4);
 
 			if(m_sel.prim != GS_SPRITE_CLASS)
 			{
@@ -1289,7 +1350,8 @@ private:
 				pshuflw(vf, xtm3, _MM_SHUFFLE(2, 2, 0, 0));
 				pshufhw(vf, vf, _MM_SHUFFLE(2, 2, 0, 0));
 				psrlw(vf, 12);
-				ONLY32(movdqa(_rip_local(temp.vf), vf));
+				if (is32 || !hasSSE41)
+					movdqa(_rip_local(temp.vf), vf);
 			}
 		}
 
@@ -1305,7 +1367,7 @@ private:
 
 			pcmpeqd(xtm0, xtm0);
 			psrlw(xtm0, 15);
-			vpaddw(xtm3, xtm2, xtm0);
+			THREEARG(paddw, xtm3, xtm2, xtm0);
 
 			// uv0 = Wrap(uv0);
 			// uv1 = Wrap(uv1);
@@ -1321,8 +1383,8 @@ private:
 
 		// xtm2 = uv0
 		// xtm3 = uv1
-		// xtm4 = uf
-		// xtm7 = used[x86] vf[x64]
+		// xtm4 = uf[x64||sse41]
+		// xtm7 = used[x86] vf[x64&&sse41]
 		// Free: xtm0, xtm1, xtm5, xtm6
 
 		// GSVector4i x0 = uv0.upl16();
@@ -1330,16 +1392,16 @@ private:
 
 		pxor(xtm0, xtm0);
 
-		vpunpcklwd(xtm5, xtm2, xtm0);
-		vpunpckhwd(xtm2, xtm2, xtm0);
+		THREEARG(punpcklwd, xtm5, xtm2, xtm0);
+		punpckhwd(xtm2, xtm0);
 		pslld(xtm2, static_cast<uint8>(m_sel.tw + 3));
 
 		// xtm0 = 0
 		// xtm2 = y0
 		// xtm3 = uv1 (ltf)
-		// xtm4 = uf
+		// xtm4 = uf[x64||sse41]
 		// xtm5 = x0
-		// xtm7 = used[x86] vf[x64]
+		// xtm7 = used[x86] vf[x64&&sse41]
 		// Free: xtm1, xtm6
 
 		if(m_sel.ltf)
@@ -1347,16 +1409,16 @@ private:
 			// GSVector4i x1 = uv1.upl16();
 			// GSVector4i y1 = uv1.uph16() << tw;
 
-			vpunpcklwd(xtm1, xtm3, xtm0);
-			vpunpckhwd(xtm3, xtm3, xtm0);
+			THREEARG(punpcklwd, xtm1, xtm3, xtm0);
+			punpckhwd(xtm3, xtm0);
 			pslld(xtm3, static_cast<uint8>(m_sel.tw + 3));
 
 			// xtm1 = x1
 			// xtm2 = y0
 			// xtm3 = y1
-			// xtm4 = uf
+			// xtm4 = uf[x64||sse41]
 			// xtm5 = x0
-			// xtm7 = used[x86] vf[x64]
+			// xtm7 = used[x86] vf[x64&&sse41]
 			// Free: xtm0, xtm6
 
 			// GSVector4i addr00 = y0 + x0;
@@ -1364,17 +1426,17 @@ private:
 			// GSVector4i addr10 = y1 + x0;
 			// GSVector4i addr11 = y1 + x1;
 
-			vpaddd(xtm0, xtm3, xtm1); // addr11
-			vpaddd(xtm1, xtm2, xtm1); // addr01
-			vpaddd(xtm2, xtm2, xtm5); // addr00
-			vpaddd(xtm3, xtm3, xtm5); // addr10
+			THREEARG(paddd, xtm0, xtm3, xtm1); // addr11
+			paddd(xtm1, xtm2); // addr01
+			paddd(xtm2, xtm5); // addr00
+			paddd(xtm3, xtm5); // addr10
 
 			// xtm0 = addr11
 			// xtm1 = addr01
 			// xtm2 = addr00
 			// xtm3 = addr10
-			// xtm6 = uf
-			// xtm7 = used[x86] vf[x64]
+			// xtm4 = uf[x64||sse41]
+			// xtm7 = used[x86] vf[x64&&sse41]
 			// Free: xtm4, xtm5
 
 			// c00 = addr00.gather32_32((const uint32/uint8*)tex[, clut]);
@@ -1389,12 +1451,13 @@ private:
 
 			// xtm0 = c01
 			// xtm2 = c10
-			// xtm4 = uf
+			// xtm4 = uf[x64||sse41]
 			// xtm5 = c11
 			// xtm6 = c00
-			// xtm7 = used[x86] vf[x64]
+			// xtm7 = used[x86] vf[x64&&sse41]
 
-
+			if (is32 && !hasSSE41)
+				movdqa(xtm4, _rip_local(temp.uf));
 
 			// GSVector4i rb00 = c00 & mask;
 			// GSVector4i ga00 = (c00 >> 8) & mask;
@@ -1413,7 +1476,7 @@ private:
 			// xtm4 = uf
 			// xtm5 = c11
 			// xtm6 = ga00
-			// xtm7 = used[x86] vf[x64]
+			// xtm7 = used[x86] vf[x64&&sse41]
 
 			// rb00 = rb00.lerp16_4(rb01, uf);
 			// ga00 = ga00.lerp16_4(ga01, uf);
@@ -1426,7 +1489,7 @@ private:
 			// xtm2 = c10
 			// xtm4 = uf
 			// xtm5 = c11
-			// xtm7 = used[x86] vf[x64]
+			// xtm7 = used[x86] vf[x64&&sse41]
 
 			// GSVector4i rb10 = c10 & mask;
 			// GSVector4i ga10 = (c10 >> 8) & mask;
@@ -1445,7 +1508,7 @@ private:
 			// xtm4 = uf
 			// xtm5 = rb11
 			// xtm6 = ga11
-			// xtm7 = used[x86] vf[x64]
+			// xtm7 = used[x86] vf[x64&&sse41]
 
 			// rb10 = rb10.lerp16_4(rb11, uf);
 			// ga10 = ga10.lerp16_4(ga11, uf);
@@ -1457,12 +1520,12 @@ private:
 			// xtm1 = ga00
 			// xtm5 = rb10
 			// xtm6 = ga10
-			// xtm7 = used[x86] vf[x64]
+			// xtm7 = used[x86] vf[x64&&sse41]
 
 			// rb00 = rb00.lerp16_4(rb10, vf);
 			// ga00 = ga00.lerp16_4(ga10, vf);
 
-			Xmm vf = is64 ? xtm7 : xtm6;
+			Xmm vf = is64 ? xtm7 : xtm4;
 			ONLY32(movdqa(vf, _rip_local(temp.vf)));
 
 			lerp16_4(xtm5, xtm0, vf);
@@ -1472,7 +1535,7 @@ private:
 		{
 			// GSVector4i addr00 = y0 + x0;
 
-			vpaddd(xtm2, xtm2, xtm5);
+			paddd(xtm2, xtm5);
 
 			// c00 = addr00.gather32_32((const uint32/uint8*)tex[, clut]);
 
@@ -1537,17 +1600,19 @@ private:
 			movdqa(mask, _rip_global(t.mask));
 
 			// GSVector4i repeat = (t & m_local.gd->t.min) | m_local.gd->t.max;
-			vpand(tmp, uv, min);
+			THREEARG(pand, tmp, uv, min);
 			if(region)
 				por(tmp, max);
 			// GSVector4i clamp = t.sat_i16(m_local.gd->t.min, m_local.gd->t.max);
 			pmaxsw(uv, min);
 			pminsw(uv, max);
 			// clamp.blend8(repeat, m_local.gd->t.mask);
-			pblendvb(uv, tmp /*, xmm0==mask */);
+			blend8(uv, tmp /*, xmm0==mask */);
 		}
 	}
 
+	/// Destroys[x86]: xmm0, xmm1, xmm2, xmm3, xmm4[!sse41]
+	/// Destroys[x64]: xmm0, xmm1, xmm5, xmm6, xmm7[!sse41]
 	void Wrap(const Xmm& uv0, const Xmm& uv1)
 	{
 		// Registers free from SampleTexture
@@ -1599,21 +1664,27 @@ private:
 		}
 		else
 		{
+			const Xmm& mask2 = is64 ? xmm7 : xmm4; // <SSE4.1 only
 			movdqa(min, _rip_global(t.min));
 			movdqa(max, _rip_global(t.max));
-			movdqa(mask, _rip_global(t.mask));
+			movdqa(mask, hasSSE41 ? _rip_global(t.mask) : _rip_global(t.invmask));
+			if (!hasSSE41)
+				movdqa(mask2, mask);
 
 			for (const Xmm& uv : {uv0, uv1})
 			{
 				// GSVector4i repeat = (t & m_local.gd->t.min) | m_local.gd->t.max;
-				vpand(tmp, uv, min);
+				THREEARG(pand, tmp, uv, min);
 				if(region)
 					por(tmp, max);
 				// GSVector4i clamp = t.sat_i16(m_local.gd->t.min, m_local.gd->t.max);
 				pmaxsw(uv, min);
 				pminsw(uv, max);
 				// clamp.blend8(repeat, m_local.gd->t.mask);
-				pblendvb(uv, tmp /*, xmm0==mask*/);
+				if (hasSSE41)
+					pblendvb(uv, tmp /*, xmm0==mask*/);
+				else
+					blendr(uv, tmp, uv == uv0 ? mask : mask2);
 			}
 		}
 	}
@@ -1658,16 +1729,16 @@ private:
 			// lod = -log2(Q) * (1 << L) + K
 
 			pcmpeqd(xmm1, xmm1);
-			vpsrld(xmm1, xmm1, 25);
-			vpslld(xmm0, xmm4, 1);
-			vpsrld(xmm0, xmm0, 24);
+			psrld(xmm1, 25);
+			THREEARG(pslld, xmm0, xmm4, 1);
+			psrld(xmm0, 24);
 			psubd(xmm0, xmm1);
 			cvtdq2ps(xmm0, xmm0);
 
 			// xmm0 = (float)(exp(q) - 127)
 
-			vpslld(xmm4, xmm4, 9);
-			vpsrld(xmm4, xmm4, 9);
+			pslld(xmm4, 9);
+			psrld(xmm4, 9);
 			orps(xmm4, ptr[g_const->m_log2_coef_128b[3]]);
 
 			// xmm4 = mant(q) | 1.0f
@@ -1682,7 +1753,7 @@ private:
 			}
 			else
 			{
-				vmulps(xmm5, xmm4, ptr[g_const->m_log2_coef_128b[0]]);
+				THREEARG(mulps, xmm5, xmm4, ptr[g_const->m_log2_coef_128b[0]]);
 				addps(xmm5, ptr[g_const->m_log2_coef_128b[1]]);
 				mulps(xmm5, xmm4);
 				subps(xmm4, ptr[g_const->m_log2_coef_128b[3]]);
@@ -1719,7 +1790,7 @@ private:
 				paddd(xmm4, xmm0);
 			}
 
-			vpsrld(xmm0, xmm4, 16);
+			THREEARG(psrld, xmm0, xmm4, 16);
 
 			movdqa(ptr[&m_local.temp.lod.i], xmm0);
 			/*
@@ -1770,34 +1841,34 @@ private:
 			{
 				movq(xmm4, ptr[&m_local.gd->t.minmax]);
 
-				vpunpckldq(xmm5, xmm2, xmm3);
-				vpunpckhdq(xmm6, xmm2, xmm3);
-				movdqa(xmm2, xmm5);
+				THREEARG(punpckhdq, xmm6, xmm2, xmm3);
+				punpckldq(xmm2, xmm3);
+				movdqa(xmm5, xmm2);
 				movdqa(xmm3, xmm6);
 
 				movd(xmm0, ptr[&m_local.temp.lod.i.u32[0]]);
 				psrad(xmm2, xmm0);
-				vpsrlw(xmm1, xmm4, xmm0);
+				THREEARG(psrlw, xmm1, xmm4, xmm0);
 				movq(ptr[&m_local.temp.uv_minmax[0].u32[0]], xmm1);
 
 				movd(xmm0, ptr[&m_local.temp.lod.i.u32[1]]);
 				psrad(xmm5, xmm0);
-				vpsrlw(xmm1, xmm4, xmm0);
+				THREEARG(psrlw, xmm1, xmm4, xmm0);
 				movq(ptr[&m_local.temp.uv_minmax[1].u32[0]], xmm1);
 
 				movd(xmm0, ptr[&m_local.temp.lod.i.u32[2]]);
 				psrad(xmm3, xmm0);
-				vpsrlw(xmm1, xmm4, xmm0);
+				THREEARG(psrlw, xmm1, xmm4, xmm0);
 				movq(ptr[&m_local.temp.uv_minmax[0].u32[2]], xmm1);
 
 				movd(xmm0, ptr[&m_local.temp.lod.i.u32[3]]);
 				psrad(xmm6, xmm0);
-				vpsrlw(xmm1, xmm4, xmm0);
+				THREEARG(psrlw, xmm1, xmm4, xmm0);
 				movq(ptr[&m_local.temp.uv_minmax[1].u32[2]], xmm1);
 
 				punpckldq(xmm2, xmm3);
 				punpckhdq(xmm5, xmm6);
-				vpunpckhdq(xmm3, xmm2, xmm5);
+				THREEARG(punpckhdq, xmm3, xmm2, xmm5);
 				punpckldq(xmm2, xmm5);
 
 				movdqa(ptr[&m_local.temp.uv[0]], xmm2);
@@ -1806,10 +1877,22 @@ private:
 				movdqa(xmm5, ptr[&m_local.temp.uv_minmax[0]]);
 				movdqa(xmm6, ptr[&m_local.temp.uv_minmax[1]]);
 
-				vpunpcklwd(xmm0, xmm5, xmm6);
-				vpunpckhwd(xmm1, xmm5, xmm6);
-				vpunpckldq(xmm5, xmm0, xmm1);
-				vpunpckhdq(xmm6, xmm0, xmm1);
+				if (hasAVX)
+				{
+					vpunpcklwd(xmm0, xmm5, xmm6);
+					vpunpckhwd(xmm1, xmm5, xmm6);
+					vpunpckldq(xmm5, xmm0, xmm1);
+					vpunpckhdq(xmm6, xmm0, xmm1);
+				}
+				else
+				{
+					movdqa(xmm0, xmm5);
+					punpcklwd(xmm5, xmm6);
+					punpckhwd(xmm0, xmm6);
+					movdqa(xmm6, xmm5);
+					punpckldq(xmm5, xmm0);
+					punpckhdq(xmm6, xmm0);
+				}
 
 				movdqa(ptr[&m_local.temp.uv_minmax[0]], xmm5);
 				movdqa(ptr[&m_local.temp.uv_minmax[1]], xmm6);
@@ -1875,7 +1958,7 @@ private:
 
 			pcmpeqd(xmm1, xmm1);
 			psrlw(xmm1, 15);
-			vpaddw(xmm3, xmm2, xmm1);
+			THREEARG(paddw, xmm3, xmm2, xmm1);
 
 			// uv0 = Wrap(uv0);
 			// uv1 = Wrap(uv1);
@@ -1899,8 +1982,8 @@ private:
 
 		pxor(xmm0, xmm0);
 
-		vpunpcklwd(xmm4, xmm2, xmm0);
-		vpunpckhwd(xmm2, xmm2, xmm0);
+		THREEARG(punpcklwd, xmm4, xmm2, xmm0);
+		punpckhwd(xmm2, xmm0);
 		pslld(xmm2, static_cast<uint8>(m_sel.tw + 3));
 
 		// xmm0 = 0
@@ -1915,8 +1998,8 @@ private:
 			// GSVector4i x1 = uv1.upl16();
 			// GSVector4i y1 = uv1.uph16() << tw;
 
-			vpunpcklwd(xmm6, xmm3, xmm0);
-			vpunpckhwd(xmm3, xmm3, xmm0);
+			THREEARG(punpcklwd, xmm6, xmm3, xmm0);
+			punpckhwd(xmm3, xmm0);
 			pslld(xmm3, static_cast<uint8>(m_sel.tw + 3));
 
 			// xmm2 = y0
@@ -1931,10 +2014,10 @@ private:
 			// GSVector4i addr10 = y1 + x0;
 			// GSVector4i addr11 = y1 + x1;
 
-			vpaddd(xmm5, xmm2, xmm4);
-			vpaddd(xmm2, xmm2, xmm6);
-			vpaddd(xmm0, xmm3, xmm4);
-			vpaddd(xmm3, xmm3, xmm6);
+			THREEARG(paddd, xmm5, xmm2, xmm4);
+			paddd(xmm2, xmm6);
+			THREEARG(paddd, xmm0, xmm3, xmm4);
+			paddd(xmm3, xmm6);
 
 			// xmm5 = addr00
 			// xmm2 = addr01
@@ -2038,11 +2121,11 @@ private:
 		{
 			// GSVector4i addr00 = y0 + x0;
 
-			vpaddd(xmm5, xmm2, xmm4);
+			paddd(xmm2, xmm4);
 
 			// c00 = addr00.gather32_32((const uint32/uint8*)tex[, clut]);
 
-			ReadTexel(&xmm6, &xmm5, 1, 0);
+			ReadTexel(&xmm6, &xmm2, 1, 0);
 
 			// GSVector4i mask = GSVector4i::x00ff();
 
@@ -2132,8 +2215,8 @@ private:
 
 			pxor(xmm0, xmm0);
 
-			vpunpcklwd(xmm4, xmm2, xmm0);
-			vpunpckhwd(xmm2, xmm2, xmm0);
+			THREEARG(punpcklwd, xmm4, xmm2, xmm0);
+			punpckhwd(xmm2, xmm0);
 			pslld(xmm2, static_cast<uint8>(m_sel.tw + 3));
 
 			// xmm0 = 0
@@ -2148,8 +2231,8 @@ private:
 				// GSVector4i x1 = uv1.upl16();
 				// GSVector4i y1 = uv1.uph16() << tw;
 
-				vpunpcklwd(xmm6, xmm3, xmm0);
-				vpunpckhwd(xmm3, xmm3, xmm0);
+				THREEARG(punpcklwd, xmm6, xmm3, xmm0);
+				punpckhwd(xmm3, xmm0);
 				pslld(xmm3, static_cast<uint8>(m_sel.tw + 3));
 
 				// xmm2 = y0
@@ -2164,10 +2247,10 @@ private:
 				// GSVector4i addr10 = y1 + x0;
 				// GSVector4i addr11 = y1 + x1;
 
-				vpaddd(xmm5, xmm2, xmm4);
-				vpaddd(xmm2, xmm2, xmm6);
-				vpaddd(xmm0, xmm3, xmm4);
-				vpaddd(xmm3, xmm3, xmm6);
+				THREEARG(paddd, xmm5, xmm2, xmm4);
+				paddd(xmm2, xmm6);
+				THREEARG(paddd, xmm0, xmm3, xmm4);
+				paddd(xmm3, xmm6);
 
 				// xmm5 = addr00
 				// xmm2 = addr01
@@ -2272,11 +2355,11 @@ private:
 			{
 				// GSVector4i addr00 = y0 + x0;
 
-				vpaddd(xmm5, xmm2, xmm4);
+				paddd(xmm2, xmm4);
 
 				// c00 = addr00.gather32_32((const uint32/uint8*)tex[, clut]);
 
-				ReadTexel(&xmm6, &xmm5, 1, 1);
+				ReadTexel(&xmm6, &xmm2, 1, 1);
 
 				// GSVector4i mask = GSVector4i::x00ff();
 
@@ -2287,7 +2370,7 @@ private:
 			}
 
 			movdqa(xmm0, ptr[m_sel.lcm ? &m_local.gd->lod.f : &m_local.temp.lod.f]);
-			vpsrlw(xmm0, xmm0, 1);
+			psrlw(xmm0, 1);
 
 			movdqa(xmm2, ptr[&m_local.temp.trb]);
 			movdqa(xmm3, ptr[&m_local.temp.tga]);
@@ -2342,7 +2425,7 @@ private:
 
 			// GSVector4i repeat = (t & m_local.gd->t.min) | m_local.gd->t.max;
 
-			vpand(xmm1, uv, xmm5);
+			THREEARG(pand, xmm1, uv, xmm5);
 
 			if(region)
 			{
@@ -2356,7 +2439,7 @@ private:
 
 			// clamp.blend8(repeat, m_local.gd->t.mask);
 
-			pblendvb(uv, xmm1 /*, xmm0 */);
+			blend8(uv, xmm1 /*, xmm0 */);
 		}
 	}
 
@@ -2404,13 +2487,15 @@ private:
 		}
 		else
 		{
-			movdqa(xmm0, ptr[&m_local.gd->t.mask]);
+			movdqa(xmm0, hasSSE41 ? ptr[&m_local.gd->t.mask] : ptr[&m_local.gd->t.invmask]);
+			if (hasSSE41)
+				movdqa(xmm4, xmm0);
 
 			// uv0
 
 			// GSVector4i repeat = (t & m_local.gd->t.min) | m_local.gd->t.max;
 
-			vpand(xmm1, uv0, xmm5);
+			THREEARG(pand, xmm1, uv0, xmm5);
 
 			if(region)
 			{
@@ -2424,13 +2509,16 @@ private:
 
 			// clamp.blend8(repeat, m_local.gd->t.mask);*
 
-			pblendvb(uv0, xmm1 /*, xmm0 */);
+			if (hasSSE41)
+				pblendvb(uv0, xmm1 /*, xmm0 */);
+			else
+				blendr(uv0, xmm1, xmm0);
 
 			// uv1
 
 			// GSVector4i repeat = (t & m_local.gd->t.min) | m_local.gd->t.max;
 
-			vpand(xmm1, uv1, xmm5);
+			THREEARG(pand, xmm1, uv1, xmm5);
 
 			if(region)
 			{
@@ -2444,7 +2532,10 @@ private:
 
 			// clamp.blend8(repeat, m_local.gd->t.mask);
 
-			pblendvb(uv1, xmm1 /*, xmm0 */);
+			if (hasSSE41)
+				pblendvb(uv1, xmm1 /*, xmm0 */);
+			else
+				blendr(uv1, xmm1, xmm4);
 		}
 	}
 
@@ -2594,7 +2685,7 @@ private:
 //#ifdef _WIN64
 					movdqa(xmm1, _rip_local(temp.cov));
 //#else
-//					vmovdqa(xmm1, ptr[rsp + _rz_cov]);
+//					movdqa(xmm1, ptr[rsp + _rz_cov]);
 //#endif
 				}
 				else
@@ -2606,7 +2697,7 @@ private:
 				psrld(xmm0, 16);
 				pslld(xmm0, 16);
 
-				pblendvb(_ga, xmm1 /*, xmm0 */);
+				blend8(_ga, xmm1 /*, xmm0 */);
 			}
 		}
 	}
@@ -2644,13 +2735,13 @@ private:
 			case ATST_LESS:
 			case ATST_LEQUAL:
 				// t = (ga >> 16) > m_local.gd->aref;
-				vpsrld(xmm1, ga, 16);
+				THREEARG(psrld, xmm1, ga, 16);
 				pcmpgtd(xmm1, _rip_global(aref));
 				break;
 
 			case ATST_EQUAL:
 				// t = (ga >> 16) != m_local.gd->aref;
-				vpsrld(xmm1, ga, 16);
+				THREEARG(psrld, xmm1, ga, 16);
 				pcmpeqd(xmm1, _rip_global(aref));
 				pcmpeqd(xmm0, xmm0);
 				pxor(xmm1, xmm0);
@@ -2659,14 +2750,14 @@ private:
 			case ATST_GEQUAL:
 			case ATST_GREATER:
 				// t = (ga >> 16) < m_local.gd->aref;
-				vpsrld(xmm0, ga, 16);
+				THREEARG(psrld, xmm0, ga, 16);
 				movdqa(xmm1, _rip_global(aref));
 				pcmpgtd(xmm1, xmm0);
 				break;
 
 			case ATST_NOTEQUAL:
 				// t = (ga >> 16) == m_local.gd->aref;
-				vpsrld(xmm1, ga, 16);
+				THREEARG(psrld, xmm1, ga, 16);
 				pcmpeqd(xmm1, _rip_global(aref));
 				break;
 		}
@@ -2851,14 +2942,14 @@ private:
 			{
 				pxor(xmm0, xmm0);
 				//vpsrld(xmm1, _fd, 15);
-				vpslld(xmm1, _fd, 16);
+				THREEARG(pslld, xmm1, _fd, 16);
 				psrad(xmm1, 31);
 				pcmpeqd(xmm1, xmm0);
 			}
 			else
 			{
 				pcmpeqd(xmm0, xmm0);
-				vpxor(xmm1, _fd, xmm0);
+				THREEARG(pxor, xmm1, _fd, xmm0);
 				psrad(xmm1, 31);
 			}
 		}
@@ -2866,12 +2957,12 @@ private:
 		{
 			if(m_sel.fpsm == 2)
 			{
-				vpslld(xmm1, _fd, 16);
+				THREEARG(pslld, xmm1, _fd, 16);
 				psrad(xmm1, 31);
 			}
 			else
 			{
-				vpsrad(xmm1, _fd, 31);
+				THREEARG(psrad, xmm1, _fd, 31);
 			}
 		}
 
@@ -2909,7 +3000,7 @@ private:
 
 		if(m_sel.fwrite && m_sel.zwrite)
 		{
-			vpcmpeqd(xmm0, xmm1, _zm);
+			THREEARG(pcmpeqd, xmm0, xmm1, _zm);
 			pcmpeqd(xmm1, _fm);
 			packssdw(xmm1, xmm0);
 		}
@@ -2930,7 +3021,7 @@ private:
 	}
 
 	/// Inputs: rbp=za, edx=fzm, _zm
-	/// Destroys: xmm1, xmm7
+	/// Destroys: xmm0, xmm1, xmm7
 	void WriteZBuf()
 	{
 		if(!m_sel.zwrite)
@@ -2951,20 +3042,43 @@ private:
 		{
 			// zs = zs.blend8(zd, zm);
 
+			if (hasAVX)
+			{
 //#ifdef _WIN64
-			vpblendvb(xmm1, xmm1, _rip_local(temp.zd), _zm);
+				vpblendvb(xmm1, xmm1, _rip_local(temp.zd), _zm);
 //#else
-//			pblendvb(xmm1, ptr[rsp + _rz_zd], _zm);
+//				pblendvb(xmm1, ptr[rsp + _rz_zd], _zm);
 //#endif
+			}
+			else
+			{
+				movdqa(xmm0, _zm);
+				movdqa(xmm7, _rip_local(temp.zd));
+				blend8(xmm1, xmm7 /*, xmm0 */);
+			}
 		}
 
-		// TODO: Why x86 only?
 		// Clamp Z to ZPSM_FMT_MAX
-		if (is32 && m_sel.zclamp)
+		if (m_sel.zclamp)
 		{
-			pcmpeqd(xmm7, xmm7);
-			psrld(xmm7, (uint8)((m_sel.zpsm & 0x3) * 8));
-			pminsd(xmm1, xmm7);
+			const uint8 amt = (uint8)((m_sel.zpsm & 0x3) * 8);
+			if (hasSSE41)
+			{
+				pcmpeqd(xmm7, xmm7);
+				psrld(xmm7, amt);
+				pminsd(xmm1, xmm7);
+			}
+			else
+			{
+				pcmpeqd(xmm7, xmm7);
+				psrld(xmm7, amt);
+				pcmpgtd(xmm7, xmm1);
+				pand(xmm1, xmm7);
+				pcmpeqd(xmm0, xmm0);
+				pxor(xmm7, xmm0);
+				psrld(xmm7, amt);
+				por(xmm1, xmm7);
+			}
 		}
 
 		bool fast = m_sel.ztest ? m_sel.zpsm < 2 : m_sel.zpsm == 0 && m_sel.notest;
@@ -3013,21 +3127,21 @@ private:
 					pcmpeqd(tmp1, tmp1);
 
 					psrld(tmp1, 27); // 0x0000001f
-					vpand(_dst_rb, _fd, tmp1);
+					THREEARG(pand, _dst_rb, _fd, tmp1);
 					pslld(_dst_rb, 3);
 
 					pslld(tmp1, 10); // 0x00007c00
-					vpand(tmp2, _fd, tmp1);
+					THREEARG(pand, tmp2, _fd, tmp1);
 					pslld(tmp2, 9);
 
 					por(_dst_rb, tmp2);
 
 					psrld(tmp1, 5); // 0x000003e0
-					vpand(_dst_ga, _fd, tmp1);
+					THREEARG(pand, _dst_ga, _fd, tmp1);
 					psrld(_dst_ga, 2);
 
 					psllw(tmp1, 10); // 0x00008000
-					vpand(tmp2, _fd, tmp1);
+					THREEARG(pand, tmp2, _fd, tmp1);
 					pslld(tmp2, 8);
 
 					por(_dst_ga, tmp2);
@@ -3112,15 +3226,15 @@ private:
 		{
 			// mask = (c[1] << 8).sra32(31);
 
-			vpslld(xmm0, _ga, 8);
+			THREEARG(pslld, xmm0, _ga, 8);
 			psrad(xmm0, 31);
 
 			// rb = c[0].blend8(rb, mask);
 
-			vpblendvb(_rb, tmp1, _rb, xmm0);
+			blend8r(_rb, tmp1 /*, xmm0 */);
 		}
 
-		// xmm0 = pabe mask
+		// xmm0 = pabe mask (>=sse41)
 		// ga   = src ga
 		// xmm1 = dst ga
 		// rb   = rb
@@ -3177,7 +3291,7 @@ private:
 			}
 		}
 
-		// xmm0 = pabe mask
+		// xmm0 = pabe mask (>=sse41)
 		// tmp2 = src ga
 		// rb = rb
 		// ga = ga
@@ -3185,11 +3299,18 @@ private:
 
 		if(m_sel.pabe)
 		{
+			if (!hasSSE41)
+			{
+				// doh, previous blend8r overwrote xmm0 (sse41+ uses pblendvb)
+				THREEARG(pslld, xmm0, _ga, 8);
+				psrad(xmm0, 31);
+			}
+
 			psrld(xmm0, 16); // zero out high words to select the source alpha in blend (so it also does mix16)
 
 			// ga = c[1].blend8(ga, mask).mix16(c[1]);
 
-			vpblendvb(_ga, tmp2, _ga, xmm0);
+			blend8r(_ga, tmp2 /*, xmm0 */);
 		}
 		else
 		{
@@ -3246,7 +3367,7 @@ private:
 
 		// GSVector4i fs = c[0].upl16(c[1]).pu16(c[0].uph16(c[1]));
 
-		vpunpckhwd(tmp0, tmp1, tmp2);
+		THREEARG(punpckhwd, tmp0, tmp1, tmp2);
 		punpcklwd(tmp1, tmp2);
 		packuswb(tmp1, tmp0);
 
@@ -3285,9 +3406,9 @@ private:
 
 				// fs = (ga >> 16) | (rb >> 9) | (ga >> 6) | (rb >> 3);
 
-				vpsrld(tmp1, xmm0, 9);
+				THREEARG(psrld, tmp1, xmm0, 9);
 				psrld(xmm0, 3);
-				vpsrld(xmm3, xmm1, 16);
+				THREEARG(psrld, xmm3, xmm1, 16);
 				psrld(xmm1, 6);
 
 				por(xmm0, xmm1);
@@ -3307,14 +3428,14 @@ private:
 				movd(xmm7, eax);
 				pshufd(xmm7, xmm7, _MM_SHUFFLE(0, 0, 0, 0));
 
-				vpand(xmm4, tmp1, xmm6);
+				THREEARG(pand, xmm4, tmp1, xmm6);
 				pand(tmp1, xmm7);
 
 				// fs = (ga >> 16) | (rb >> 9) | (ga >> 6) | (rb >> 3);
 
-				vpsrld(xmm6, xmm4, 9);
+				THREEARG(psrld, xmm6, xmm4, 9);
 				psrld(xmm4, 3);
-				vpsrld(xmm7, tmp1, 16);
+				THREEARG(psrld, xmm7, tmp1, 16);
 				psrld(xmm5, 6);
 
 				por(tmp1, xmm4);
@@ -3413,15 +3534,31 @@ private:
 
 		Address dst = ptr[_m_local__gd__vm + addr * 2 + s_offsets[i] * 2];
 
+		
+
 		switch(psm)
 		{
 			case 0:
 				if(i == 0) movd(dst, src);
-				else pextrd(dst, src, i);
+				else {
+					if (hasSSE41) {
+						pextrd(dst, src, i);
+					} else {
+						pshufd(xmm0, src, _MM_SHUFFLE(i, i, i, i));
+						movd(dst, xmm0);
+					}
+				}
 				break;
 			case 1:
 				if(i == 0) movd(eax, src);
-				else pextrd(eax, src, i);
+				else {
+					if (hasSSE41) {
+						pextrd(eax, src, i);
+					} else {
+						pshufd(xmm0, src, _MM_SHUFFLE(i, i, i, i));
+						movd(eax, xmm0);
+					}
+				}
 				xor(eax, dst);
 				and(eax, 0xffffff);
 				xor(dst, eax);
@@ -3439,10 +3576,11 @@ private:
 	///  rbx = m_local.tex[0]  (x86 && !m_sel.mmin)
 	///  a3  = m_local.tex (x86 && m_sel.mmin)
 	///  a1  = m_local.clut (x86 && m_sel.tlu)
-	/// Destroys: rax, xmm0
+	/// Destroys: rax
 	/// Destroys a3 (!m_sel.mmin)
 	void ReadTexel(const Xmm* regOut, const Xmm* regIn, int pixels, int mip_offset)
 	{
+		// FIXME: <SSE41 support missing
 		mip_offset *= wordsize;
 
 		AddressReg texIn = is64 ? _64_m_local__gd__tex : rbp;
@@ -3462,7 +3600,7 @@ private:
 			for (int j = 0; j < 4; j++)
 			{
 				mov(a3.cvt32(), lod_i(j));
-				mov(a3.cvt32(), ptr[texIn + a3*wordsize + mip_offset]);
+				mov(a3, ptr[texIn + a3*wordsize + mip_offset]);
 
 				for (int i = 0; i < pixels; i++)
 				{
@@ -3478,7 +3616,7 @@ private:
 			if (m_sel.mmin && m_sel.lcm && is32) // TODO: x64 LOD
 			{
 				mov(a3.cvt32(), lod_i(0));
-				mov(a3.cvt32(), ptr[texIn + a3*wordsize + mip_offset]);
+				mov(a3, ptr[texIn + a3*wordsize + mip_offset]);
 				texInA3 = true;
 			}
 
