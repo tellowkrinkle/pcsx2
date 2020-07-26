@@ -315,6 +315,7 @@ namespace Xbyak
 		AFORWARD(2, pmaxsw,    ARGS_XO)
 		AFORWARD(2, pminsd,    ARGS_XO)
 		AFORWARD(2, pminsw,    ARGS_XO)
+		SFORWARD(2, pmovsxbd,  ARGS_XO)
 		SFORWARD(2, pmovmskb,  const Reg32e&, const Xmm&)
 		SFORWARD(2, pmovzxbw,  ARGS_XO)
 		AFORWARD(2, pmulhrsw,  ARGS_XO)
@@ -347,11 +348,18 @@ namespace Xbyak
 
 		FORWARD_SSE_XMM0(pblendvb)
 
-		FORWARD(2, AVX,  vbroadcastss, ARGS_XO)
-		FORWARD(3, FMA,  vfmadd213ps,  ARGS_XXO)
-		FORWARD(3, AVX2, vpermq,       ARGS_YOI)
-		FORWARD(3, AVX2, vpsravd,      ARGS_XXO)
-		FORWARD(3, AVX2, vpsrlvd,      ARGS_XXO)
+		FORWARD(2, AVX,  vbroadcastss,   ARGS_XO)
+		FORWARD(2, AVX2, vbroadcasti128, const Ymm&, const Address&)
+		FORWARD(2, AVX,  vbroadcastf128, const Ymm&, const Address&)
+		FORWARD(3, FMA,  vfmadd213ps,    ARGS_XXO)
+		FORWARD(3, AVX2, vextracti128,   const Operand&, const Ymm&, uint8)
+		FORWARD(4, AVX2, vinserti128,    const Ymm&, const Ymm&, const Operand&, uint8);
+		FORWARD(2, AVX2, vpbroadcastd,   ARGS_XO)
+		FORWARD(2, AVX2, vpbroadcastq,   ARGS_XO)
+		FORWARD(2, AVX2, vpbroadcastw,   ARGS_XO)
+		FORWARD(3, AVX2, vpermq,         ARGS_YOI)
+		FORWARD(3, AVX2, vpsravd,        ARGS_XXO)
+		FORWARD(3, AVX2, vpsrlvd,        ARGS_XXO)
 
 #undef REQUIRE64
 #undef ARGS_OI
