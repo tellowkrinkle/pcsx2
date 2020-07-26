@@ -37,7 +37,7 @@
 
 // Ease the reading of the code
 // Note, there are versions without the _64 prefix that can be used as source (but not destination) operands on both 32 and 64 bit
-#define _64_m_test r10
+#define _64_g_const r10
 #define _64_m_local r12
 #define _64_m_local__gd r13
 #define _64_m_local__gd__vm a1
@@ -137,7 +137,7 @@ class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator
 
 	/// Note: a2 is only available on x86-64
 	const AddressReg a0, a1, a2, a3, t0, t1;
-	const LocalAddr _m_test, _m_local, _m_local__gd, _m_local__gd__vm;
+	const LocalAddr _g_const, _m_local, _m_local__gd, _m_local__gd__vm;
 	/// Available on both x86 and x64, not always valid
 	const Xmm _rb, _ga, _fm, _zm, _fd, _test;
 	/// Always valid if needed, x64 only
@@ -169,7 +169,7 @@ public:
 		, a2(is64 ? rdx : r8),  a3(is64 ? rcx : rbx)
 		, t0(is64 ? r8  : rdi), t1(is64 ? r9  : rsi)
 #endif
-		, _m_test(chooseLocal(g_const->m_test_128b[0], _64_m_test))
+		, _g_const(chooseLocal(&*g_const, _64_g_const))
 		, _m_local(chooseLocal(&m_local, _64_m_local))
 		, _m_local__gd(chooseLocal(m_local.gd, _64_m_local__gd))
 		, _m_local__gd__vm(chooseLocal(m_local.gd->vm, _64_m_local__gd__vm))
@@ -392,7 +392,7 @@ public:
 			mov(ptr[rsp + _64_rz_r14], r14);
 			mov(ptr[rsp + _64_rz_r15], r15);
 #endif
-			mov(_64_m_test, (size_t)g_const->m_test_128b[0]);
+			mov(_64_g_const, (size_t)&*g_const);
 			if (!m_rip)
 			{
 				mov(_64_m_local, (size_t)&m_local);
@@ -687,7 +687,7 @@ private:
 
 			shl(a1.cvt32(), 4); // * sizeof(m_test[0])
 
-			movdqa(_test, ptr[a1 + _m_test]);
+			movdqa(_test, ptr[a1 + _g_const + offsetof(GSScanlineConstantData, m_test_128b[0])]);
 
 			mov(eax, a0.cvt32());
 			sar(eax, 31); // GH: 31 to extract the sign of the register
@@ -695,7 +695,7 @@ private:
 			shl(eax, 4); // * sizeof(m_test[0])
 			ONLY64(cdqe());
 
-			por(_test, ptr[rax + (_m_test + 7 * 16)]);
+			por(_test, ptr[rax + _g_const + offsetof(GSScanlineConstantData, m_test_128b[7])]);
 		}
 		else
 		{
@@ -1123,7 +1123,7 @@ private:
 			shl(eax, 4);
 			ONLY64(cdqe());
 
-			movdqa(_test, ptr[rax + _m_test + 7 * 16]);
+			movdqa(_test, ptr[rax + _g_const + offsetof(GSScanlineConstantData, m_test_128b[7])]);
 		}
 	}
 
