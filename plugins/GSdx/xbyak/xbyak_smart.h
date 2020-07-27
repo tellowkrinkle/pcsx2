@@ -331,6 +331,7 @@ namespace Xbyak
 		AFORWARD(2, psrad,     ARGS_XO)
 		AFORWARD(2, psraw,     ARGS_XI)
 		AFORWARD(2, psrld,     ARGS_XI)
+		AFORWARD(2, psrldq,    ARGS_XI)
 		AFORWARD(2, psrlw,     ARGS_XI)
 		AFORWARD(2, psrlw,     ARGS_XO)
 		AFORWARD(2, psubd,     ARGS_XO)
@@ -339,6 +340,7 @@ namespace Xbyak
 		AFORWARD(2, punpckhwd, ARGS_XO)
 		AFORWARD(2, punpcklbw, ARGS_XO)
 		AFORWARD(2, punpckldq, ARGS_XO)
+		AFORWARD(2, punpcklqdq,ARGS_XO)
 		AFORWARD(2, punpcklwd, ARGS_XO)
 		AFORWARD(2, pxor,      ARGS_XO)
 		SFORWARD(2, rcpps,     ARGS_XO)
@@ -358,6 +360,7 @@ namespace Xbyak
 		FORWARD(2, AVX2, vpbroadcastq,   ARGS_XO)
 		FORWARD(2, AVX2, vpbroadcastw,   ARGS_XO)
 		FORWARD(3, AVX2, vpermq,         ARGS_YOI)
+		FORWARD(3, AVX2, vpgatherdd,     const Xmm&, const Address&, const Xmm&);
 		FORWARD(3, AVX2, vpsravd,        ARGS_XXO)
 		FORWARD(3, AVX2, vpsrlvd,        ARGS_XXO)
 
