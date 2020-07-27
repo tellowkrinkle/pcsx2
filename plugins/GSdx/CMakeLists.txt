@@ -214,11 +214,13 @@ elseif(APPLE)
 else()
     LIST(APPEND GSdxSources
         Window/GSLinuxDialog.cpp
+        Window/GSwxDialog.cpp
         Window/GSWndEGL.cpp
         )
 
     LIST(APPEND GSdxHeaders
         Window/GSWndEGL.h
+        Window/GSwxDialog.h
         )
 endif()
 
@@ -229,6 +231,7 @@ set(GSdxFinalSources
 )
 
 set(GSdxFinalLibs
+    ${wxWidgets_LIBRARIES}
     ${X11_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${EGL_LIBRARIES}
