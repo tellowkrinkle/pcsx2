@@ -1373,6 +1373,8 @@ private:
 			}
 		}
 
+		const bool needsMoreRegs = !hasSSE41 || isYmm;
+
 		// x86-64 and i386 want the output of this function in different places :(
 		// Solve by remapping registers
 		const XYm
@@ -1422,7 +1424,7 @@ private:
 			pshuflw(xtm4, xtm2, _MM_SHUFFLE(2, 2, 0, 0));
 			pshufhw(xtm4, xtm4, _MM_SHUFFLE(2, 2, 0, 0));
 			psrlw(xtm4, 12);
-			if (is32 && !hasSSE41)
+			if (is32 && needsMoreRegs)
 				movdqa(_rip_local(temp.uf), xtm4);
 
 			if(m_sel.prim != GS_SPRITE_CLASS)
@@ -1432,7 +1434,7 @@ private:
 				pshuflw(vf, xtm3, _MM_SHUFFLE(2, 2, 0, 0));
 				pshufhw(vf, vf, _MM_SHUFFLE(2, 2, 0, 0));
 				psrlw(vf, 12);
-				if (is32 || !hasSSE41)
+				if (is32 || needsMoreRegs)
 					movdqa(_rip_local(temp.vf), vf);
 			}
 		}
@@ -1465,8 +1467,8 @@ private:
 
 		// xtm2 = uv0
 		// xtm3 = uv1
-		// xtm4 = uf[x64||sse41]
-		// xtm7 = used[x86] vf[x64&&sse41]
+		// xtm4 = uf[x64||!needsMoreRegs]
+		// xtm7 = used[x86] vf[x64&&!needsMoreRegs]
 		// Free: xtm0, xtm1, xtm5, xtm6
 
 		// GSVector4i x0 = uv0.upl16();
@@ -1481,9 +1483,9 @@ private:
 		// xtm0 = 0
 		// xtm2 = y0
 		// xtm3 = uv1 (ltf)
-		// xtm4 = uf[x64||sse41]
+		// xtm4 = uf[x64||!needsMoreRegs]
 		// xtm5 = x0
-		// xtm7 = used[x86] vf[x64&&sse41]
+		// xtm7 = used[x86] vf[x64&&!needsMoreRegs]
 		// Free: xtm1, xtm6
 
 		if(m_sel.ltf)
@@ -1498,9 +1500,9 @@ private:
 			// xtm1 = x1
 			// xtm2 = y0
 			// xtm3 = y1
-			// xtm4 = uf[x64||sse41]
+			// xtm4 = uf[x64||!needsMoreRegs]
 			// xtm5 = x0
-			// xtm7 = used[x86] vf[x64&&sse41]
+			// xtm7 = used[x86] vf[x64&&!needsMoreRegs]
 			// Free: xtm0, xtm6
 
 			// GSVector4i addr00 = y0 + x0;
@@ -1517,8 +1519,8 @@ private:
 			// xtm1 = addr01
 			// xtm2 = addr00
 			// xtm3 = addr10
-			// xtm4 = uf[x64||sse41]
-			// xtm7 = used[x86] vf[x64&&sse41]
+			// xtm4 = uf[x64||!needsMoreRegs]
+			// xtm7 = used[x86] vf[x64&&!needsMoreRegs]
 			// Free: xtm4, xtm5
 
 			// c00 = addr00.gather32_32((const uint32/uint8*)tex[, clut]);
@@ -1526,19 +1528,19 @@ private:
 			// c10 = addr10.gather32_32((const uint32/uint8*)tex[, clut]);
 			// c11 = addr11.gather32_32((const uint32/uint8*)tex[, clut]);
 
-			XYm regIn[]  = { xtm0, xtm2, xtm1, xtm3 };
-			XYm regOut[] = { xtm5, xtm6, xtm0, xtm2 };
-
-			ReadTexel(regOut, regIn, 4, 0);
+			const Xmm& tmp1 = is64 ? xtm7 : xtm4; // OK to destroy if needsMoreRegs
+			const Xmm& tmp2 = is64 ? xtm4 : xtm7;
+			//         d0    d1    d2s0  d3s1  s1    s2
+			ReadTexel4(xtm5, xtm6, xtm0, xtm2, xtm1, xtm3, tmp1, tmp2, 0);
 
 			// xtm0 = c01
 			// xtm2 = c10
-			// xtm4 = uf[x64||sse41]
+			// xtm4 = uf[x64||!needsMoreRegs]
 			// xtm5 = c11
 			// xtm6 = c00
-			// xtm7 = used[x86] vf[x64&&sse41]
+			// xtm7 = used[x86] vf[x64&&!needsMoreRegs]
 
-			if (is32 && !hasSSE41)
+			if (is32 && needsMoreRegs)
 				movdqa(xtm4, _rip_local(temp.uf));
 
 			// GSVector4i rb00 = c00 & mask;
@@ -1558,7 +1560,7 @@ private:
 			// xtm4 = uf
 			// xtm5 = c11
 			// xtm6 = ga00
-			// xtm7 = used[x86] vf[x64&&sse41]
+			// xtm7 = used[x86] vf[x64&&!needsMoreRegs]
 
 			// rb00 = rb00.lerp16_4(rb01, uf);
 			// ga00 = ga00.lerp16_4(ga01, uf);
@@ -1571,7 +1573,7 @@ private:
 			// xtm2 = c10
 			// xtm4 = uf
 			// xtm5 = c11
-			// xtm7 = used[x86] vf[x64&&sse41]
+			// xtm7 = used[x86] vf[x64&&!needsMoreRegs]
 
 			// GSVector4i rb10 = c10 & mask;
 			// GSVector4i ga10 = (c10 >> 8) & mask;
@@ -1590,7 +1592,7 @@ private:
 			// xtm4 = uf
 			// xtm5 = rb11
 			// xtm6 = ga11
-			// xtm7 = used[x86] vf[x64&&sse41]
+			// xtm7 = used[x86] vf[x64&&!needsMoreRegs]
 
 			// rb10 = rb10.lerp16_4(rb11, uf);
 			// ga10 = ga10.lerp16_4(ga11, uf);
@@ -1602,13 +1604,13 @@ private:
 			// xtm1 = ga00
 			// xtm5 = rb10
 			// xtm6 = ga10
-			// xtm7 = used[x86] vf[x64&&sse41]
+			// xtm7 = used[x86] vf[x64&&!needsMoreRegs]
 
 			// rb00 = rb00.lerp16_4(rb10, vf);
 			// ga00 = ga00.lerp16_4(ga10, vf);
 
 			XYm vf = is64 ? xtm7 : xtm4;
-			if (!hasSSE41 || is32)
+			if (needsMoreRegs || is32)
 				movdqa(vf, _rip_local(temp.vf));
 
 			lerp16_4(xtm5, xtm0, vf);
@@ -1622,7 +1624,7 @@ private:
 
 			// c00 = addr00.gather32_32((const uint32/uint8*)tex[, clut]);
 
-			ReadTexel(&xtm5, &xtm2, 1, 0);
+			ReadTexel1(xtm5, xtm2, xtm0, xtm1, 0);
 
 			// GSVector4i mask = GSVector4i::x00ff();
 
@@ -2119,15 +2121,14 @@ private:
 			// c10 = addr10.gather32_32((const uint32/uint8*)tex[, clut]);
 			// c11 = addr11.gather32_32((const uint32/uint8*)tex[, clut]);
 
-			const XYm regSrc[] = { xym5, xym2, xym0, xym3 };
-			const XYm regDst[] = { xym6, xym4, xym1, xym5 };
-			ReadTexel(regDst, regSrc, 4, 0);
+			//         d0    d1    d2s0  d2s1  s2    s3    tmp1  tmp2
+			ReadTexel4(xym6, xym4, xym5, xym2, xym3, xym0, xym1, xym7, 0);
 
 			// xym6 = c00
 			// xym4 = c01
-			// xym1 = c10
+			// xym2 = c10
 			// xym5 = c11
-			// xym0, xym2, xym3 = free
+			// xym0, xym1, xym3 = free
 			// xym7 = used
 
 			movdqa(xym0, ptr[&m_local.temp.uf]);
@@ -2135,7 +2136,7 @@ private:
 			// GSVector4i rb00 = c00 & mask;
 			// GSVector4i ga00 = (c00 >> 8) & mask;
 
-			split16_2x8(xym2, xym6, xym6);
+			split16_2x8(xym1, xym6, xym6);
 
 			// GSVector4i rb01 = c01 & mask;
 			// GSVector4i ga01 = (c01 >> 8) & mask;
@@ -2143,32 +2144,32 @@ private:
 			split16_2x8(xym3, xym4, xym4);
 
 			// xym0 = uf
-			// xym2 = rb00
+			// xym1 = rb00
 			// xym3 = rb01
 			// xym6 = ga00
 			// xym4 = ga01
-			// xym1 = c10
+			// xym2 = c10
 			// xym5 = c11
 			// xym7 = used
 
 			// rb00 = rb00.lerp16_4(rb01, uf);
 			// ga00 = ga00.lerp16_4(ga01, uf);
 
-			lerp16_4(xym3, xym2, xym0);
+			lerp16_4(xym3, xym1, xym0);
 			lerp16_4(xym4, xym6, xym0);
 
 			// xym0 = uf
 			// xym3 = rb00
 			// xym4 = ga00
-			// xym1 = c10
+			// xym2 = c10
 			// xym5 = c11
-			// xym2, xym6 = free
+			// xym1, xym6 = free
 			// xym7 = used
 
 			// GSVector4i rb10 = c10 & mask;
 			// GSVector4i ga10 = (c10 >> 8) & mask;
 
-			split16_2x8(xym1, xym2, xym1);
+			split16_2x8(xym1, xym2, xym2);
 
 			// GSVector4i rb11 = c11 & mask;
 			// GSVector4i ga11 = (c11 >> 8) & mask;
@@ -2213,7 +2214,7 @@ private:
 
 			// c00 = addr00.gather32_32((const uint32/uint8*)tex[, clut]);
 
-			ReadTexel(&xym6, &xym2, 1, 0);
+			ReadTexel1(xym6, xym2, xym0, xym1, 0);
 
 			// GSVector4i mask = GSVector4i::x00ff();
 
@@ -2351,14 +2352,12 @@ private:
 				// c10 = addr10.gather32_32((const uint32/uint8*)tex[, clut]);
 				// c11 = addr11.gather32_32((const uint32/uint8*)tex[, clut]);
 
-				const XYm regSrc[] = { xym5, xym2, xym0, xym3 };
-				const XYm regDst[] = { xym6, xym4, xym1, xym5 };
-
-				ReadTexel(regDst, regSrc, 4, 1);
+				//         d0    d1    d2s0  d2s1  s2    s3    tmp1  tmp2
+				ReadTexel4(xym6, xym4, xym5, xym2, xym3, xym0, xym1, xym7, 0);
 
 				// xym6 = c00
 				// xym4 = c01
-				// xym1 = c10
+				// xym2 = c10
 				// xym5 = c11
 				// xym0, xym2, xym3 = free
 				// xym7 = used
@@ -2368,7 +2367,7 @@ private:
 				// GSVector4i rb00 = c00 & mask;
 				// GSVector4i ga00 = (c00 >> 8) & mask;
 
-				split16_2x8(xym2, xym6, xym6);
+				split16_2x8(xym1, xym6, xym6);
 
 				// GSVector4i rb01 = c01 & mask;
 				// GSVector4i ga01 = (c01 >> 8) & mask;
@@ -2376,24 +2375,24 @@ private:
 				split16_2x8(xym3, xym4, xym4);
 
 				// xym0 = uf
-				// xym2 = rb00
+				// xym1 = rb00
 				// xym3 = rb01
 				// xym6 = ga00
 				// xym4 = ga01
-				// xym1 = c10
+				// xym2 = c10
 				// xym5 = c11
 				// xym7 = used
 
 				// rb00 = rb00.lerp16_4(rb01, uf);
 				// ga00 = ga00.lerp16_4(ga01, uf);
 
-				lerp16_4(xym3, xym2, xym0);
+				lerp16_4(xym3, xym1, xym0);
 				lerp16_4(xym4, xym6, xym0);
 
 				// xym0 = uf
 				// xym3 = rb00
 				// xym4 = ga00
-				// xym1 = c10
+				// xym2 = c10
 				// xym5 = c11
 				// xym2, xym6 = free
 				// xym7 = used
@@ -2401,7 +2400,7 @@ private:
 				// GSVector4i rb10 = c10 & mask;
 				// GSVector4i ga10 = (c10 >> 8) & mask;
 
-				split16_2x8(xym1, xym2, xym1);
+				split16_2x8(xym1, xym2, xym2);
 
 				// GSVector4i rb11 = c11 & mask;
 				// GSVector4i ga11 = (c11 >> 8) & mask;
@@ -2446,7 +2445,7 @@ private:
 
 				// c00 = addr00.gather32_32((const uint32/uint8*)tex[, clut]);
 
-				ReadTexel(&xym6, &xym2, 1, 1);
+				ReadTexel1(xym6, xym2, xym0, xym1, 1);
 
 				// GSVector4i mask = GSVector4i::x00ff();
 
@@ -3748,41 +3747,162 @@ private:
 		}
 	}
 
-	/// Will process `pixels` items from regIn into regOut in order
 	/// Input:
-	///  rbx = m_local.tex[0]  (x86 && !m_sel.mmin)
-	///  a3  = m_local.tex (x86 && m_sel.mmin)
+	///  a3 = m_local.tex[0]  (x86 && !m_sel.mmin)
+	///  rbp  = m_local.tex (x86 && m_sel.mmin)
+	///  a1  = m_local.clut (x86 && m_sel.tlu)
+	/// Destroys: rax, src, tmp1, tmp2
+	/// Destroys a3 (!m_sel.mmin)
+	void ReadTexel1(const XYm& dst, const XYm& src, const XYm& tmp1, const XYm& tmp2, int mip_offset)
+	{
+		const Xmm no(-1); // Hopefully this will assert if we accidentally use it
+		ReadTexelImpl(dst, tmp1, src, no, no, no, tmp2, no, 1, mip_offset);
+	}
+
+	/// Will process addr## to c## from s registers to d registers
+	/// Destroys contents of s registers
+	/// Destroys tmp1 if <sse41 or isYmm
+	/// Will preserve tmp2
+	/// Input:
+	///  a3 = m_local.tex[0]  (x86 && !m_sel.mmin)
+	///  rbp  = m_local.tex (x86 && m_sel.mmin)
 	///  a1  = m_local.clut (x86 && m_sel.tlu)
 	/// Destroys: rax
 	/// Destroys a3 (!m_sel.mmin)
-	void ReadTexel(const XYm* regOut, const XYm* regIn, int pixels, int mip_offset)
+	void ReadTexel4(
+		const XYm& d0,   const XYm& d1,
+		const XYm& d2s0, const XYm& d3s1,
+		const XYm& s2,   const XYm& s3,
+		const XYm& tmp1, const XYm& tmp2,
+		int mip_offset)
 	{
-		// FIXME: <SSE41 support missing
-		// FIXME: YMM support missing
-		mip_offset *= wordsize;
+		ReadTexelImpl(d0, d1, d2s0, d3s1, s2, s3, tmp1, tmp2, 4, mip_offset);
+	}
 
+	void ReadTexelImpl(
+		const Xmm& d0,   const Xmm& d1,
+		const Xmm& d2s0, const Xmm& d3s1,
+		const Xmm& s2,   const Xmm& s3,
+		const Xmm& tmp1, const Xmm& tmp2,
+		int pixels,      int mip_offset)
+	{
+		mip_offset *= wordsize;
+#if USING_XMM
+		if (hasSSE41)
+			ReadTexelImplSSE4(d0, d1, d2s0, d3s1, s2, s3, pixels, mip_offset);
+		else
+			ReadTexelImplSSE3(d0, d1, d2s0, d3s1, s2, s3, tmp1, tmp2, pixels, mip_offset);
+#else
+		ReadTexelImplYmm(d0, d1, d2s0, d3s1, s2, s3, tmp1, pixels, mip_offset);
+#endif
+
+	}
+
+	void ReadTexelImplLoadTexLOD(int lod, int mip_offset)
+	{
 		AddressReg texIn = is64 ? _64_m_local__gd__tex : rbp;
-		auto lod_i = [this](int j) -> Address
+		Address lod_addr = m_sel.lcm ? _rip_global(lod.i.u32[lod]) : _rip_local(temp.lod.i.u32[lod]);
+		mov(a3.cvt32(), lod_addr);
+		mov(a3, ptr[texIn + a3*wordsize + mip_offset]);
+	}
+
+	void ReadTexelImplYmm(
+		const Ymm& d0,   const Ymm& d1,
+		const Ymm& d2s0, const Ymm& d3s1,
+		const Ymm& s2,   const Ymm& s3,
+		const Ymm& tmp,
+		int pixels,      int mip_offset)
+	{
+		const Ymm dst[] = { d0,   d1,   d2s0, d3s1 };
+		const Ymm src[] = { d2s0, d3s1,   s2,   s3 };
+		const Ymm t1[]  = { d1,   d2s0, d3s1,   s2 };
+		const Ymm t2[]  = { tmp,  tmp,  tmp,  tmp  };
+
+		bool texInA3 = is32;
+		if(m_sel.mmin && m_sel.lcm && is32) // TODO: x64 LOD
 		{
-			return m_sel.lcm ? _rip_global(lod.i.u32[j]) : _rip_local(temp.lod.i.u32[j]);
-		};
+			ReadTexelImplLoadTexLOD(0, mip_offset);
+			texInA3 = true;
+		}
+
+		for (int i = 0; i < pixels; i++) {
+			const Xmm xdst{dst[i].getIdx()};
+			const Xmm xsrc{src[i].getIdx()};
+			const Xmm xt1{t1[i].getIdx()};
+			const Xmm xt2{t2[i].getIdx()};
+
+			if(m_sel.mmin && !m_sel.lcm && is32) // TODO: x64 LOD
+			{
+				texInA3 = true;
+
+				vextracti128(xt1, src[i], 1);
+
+				for (int j = 0; j < 4; j++)
+				{
+					ReadTexelImplLoadTexLOD(j, mip_offset);
+
+					ReadTexelImpl(xdst, xsrc, j, texInA3, false);
+
+					ReadTexelImplLoadTexLOD(j+4, mip_offset);
+
+					ReadTexelImpl(xt2, xt1, j, texInA3, false);
+				}
+
+				vinserti128(dst[i], dst[i], xt2, 1);
+			}
+			else
+			{
+				AddressReg tex  = texInA3 ? a3 : _64_m_local__gd__tex;
+				if (!m_sel.tlu)
+				{
+					pcmpeqd(t1[i], t1[i]);
+					vpgatherdd(dst[i], ptr[tex + src[i]*4], t1[i]);
+				}
+				else
+				{
+					vextracti128(xt1, src[i], 1);
+
+					for (int j = 0; j < 4; j++)
+					{
+						ReadTexelImpl(xdst, xsrc, j, texInA3, false);
+						ReadTexelImpl(xt2, xt1, j, texInA3, false);
+					}
+
+					vinserti128(dst[i], dst[i], xt2, 1);
+
+					/*
+					pcmpeqd(t1[i], t1[i]);
+					vpgatherdd(t2[i], ptr[tex + src[i]*1], t1[i]); // either this 1x scale, or the latency of two dependendent gathers are too slow
+					pslld(t2[i], 24);
+					psrld(t2[i], 24);
+					pcmpeqd(t1[i], t1[i]);
+					vpgatherdd(dst[i], ptr[clut + t2[i]*4], t1[i]);
+					*/
+				}
+			}
+		}
+	}
+
+	void ReadTexelImplSSE4(
+		const Xmm& d0,   const Xmm& d1,
+		const Xmm& d2s0, const Xmm& d3s1,
+		const Xmm& s2,   const Xmm& s3,
+		int pixels,      int mip_offset)
+	{
+		const bool preserve[] = { false, false, true, true };
+		const Xmm dst[]       = { d0,    d1,    d2s0, d3s1 };
+		const Xmm src[]       = { d2s0,  d3s1,    s2,   s3 };
 
 		if (m_sel.mmin && !m_sel.lcm && is32) // TODO: x64 LOD
 		{
-			bool preserve = false;
-			for (int i = 0; i < pixels; i++)
-				for (int j = 0; j < pixels; j++)
-					if (regIn[i] == regOut[j])
-						preserve = true;
 			bool texInA3 = true;
 			for (int j = 0; j < 4; j++)
 			{
-				mov(a3.cvt32(), lod_i(j));
-				mov(a3, ptr[texIn + a3*wordsize + mip_offset]);
+				ReadTexelImplLoadTexLOD(j, mip_offset);
 
 				for (int i = 0; i < pixels; i++)
 				{
-					ReadTexel(regOut[i], regIn[i], j, texInA3, preserve);
+					ReadTexelImpl(dst[i], src[i], j, texInA3, preserve[i]);
 				}
 			}
 		}
@@ -3793,8 +3913,7 @@ private:
 
 			if (m_sel.mmin && m_sel.lcm && is32) // TODO: x64 LOD
 			{
-				mov(a3.cvt32(), lod_i(0));
-				mov(a3, ptr[texIn + a3*wordsize + mip_offset]);
+				ReadTexelImplLoadTexLOD(0, mip_offset);
 				texInA3 = true;
 			}
 
@@ -3802,13 +3921,127 @@ private:
 			{
 				for (int j = 0; j < 4; j++)
 				{
-					ReadTexel(regOut[i], regIn[i], j, texInA3, preserve);
+					ReadTexelImpl(dst[i], src[i], j, texInA3, preserve);
 				}
 			}
 		}
 	}
 
-	void ReadTexel(const XYm& dst, const XYm& addr, uint8 i, bool texInA3, bool preserveDst)
+	void ReadTexelImplSSE3(
+		const Xmm& d0,   const Xmm& d1,
+		const Xmm& d2s0, const Xmm& d3s1,
+		const Xmm& s2,   const Xmm& s3,
+		const Xmm& tmp1, const Xmm& tmp2,
+		int pixels,      int mip_offset)
+	{
+		bool texInA3 = is32;
+		auto Read = [&](const Xmm& dst, const Xmm& src)
+		{
+			ReadTexelImpl(dst, src, 0, texInA3, /*preserveDst=*/false);
+		};
+
+		// Note: Should use d1 and tmp1 as temp if pixels == 1
+		if(m_sel.mmin && !m_sel.lcm && is32) // TODO: x64 LOD
+		{
+			texInA3 = true;
+			if (pixels == 1)
+			{
+				ReadTexelImplLoadTexLOD(0, mip_offset);
+				Read(d0, d2s0);
+				psrldq(d2s0, 4);
+
+				ReadTexelImplLoadTexLOD(1, mip_offset);
+				Read(d1, d2s0);
+				psrldq(d2s0, 4);
+
+				punpckldq(d0, d1);
+
+				ReadTexelImplLoadTexLOD(2, mip_offset);
+				Read(d1, d2s0);
+				psrldq(d2s0, 4);
+
+				ReadTexelImplLoadTexLOD(3, mip_offset);
+				Read(tmp1, d2s0);
+
+				punpckldq(d1, tmp1);
+
+				punpcklqdq(d0, d1);
+			}
+			else
+			{
+				movdqa(_rip_local(temp.test), tmp2);
+
+				Xmm dst[2][2] = {{d0,   d1}, {d2s0, d3s1}};
+				Xmm src[2][2] = {{d2s0, d3s1}, {s2,   s3}};
+
+				for (int i = 0; i < 2; i++)
+				{
+					ReadTexelImplLoadTexLOD(0, mip_offset);
+					Read(dst[i][0], src[i][0]);
+					psrldq(src[i][0], 4);
+					Read(dst[i][1], src[i][1]);
+					psrldq(src[i][1], 4);
+
+					ReadTexelImplLoadTexLOD(1, mip_offset);
+					Read(tmp1, src[i][0]);
+					psrldq(src[i][0], 4);
+					Read(tmp2, src[i][1]);
+					psrldq(src[i][1], 4);
+
+					punpckldq(dst[i][0], tmp1);
+					punpckldq(dst[i][0], tmp2);
+
+					ReadTexelImplLoadTexLOD(2, mip_offset);
+					Read(tmp1, src[i][0]);
+					psrldq(src[i][0], 4);
+					Read(tmp2, src[i][1]);
+					psrldq(src[i][1], 4);
+
+					ReadTexelImplLoadTexLOD(3, mip_offset);
+					Read(src[i][0], src[i][0]);
+					Read(src[i][1], src[i][1]);
+
+					punpckldq(tmp1, src[i][0]);
+					punpckldq(tmp2, src[i][1]);
+
+					punpcklqdq(dst[i][0], tmp1);
+					punpcklqdq(dst[i][1], tmp2);
+				}
+
+				movdqa(tmp2, _rip_local(temp.test));
+			}
+		}
+		else
+		{
+			if(m_sel.mmin && m_sel.lcm && is32) // TODO: x64 LOD
+			{
+				ReadTexelImplLoadTexLOD(0, mip_offset);
+				texInA3 = true;
+			}
+
+			const Xmm dst[] = { d0,   d1,   d2s0, d3s1 };
+			const Xmm src[] = { d2s0, d3s1,   s2,   s3 };
+			const Xmm tmp[] = { d1,   d2s0, d3s1,   s2 };
+
+			for (int i = 0; i < pixels; i++)
+			{
+				Read(dst[i], src[i]);
+				psrldq(src[i], 4);
+				Read(tmp[i], src[i]);
+				psrldq(src[i], 4);
+				punpckldq(dst[i], tmp[i]);
+
+				Read(tmp[i], src[i]);
+				psrldq(src[i], 4);
+				Read(src[i], src[i]);
+				punpckldq(tmp[i], src[i]);
+
+				punpcklqdq(dst[i], tmp[i]);
+			}
+		}
+	}
+
+	void ReadTexelImpl(const Xmm& dst, const Xmm& addr, uint8 i, bool texInA3, bool preserveDst)
 	{
 		ASSERT(i < 4);
 
