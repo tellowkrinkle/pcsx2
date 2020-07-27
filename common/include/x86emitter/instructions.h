@@ -198,7 +198,7 @@ public:
 /// Helper object to save some temporary registers before the call
 class xScopedSavedRegisters
 {
-    std::initializer_list<std::reference_wrapper<const xAddressReg>> regs;
+    std::vector<std::reference_wrapper<const xAddressReg>> regs;
 public:
     xScopedSavedRegisters(std::initializer_list<std::reference_wrapper<const xAddressReg>> regs);
     ~xScopedSavedRegisters();
