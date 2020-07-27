@@ -107,8 +107,8 @@ namespace Xbyak
 		const Reg16       ax,  cx,  dx,  bx,  sp,  bp,  si,  di;
 		const Reg8        al,  cl,  dl,  bl,  ah,  ch,  dh,  bh;
 
-		constexpr static RipType rip{};
-		constexpr static AddressFrame ptr{0}, byte{8}, word{16}, dword{32}, qword{64}, xword{128}, yword{256}, zword{512};
+		const RipType rip{};
+		const AddressFrame ptr{0}, byte{8}, word{16}, dword{32}, qword{64}, xword{128}, yword{256}, zword{512};
 
 		SmartCodeGenerator(CodeGenerator* actual, SSEVersion::SSEVersion sse, bool hasFMA)
 			: actual(*actual), hasSSE2(sse >= SSEVersion::SSE2), hasSSE3(sse >= SSEVersion::SSE3), hasSSE41(sse >= SSEVersion::SSE41), hasAVX(sse >= SSEVersion::AVX), hasAVX2(sse >= SSEVersion::AVX2), hasFMA(hasFMA)

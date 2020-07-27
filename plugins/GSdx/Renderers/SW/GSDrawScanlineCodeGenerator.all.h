@@ -94,7 +94,7 @@
 	broadcast(dst, src)
 /// On AVX2, uses the given broadcast to load into the temp register, then applies the given op
 /// Otherwise, applies the given op directly
-# define BROADCAST_AND_OP(broacast, op, dst, tmpReg, src) \
+# define BROADCAST_AND_OP(broadcast, op, dst, tmpReg, src) \
 	do \
 	{ \
 		broadcast(tmpReg, src); \
@@ -104,7 +104,7 @@
 	do \
 	{ \
 		movd(Xmm(vec.getIdx()), gpr); \
-		vpbroadcastd(veclarge, Xmm(vec.getIdx())); \
+		vpbroadcastd(vec, Xmm(vec.getIdx())); \
 	} while (0)
 # define _rip_local_d(x) _rip_local(d8.x)
 # define _rip_local_d_p(x) _rip_local_d(p.x)
@@ -117,7 +117,7 @@
 	load(dst, src)
 /// On AVX2, uses the given broadcast to load into the temp register, then applies the given op
 /// Otherwise, applies the given op directly
-# define BROADCAST_AND_OP(broacast, op, dst, tmpReg, src) \
+# define BROADCAST_AND_OP(broadcast, op, dst, tmpReg, src) \
 	op(dst, src)
 # define BROADCAST_GPR_TO_VEC(vec, gpr) \
 	do \
@@ -1059,7 +1059,7 @@ private:
 			{
 				if (is32)
 				{
-					BROADCAST_OR_LOAD(vbroadcastw, movdqa, z, _rip_local_d_p(f));
+					BROADCAST_OR_LOAD(vpbroadcastw, movdqa, z, _rip_local_d_p(f));
 					paddw(f, _rip_local(temp.f));
 					movdqa(_rip_local(temp.f), f);
 				}
@@ -1129,7 +1129,7 @@ private:
 					}
 					else
 					{
-						movaps(q, _rip_local(d4.stq));
+						movaps(q, _rip_local_d(stq));
 						movaps(s, q);
 						movaps(t, q);
 
@@ -1204,7 +1204,7 @@ private:
 #if USING_XMM
 			movdqa(_test, ptr[rax + _g_const + offsetof(GSScanlineConstantData, m_test_128b[7])]);
 #else
-			vpmovsxbd(_test, ptr[rax*8 + _g_const + offsetof(GSScanlineConstantData, m_test_256b[15])]);
+			pmovsxbd(_test, ptr[rax*8 + _g_const + offsetof(GSScanlineConstantData, m_test_256b[15])]);
 #endif
 		}
 	}
@@ -1556,8 +1556,8 @@ private:
 			// c10 = addr10.gather32_32((const uint32/uint8*)tex[, clut]);
 			// c11 = addr11.gather32_32((const uint32/uint8*)tex[, clut]);
 
-			const Xmm& tmp1 = is64 ? xtm7 : xtm4; // OK to destroy if needsMoreRegs
-			const Xmm& tmp2 = is64 ? xtm4 : xtm7;
+			const XYm& tmp1 = is64 ? xtm7 : xtm4; // OK to destroy if needsMoreRegs
+			const XYm& tmp2 = is64 ? xtm4 : xtm7;
 			//         d0    d1    d2s0  d3s1  s1    s2
 			ReadTexel4(xtm5, xtm6, xtm0, xtm2, xtm1, xtm3, tmp1, tmp2, 0);
 
@@ -3486,7 +3486,7 @@ private:
 	/// Destroys a3 (!m_sel.mmin)
 	void ReadTexel1(const XYm& dst, const XYm& src, const XYm& tmp1, const XYm& tmp2, int mip_offset)
 	{
-		const Xmm no(-1); // Hopefully this will assert if we accidentally use it
+		const XYm no(-1); // Hopefully this will assert if we accidentally use it
 		ReadTexelImpl(dst, tmp1, src, no, no, no, tmp2, no, 1, mip_offset);
 	}
 
@@ -3511,10 +3511,10 @@ private:
 	}
 
 	void ReadTexelImpl(
-		const Xmm& d0,   const Xmm& d1,
-		const Xmm& d2s0, const Xmm& d3s1,
-		const Xmm& s2,   const Xmm& s3,
-		const Xmm& tmp1, const Xmm& tmp2,
+		const XYm& d0,   const XYm& d1,
+		const XYm& d2s0, const XYm& d3s1,
+		const XYm& s2,   const XYm& s3,
+		const XYm& tmp1, const XYm& tmp2,
 		int pixels,      int mip_offset)
 	{
 		mip_offset *= wordsize;
