@@ -1239,8 +1239,11 @@ xScopedStackFrame::~xScopedStackFrame()
     }
 }
 
-xScopedSavedRegisters::xScopedSavedRegisters(std::initializer_list<std::reference_wrapper<const xAddressReg>> regs) {
-    for (auto reg : regs) {
+xScopedSavedRegisters::xScopedSavedRegisters(std::initializer_list<std::reference_wrapper<const xAddressReg>> regs)
+    : regs(regs)
+{
+    for (auto reg : regs)
+    {
         const xAddressReg& regRef = reg;
         xPUSH(regRef);
     }
@@ -1249,8 +1252,8 @@ xScopedSavedRegisters::xScopedSavedRegisters(std::initializer_list<std::referenc
 
 xScopedSavedRegisters::~xScopedSavedRegisters() {
     stackAlign(regs.size() * wordsize, false);
-    for (auto reg : regs) {
-        const xAddressReg& regRef = reg;
+    for (auto it = regs.rbegin(); it < regs.rend(); ++it) {
+        const xAddressReg& regRef = *it;
         xPOP(regRef);
     }
 }
