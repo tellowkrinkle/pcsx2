@@ -2733,7 +2733,7 @@ private:
 		BROADCAST_OR_LOAD(vpbroadcastd, movdqa, tmp, _rip_global(fga));
 		lerp16(_ga, tmp, f, 0);
 
-		mix16(_ga, xym1, f);
+		mix16(_ga, xym1, xym0);
 	}
 
 	/// Outputs: _fd, rbx=fa
