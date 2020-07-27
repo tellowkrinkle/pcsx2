@@ -578,7 +578,7 @@ void Dialog::config_key(int pad, int key)
         if (PollForNewKeyboardKeys(key_pressed)) {
             // special case for keyboard/mouse to handle multiple keys
             // Note: key_pressed == 0 when ESC is hit to abort the capture
-            if (key_pressed > 0) {
+            if (key_pressed != (u32)-1) {
                 clear_key(pad, key);
                 set_keyboard_key(pad, key_pressed, key);
                 m_simulatedKeys[pad][key] = key_pressed;
