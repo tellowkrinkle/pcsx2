@@ -42,7 +42,7 @@
 #define _64_m_local__gd r13
 #define _64_m_local__gd__vm a1
 #define _64_m_local__gd__clut r11
-// If m_sel.mmin, m_local.gd->tex, else m_local.gd->tex[0]
+// If use_lod, m_local.gd->tex, else m_local.gd->tex[0]
 #define _64_m_local__gd__tex r14
 
 // Careful with rip-based regexps, you can only add constants to them, not registers
@@ -184,6 +184,7 @@ class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator
 	GSScanlineSelector m_sel;
 	GSScanlineLocalData& m_local;
 	bool m_rip;
+	bool use_lod;
 
 	const XYm xym0, xym1, xym2, xym3, xym4, xym5, xym6, xym7, xym8, xym9, xym10, xym11, xym12, xym13, xym14, xym15;
 	/// Note: a2 is only available on x86-64
@@ -229,6 +230,7 @@ public:
 		, _z(xym8), _f(xym9), _s(xym10), _t(xym11), _q(xym12), _f_rb(xym13), _f_ga(xym14)
 	{
 		m_sel.key = key;
+		use_lod = m_sel.mmin;
 		if (isYmm)
 			ASSERT(hasAVX2);
 	}
@@ -463,8 +465,8 @@ public:
 		// t1 = fza_base
 		// t0 = fza_offset
 		// xym0 = z/zi      |
-		// xym2 = s/u (tme) | free
-		// xym3 = t/v (tme) | free
+		// xym2 = s/u (tme) | rb (!tme)
+		// xym3 = t/v (tme) | gb (!tme)
 		// xym4 = q (tme)   | free
 		// xym5 = rb (!tme) | free
 		// xym6 = ga (!tme) | free
@@ -473,21 +475,21 @@ public:
 
 		bool tme = m_sel.tfx != TFX_NONE;
 		
-		TestZ(tme ? xym5 : xym2, tme ? xym6 : xym3);
+		TestZ(tme || is64 ? xym5 : xym2, tme || is64 ? xym6 : xym3);
 
 		// a0 = steps
 		// t1 = fza_base
 		// t0 = fza_offset
 		// ebp = za
-		// xym2 = s/u (tme) | free
-		// xym3 = t/v (tme) | free
+		// xym2 = s/u (tme) | rb (!tme)
+		// xym3 = t/v (tme) | gb (!tme)
 		// xym4 = q (tme)   | free
 		// xym5 = rb (!tme) | free
 		// xym6 = ga (!tme) | free
 		// xym7 = test      | free
 		// xym15 =          | test
 
-		if(m_sel.mmin)
+		if(use_lod)
 		{
 			SampleTextureLOD();
 		}
@@ -1009,7 +1011,7 @@ private:
 			mov(_64_m_local__gd__vm, _rip_global(vm));
 			if(m_sel.fb && m_sel.tfx != TFX_NONE)
 			{
-				if (m_sel.mmin)
+				if (use_lod)
 					lea(_64_m_local__gd__tex, _rip_global(tex));
 				else
 					mov(_64_m_local__gd__tex, _rip_global(tex));
@@ -3495,11 +3497,11 @@ private:
 	/// Destroys tmp1 if <sse41 or isYmm
 	/// Will preserve tmp2
 	/// Input:
-	///  a3 = m_local.tex[0]  (x86 && !m_sel.mmin)
-	///  rbp  = m_local.tex (x86 && m_sel.mmin)
+	///  a3 = m_local.tex[0]  (x86 && !use_lod)
+	///  rbp  = m_local.tex (x86 && use_lod)
 	///  a1  = m_local.clut (x86 && m_sel.tlu)
 	/// Destroys: rax
-	/// Destroys a3 (!m_sel.mmin)
+	/// Destroys a3 (!use_lod)
 	void ReadTexel4(
 		const XYm& d0,   const XYm& d1,
 		const XYm& d2s0, const XYm& d3s1,
@@ -3550,7 +3552,7 @@ private:
 		const Ymm t2[]  = { tmp,  tmp,  tmp,  tmp  };
 
 		bool texInA3 = is32;
-		if(m_sel.mmin && m_sel.lcm)
+		if(use_lod && m_sel.lcm)
 		{
 			ReadTexelImplLoadTexLOD(0, mip_offset);
 			texInA3 = true;
@@ -3562,7 +3564,7 @@ private:
 			const Xmm xt1{t1[i].getIdx()};
 			const Xmm xt2{t2[i].getIdx()};
 
-			if(m_sel.mmin && !m_sel.lcm)
+			if(use_lod && !m_sel.lcm)
 			{
 				texInA3 = true;
 
@@ -3624,7 +3626,7 @@ private:
 		const Xmm dst[]       = { d0,    d1,    d2s0, d3s1 };
 		const Xmm src[]       = { d2s0,  d3s1,    s2,   s3 };
 
-		if (m_sel.mmin && !m_sel.lcm)
+		if (use_lod && !m_sel.lcm)
 		{
 			bool texInA3 = true;
 			for (int j = 0; j < 4; j++)
@@ -3642,7 +3644,7 @@ private:
 			bool preserve = false;
 			bool texInA3 = is32;
 
-			if (m_sel.mmin && m_sel.lcm)
+			if (use_lod && m_sel.lcm)
 			{
 				ReadTexelImplLoadTexLOD(0, mip_offset);
 				texInA3 = true;
@@ -3672,7 +3674,7 @@ private:
 		};
 
 		// Note: Should use d1 and tmp1 as temp if pixels == 1
-		if(m_sel.mmin && !m_sel.lcm)
+		if(use_lod && !m_sel.lcm)
 		{
 			texInA3 = true;
 			if (pixels == 1)
@@ -3744,7 +3746,7 @@ private:
 		}
 		else
 		{
-			if(m_sel.mmin && m_sel.lcm)
+			if(use_lod && m_sel.lcm)
 			{
 				ReadTexelImplLoadTexLOD(0, mip_offset);
 				texInA3 = true;
