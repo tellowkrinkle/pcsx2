@@ -44,6 +44,8 @@ namespace Xbyak
 		};
 	}
 
+	/// Code generator that automatically selects between SSE and AVX, x86 and x64 so you don't have to
+	/// Should make combined SSE and AVX codegen much easier
 	class SmartCodeGenerator
 	{
 		/// Make sure the register is okay to use
@@ -121,9 +123,25 @@ namespace Xbyak
 		{
 		}
 
-		// FORWARD: Forward things to
-		// SFORWARD: Forward vector ops to the actual generator, for ops that are the same in SSE and AVX (automatically adds the v prefix for AVX)
-		// AFORWARD: Forward vector ops to the actual generator, for ops that have SSE and AVX (extra destination register) versions
+// ------------ Forwarding instructions ------------
+// Note: Only instructions used by codegen were added here, so if you're modifying codegen, you may need to add instructions here
+
+// For instructions available in SSE and AVX, functions with the SSE name and arguments that forward to SSE or AVX depending on the target, as well as functions with the AVX name and arguments that forward to the AVX version or assert on SSE
+
+// ARGS_* macros are provided for shorter argument lists.  The following single-letter abbreviations are used: X=Xmm, Y=Ymm, O=Operand, A=Address, I=Immediate
+// FORWARD(argcount, category, instrname, argtypes...) forwards an instruction.  The following categories are available:
+//   BASE:    non-SSE
+//   SSE:     available on SSE and v-prefixed on AVX
+//   SSEONLY: available only on SSE (exception on AVX)
+//   AVX:     available only on AVX (exception on SSE)
+//   AVX2:    available only on AVX2 (exception on AVX/SSE)
+//   FMA:     available only with FMA
+// SFORWARD forwards an SSE instruction whose AVX variant takes the same number of registers
+// AFORWARD forwards an SSE instruction whose AVX variant takes an extra destination register
+
+// Implementation details:
+// ACTUAL_FORWARD_*: Actually forward the function of the given type
+// FORWARD#: First validates the arguments (e.g. make sure you're not passing registers over 7 on x86), then forwards to an ACTUAL_FORWARD_*
 
 #define ACTUAL_FORWARD_BASE(name, ...) \
 	actual.name(__VA_ARGS__);
@@ -235,6 +253,7 @@ namespace Xbyak
 #define ARGS_XXO const Xmm&, const Xmm&, const Operand&
 #define ARGS_YOI const Ymm&, const Operand&, uint8
 
+// For instructions that are ifdef'd out without XBYAK64
 #ifdef XBYAK64
 # define REQUIRE64(action) require64(); action
 #else
