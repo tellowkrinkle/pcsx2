@@ -2051,10 +2051,10 @@ private:
 		{
 			// lod = K
 
-			movd(xtm0, _rip_global(lod.i.u32[0]));
+			movd(Xmm(xtm0.getIdx()), _rip_global(lod.i.u32[0]));
 
-			psrad(xtm2, xtm0);
-			psrad(xtm3, xtm0);
+			psrad(xtm2, Xmm(xtm0.getIdx()));
+			psrad(xtm3, Xmm(xtm0.getIdx()));
 
 			movdqa(_rip_local(temp.uv[0]), xtm2);
 			movdqa(_rip_local(temp.uv[1]), xtm3);
