@@ -201,6 +201,9 @@
     <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x86.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.all.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x64.avx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -300,6 +303,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Renderers\SW\GSDrawScanlineCodeGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\SW\GSDrawScanlineCodeGenerator.all.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GSDump.h">
@@ -450,6 +456,9 @@
       <Filter>Xbyak</Filter>
     </ClInclude>
     <ClInclude Include="xbyak\xbyak_mnemonic.h">
+      <Filter>Xbyak</Filter>
+    </ClInclude>
+    <ClInclude Include="xbyak\xbyak_smart.h">
       <Filter>Xbyak</Filter>
     </ClInclude>
     <ClInclude Include="xbyak\xbyak_util.h">
