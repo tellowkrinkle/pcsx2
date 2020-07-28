@@ -80,6 +80,7 @@ set(GSdxSources
     Renderers/HW/GSTextureCache.cpp
     Renderers/SW/GSDrawScanline.cpp
     Renderers/SW/GSDrawScanlineCodeGenerator.cpp
+    Renderers/SW/GSDrawScanlineCodeGenerator.all.cpp
     Renderers/SW/GSDrawScanlineCodeGenerator.x64.cpp
     Renderers/SW/GSDrawScanlineCodeGenerator.x64.avx.cpp
     Renderers/SW/GSDrawScanlineCodeGenerator.x64.avx2.cpp
