@@ -189,6 +189,9 @@
     <ClCompile Include="Renderers\SW\GSTextureSW.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.all.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x64.avx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -348,6 +351,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Renderers\SW\GSSetupPrimCodeGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\SW\GSSetupPrimCodeGenerator.all.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Renderers\OpenGL\GSShaderOGL.h">

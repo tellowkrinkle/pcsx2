@@ -300,6 +300,7 @@ namespace Xbyak
 		SFORWARD(2, cvtdq2ps,  ARGS_XO)
 		SFORWARD(2, cvtps2dq,  ARGS_XO)
 		SFORWARD(2, cvttps2dq, ARGS_XO)
+		SFORWARD(3, extractps, const Operand&, const Xmm&, uint8)
 		AFORWARD(2, maxps,     ARGS_XO)
 		AFORWARD(2, minps,     ARGS_XO)
 		SFORWARD(2, movaps,    ARGS_XO)
