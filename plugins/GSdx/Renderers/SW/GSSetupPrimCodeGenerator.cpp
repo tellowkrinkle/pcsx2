@@ -21,6 +21,7 @@
 
 #include "stdafx.h"
 #include "GSSetupPrimCodeGenerator.h"
+#include "GSSetupPrimCodeGenerator.all.h"
 
 using namespace Xbyak;
 
@@ -37,14 +38,17 @@ GSSetupPrimCodeGenerator::GSSetupPrimCodeGenerator(void* param, uint64 key, void
 	m_en.c = m_sel.fb && !(m_sel.tfx == TFX_DECAL && m_sel.tcc) ? 1 : 0;
 
 	try {
-#if _M_SSE >= 0x501
-		Generate_AVX2();
-#else
-		if(m_cpu.has(util::Cpu::tAVX))
-			Generate_AVX();
-		else
-			Generate_SSE();
-#endif
+		auto version = SSEVersion::SSE2;
+		if (m_cpu.has(util::Cpu::tSSE3))
+			version = SSEVersion::SSE3;
+		if (m_cpu.has(util::Cpu::tSSE41))
+			version = SSEVersion::SSE41;
+		if (m_cpu.has(util::Cpu::tAVX))
+			version = SSEVersion::AVX;
+		if (m_cpu.has(util::Cpu::tAVX2))
+			version = SSEVersion::AVX2;
+
+		GSSetupPrimCodeGenerator2(this, version, m_cpu.has(util::Cpu::tFMA), param, key).Generate();
 	} catch (std::exception& e) {
 		fprintf(stderr, "ERR:GSSetupPrimCodeGenerator %s\n", e.what());
 	}
