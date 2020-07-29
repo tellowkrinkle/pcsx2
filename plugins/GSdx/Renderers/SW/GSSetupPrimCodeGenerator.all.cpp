@@ -68,7 +68,7 @@ GSSetupPrimCodeGenerator2::GSSetupPrimCodeGenerator2(Xbyak::CodeGenerator* base,
 	, m_rip(false), many_regs(false)
 #ifdef _WIN32
 	, a0(rcx) , a1(rdx)
-	, a2(is64 ? r8 : rbx)  , a3(r9)
+	, a2(is64 ? r8 : rcx)  , a3(r9)
 	, t0(rdi) , t1(rsi)
 #else
 	, a0(is64 ? rdi : rcx), a1(is64 ? rsi : rdx)
@@ -346,21 +346,21 @@ void GSSetupPrimCodeGenerator2::Texture()
 
 	BROADCAST_OR_LOAD(vbroadcastf128, movaps, xym0, ptr[a2 + offsetof(GSVertexSW, t)]);
 
-	THREEARG(mulps, xym1, xym0, xym3);
+	THREEARG(mulps, xmm1, xmm0, xmm3);
 
 	if(m_sel.fst)
 	{
 		// m_local.d4.stq = GSVector4i(t * 4.0f);
 
-		cvttps2dq(xym1, xym1);
+		cvttps2dq(xmm1, xmm1);
 
-		movdqa(_rip_local_d(stq), xym1);
+		movdqa(_rip_local_d(stq), xmm1);
 	}
 	else
 	{
 		// m_local.d4.stq = t * 4.0f;
 
-		movaps(_rip_local_d(stq), xym1);
+		movaps(_rip_local_d(stq), xmm1);
 	}
 
 	for(int j = 0, k = m_sel.fst ? 2 : 3; j < k; j++)

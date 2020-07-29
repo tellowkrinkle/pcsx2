@@ -55,8 +55,12 @@ namespace Xbyak
 				return;
 			if (op.isREG() && (op.isExtIdx() || op.isExt8bit()))
 				throw Error(ERR_64_BIT_REG_IN_32);
-			if (op.isMEM() && static_cast<const Address&>(op).getRex() != 0)
-				throw Error(ERR_64_BIT_REG_IN_32);
+			if (op.isMEM())
+			{
+				auto e = static_cast<const Address&>(op).getRegExp();
+				validateRegister(e.getIndex());
+				validateRegister(e.getBase());
+			}
 		}
 		/// For easier macro-ing
 		void validateRegister(int imm)
