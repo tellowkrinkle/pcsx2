@@ -638,8 +638,6 @@ void GSDrawScanlineCodeGenerator2::Init()
 
 		// GSVector4i test = m_test[skip] | m_test[7 + (steps & (steps >> 31))];
 
-		shl(a1.cvt32(), vecsizelog); // * sizeof(m_test[0])
-
 		mov(eax, a0.cvt32());
 		sar(eax, 31); // GH: 31 to extract the sign of the register
 		and(eax, a0.cvt32());
@@ -649,14 +647,16 @@ void GSDrawScanlineCodeGenerator2::Init()
 
 		if (isXmm)
 		{
+			shl(a1.cvt32(), 4); // * sizeof(m_test[0])
 			movdqa(_test, ptr[a1 + _g_const + offsetof(GSScanlineConstantData, m_test_128b[0])]);
 			por(_test, ptr[rax + _g_const + offsetof(GSScanlineConstantData, m_test_128b[7])]);
 		}
 		else
 		{
 			pmovsxbd(_test, ptr[a1*8 + _g_const + offsetof(GSScanlineConstantData, m_test_256b[0])]);
-			pmovsxbd(xym0, ptr[a1*8 + _g_const + offsetof(GSScanlineConstantData, m_test_256b[15])]);
+			pmovsxbd(xym0, ptr[rax*8 + _g_const + offsetof(GSScanlineConstantData, m_test_256b[15])]);
 			por(_test, xym0);
+			shl(a1.cvt32(), 5); // * sizeof(m_test[0])
 		}
 	}
 	else
@@ -683,11 +683,13 @@ void GSDrawScanlineCodeGenerator2::Init()
 	else
 	{
 		// GSVector2i* fza_base = &m_local.gd->fzbr[top];
-		mov(rax, ptr[rsp + _top]);
-		lea(t1, ptr[rax * 8 + (size_t)&m_local.gd->fzbr]);
+		mov(t1, ptr[rsp + _top]);
+		lea(t1, ptr[t1 * 8]);
+		add(t1, ptr[&m_local.gd->fzbr]);
 
 		// GSVector2i* fza_offset = &m_local.gd->fzbc[left >> 2];
-		lea(t0, ptr[(size_t)&m_local.gd->fzbc + rbx * 2]);
+		lea(t0, ptr[rbx * 2]);
+		add(t0, ptr[(size_t)&m_local.gd->fzbc]);
 	}
 
 	if(m_sel.prim != GS_SPRITE_CLASS && (m_sel.fwrite && m_sel.fge || m_sel.zb) || m_sel.fb && (m_sel.edge || m_sel.tfx != TFX_NONE || m_sel.iip))
@@ -733,13 +735,13 @@ void GSDrawScanlineCodeGenerator2::Init()
 			{
 				// z = vp.zzzz() + m_local.d[skip].z;
 				shufps(z, z, _MM_SHUFFLE(2, 2, 2, 2));
-				ONLY32(movaps(ptr[&m_local.temp.z], z));
 				if (is64)
 				{
 					addps(z, ptr[a1 + offsetof(GSScanlineLocalData::skip, z)]);
 				}
 				else
 				{
+					movaps(ptr[&m_local.temp.z], z);
 					movaps(xym2, ptr[a1 + offsetof(GSScanlineLocalData::skip, z)]);
 					movaps(ptr[&m_local.temp.zo], xym2);
 					addps(z, xym2);
@@ -751,11 +753,11 @@ void GSDrawScanlineCodeGenerator2::Init()
 	{
 		if(m_sel.ztest)
 		{
-			movdqa(z, _rip_local(p.z));
+			BROADCAST_OR_LOAD(vpbroadcastd, movdqa, z, _rip_local(p.z));
 		}
 
 		if(m_sel.fwrite && m_sel.fge && is64)
-			movdqa(_f, _rip_local(p.f));
+			BROADCAST_OR_LOAD(vpbroadcastd, movdqa, _f, _rip_local(p.f));
 	}
 
 	const XYm& vt = xym4;
@@ -787,8 +789,8 @@ void GSDrawScanlineCodeGenerator2::Init()
 		{
 			// a1 = &m_local.d[skip]
 
-			const XYm& s = is64 ? _s   : xym2;
-			const XYm& t = is64 ? _t   : xym3;
+			const XYm& s = is64 ? _s : xym2;
+			const XYm& t = is64 ? _t : xym3;
 
 			if(m_sel.fst)
 			{
@@ -966,7 +968,7 @@ void GSDrawScanlineCodeGenerator2::Step()
 		{
 			if (is32)
 			{
-				BROADCAST_OR_LOAD(vpbroadcastw, movdqa, z, _rip_local_d_p(f));
+				BROADCAST_OR_LOAD(vpbroadcastw, movdqa, f, _rip_local_d_p(f));
 				paddw(f, _rip_local(temp.f));
 				movdqa(_rip_local(temp.f), f);
 			}
