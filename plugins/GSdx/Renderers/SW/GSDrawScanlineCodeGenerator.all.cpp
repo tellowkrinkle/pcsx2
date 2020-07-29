@@ -122,7 +122,6 @@ GSDrawScanlineCodeGenerator2::GSDrawScanlineCodeGenerator2(Xbyak::CodeGenerator*
 	: _parent(base, sseVersion, hasFMA)
 	, m_local(*(GSScanlineLocalData*)param)
 	, m_rip(false)
-	, xym0(0), xym1(1), xym2(2), xym3(3), xym4(4), xym5(5), xym6(6), xym7(7), xym8(8), xym9(9), xym10(10), xym11(11), xym12(12), xym13(13), xym14(14), xym15(15)
 #ifdef _WIN32
 	, a0(rcx) , a1(rdx)
 	, a2(r8)  , a3(is64 ? r9 : rbx)
