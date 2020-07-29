@@ -143,6 +143,9 @@ namespace Xbyak
 // ACTUAL_FORWARD_*: Actually forward the function of the given type
 // FORWARD#: First validates the arguments (e.g. make sure you're not passing registers over 7 on x86), then forwards to an ACTUAL_FORWARD_*
 
+// Big thanks to https://stackoverflow.com/a/24028231 for helping me figure out how to work around MSVC's terrible macro expander
+#define EXPAND_ARGS(macro, args) macro args
+
 #define ACTUAL_FORWARD_BASE(name, ...) \
 	actual.name(__VA_ARGS__);
 
@@ -210,9 +213,9 @@ namespace Xbyak
 		ACTUAL_FORWARD_##category(name, a, b, c, d) \
 	}
 
-#define FORWARD_(argcount, ...) FORWARD##argcount(__VA_ARGS__)
+#define FORWARD_(argcount, ...) EXPAND_ARGS(FORWARD##argcount, (__VA_ARGS__))
 // Gets the macro evaluator to evaluate in the right order
-#define FORWARD(...) FORWARD_(__VA_ARGS__)
+#define FORWARD(...) EXPAND_ARGS(FORWARD_, (__VA_ARGS__))
 
 #define FORWARD_SSE_XMM0(name) \
 	void name(const Xmm& a, const Operand& b) \
@@ -234,12 +237,12 @@ namespace Xbyak
 #define ADD_ONE_2 3
 #define ADD_ONE_3 4
 
-#define SFORWARD(argcount, name, ...) FORWARD(argcount, SSE, name, __VA_ARGS__)
+#define SFORWARD(argcount, name, ...) EXPAND_ARGS(FORWARD, (argcount, SSE, name, __VA_ARGS__))
 #define AFORWARD_(argcount, name, arg1, ...)\
-	SFORWARD(argcount, name, arg1, __VA_ARGS__)\
-	FORWARD(ADD_ONE_##argcount, AVX, v##name, arg1, arg1, __VA_ARGS__)
+	EXPAND_ARGS(SFORWARD, (argcount, name, arg1, __VA_ARGS__))\
+	EXPAND_ARGS(FORWARD, (ADD_ONE_##argcount, AVX, v##name, arg1, arg1, __VA_ARGS__))
 // Gets the macro evaluator to evaluate in the right order
-#define AFORWARD(...) AFORWARD_(__VA_ARGS__)
+#define AFORWARD(...) EXPAND_ARGS(AFORWARD_, (__VA_ARGS__))
 
 #define FORWARD_OO_OI(name) \
 	FORWARD(2, BASE, name, ARGS_OO) \
@@ -412,6 +415,7 @@ namespace Xbyak
 #undef ACTUAL_FORWARD_SSE
 #undef ACTUAL_FORWARD_SSEONLY
 #undef ACTUAL_FORWARD_BASE
+#undef EXPAND_ARGS
 	};
 
 }
