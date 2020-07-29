@@ -3346,7 +3346,7 @@ void GSDrawScanlineCodeGenerator2::WritePixel(const XYm& src_, const AddressReg&
 
 void GSDrawScanlineCodeGenerator2::WritePixel(const Xmm& src, const AddressReg& addr, uint8 i, uint8 j, int psm)
 {
-	constexpr int s_offsets[4] = {0, 2, 8, 10};
+	constexpr int s_offsets[8] = {0, 2, 8, 10, 16, 18, 24, 26};
 
 	Address dst = ptr[_m_local__gd__vm + addr * 2 + s_offsets[i] * 2];
 
