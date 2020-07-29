@@ -1,7 +1,7 @@
 /*
  *	Copyright (C) 2007-2009 Gabest
- *	Copyright (C) 2020 PCSX2 Dev Team
  *	http://www.gabest.org
+ *	Copyright (C) 2020 PCSX2 Dev Team
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,9 +37,6 @@ using namespace Xbyak;
 // If use_lod, m_local.gd->tex, else m_local.gd->tex[0]
 #define _64_m_local__gd__tex r14
 
-// Careful with rip-based regexps, you can only add constants to them, not registers
-#define _rip_local_regexp(field) ((is32 || m_rip) ? (RegExp)(rip + (size_t)&m_local.field) : (RegExp)(_m_local + offsetof(GSScanlineLocalData, field)))
-#define _rip_global_regexp(field) ((is32 || m_rip) ? (RegExp)(rip + (size_t)&m_local.gd->field) : (RegExp)(_m_local__gd + offsetof(GSScanlineGlobalData, field)))
 #define _rip_local(field) ((is32 || m_rip) ? ptr[rip + (size_t)&m_local.field] : ptr[_m_local + offsetof(GSScanlineLocalData, field)])
 #define _rip_global(field) ((is32 || m_rip) ? ptr[rip + (size_t)&m_local.gd->field] : ptr[_m_local__gd + offsetof(GSScanlineGlobalData, field)])
 
@@ -49,7 +46,7 @@ using namespace Xbyak;
 #define ONLY64(code) if (is64) (code)
 /// Combines temporary with either dst64 on 64-bit or src32 on 32-bit
 /// Follow up with an ONLY32 save back to src32
-#define COMBINE(operation, dst64, temporary, src32) \
+#define REG_64_MEM_32(operation, dst64, temporary, src32) \
 	if (is32) \
 		operation(temporary, src32); \
 	else \
@@ -57,25 +54,29 @@ using namespace Xbyak;
 /// On AVX, does a v-prefixed separate destination operation
 /// On SSE, moves src1 into dst using movdqa, then does the operation
 #define THREEARG(operation, dst, src1, ...) \
-	if (hasAVX) \
-	{ \
-		v##operation(dst, src1, __VA_ARGS__); \
-	} \
-	else \
-	{ \
-		movdqa(dst, src1); \
-		operation(dst, __VA_ARGS__);\
-	}
+	do { \
+		if (hasAVX) \
+		{ \
+			v##operation(dst, src1, __VA_ARGS__); \
+		} \
+		else \
+		{ \
+			movdqa(dst, src1); \
+			operation(dst, __VA_ARGS__);\
+		} \
+	} while (0)
 /// On x64, does a 3-operand move, on x86 uses a two-operand SSE-style
 #define MOVE_IF_64(operation, dst, src64, ...) \
-	if (is64) \
-	{ \
-		THREEARG(operation, dst, src64, __VA_ARGS__); \
-	} \
-	else \
-	{ \
-		operation(dst, __VA_ARGS__); \
-	}
+	do { \
+		if (is64) \
+		{ \
+			THREEARG(operation, dst, src64, __VA_ARGS__); \
+		} \
+		else \
+		{ \
+			operation(dst, __VA_ARGS__); \
+		} \
+	} while (0)
 
 #define USING_XMM DRAW_SCANLINE_USING_XMM
 #define USING_YMM DRAW_SCANLINE_USING_YMM
@@ -999,14 +1000,14 @@ void GSDrawScanlineCodeGenerator2::Step()
 
 				XYm s = is64 ? xym1 : xym2;
 				pshufd(s, stq, _MM_SHUFFLE(0, 0, 0, 0));
-				COMBINE(paddd, _s, s, _rip_local(temp.s));
+				REG_64_MEM_32(paddd, _s, s, _rip_local(temp.s));
 				ONLY32(movdqa(_rip_local(temp.s), s));
 
 				XYm t = is64 ? xym1 : xym3;
 				if(m_sel.prim != GS_SPRITE_CLASS || m_sel.mmin)
 				{
 					pshufd(t, stq, _MM_SHUFFLE(1, 1, 1, 1));
-					COMBINE(paddd, _t, t, _rip_local(temp.t));
+					REG_64_MEM_32(paddd, _t, t, _rip_local(temp.t));
 					ONLY32(movdqa(_rip_local(temp.t), t));
 				}
 				else
@@ -1044,9 +1045,9 @@ void GSDrawScanlineCodeGenerator2::Step()
 					shufps(q, q, _MM_SHUFFLE(2, 2, 2, 2));
 				}
 
-				COMBINE(addps, _s, s, _rip_local(temp.s));
-				COMBINE(addps, _t, t, _rip_local(temp.t));
-				COMBINE(addps, _q, q, _rip_local(temp.q));
+				REG_64_MEM_32(addps, _s, s, _rip_local(temp.s));
+				REG_64_MEM_32(addps, _t, t, _rip_local(temp.t));
+				REG_64_MEM_32(addps, _q, q, _rip_local(temp.q));
 
 				ONLY32(movaps(_rip_local(temp.s), s));
 				ONLY32(movaps(_rip_local(temp.t), t));
@@ -1070,8 +1071,8 @@ void GSDrawScanlineCodeGenerator2::Step()
 				pshufd(rb, c, _MM_SHUFFLE(0, 0, 0, 0));
 				pshufd(ga, c, _MM_SHUFFLE(1, 1, 1, 1));
 
-				COMBINE(paddw, _f_rb, rb, _rip_local(temp.rb));
-				COMBINE(paddw, _f_ga, ga, _rip_local(temp.ga));
+				REG_64_MEM_32(paddw, _f_rb, rb, _rip_local(temp.rb));
+				REG_64_MEM_32(paddw, _f_ga, ga, _rip_local(temp.ga));
 
 				// FIXME: color may underflow and roll over at the end of the line, if decreasing
 

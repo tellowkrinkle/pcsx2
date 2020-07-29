@@ -1,7 +1,7 @@
 /*
  *	Copyright (C) 2007-2009 Gabest
- *	Copyright (C) 2020 PCSX2 Dev Team
  *	http://www.gabest.org
+ *	Copyright (C) 2020 PCSX2 Dev Team
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
