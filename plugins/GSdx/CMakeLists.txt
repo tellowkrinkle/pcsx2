@@ -94,6 +94,7 @@ set(GSdxSources
     Renderers/SW/GSRasterizer.cpp
     Renderers/SW/GSRendererSW.cpp
     Renderers/SW/GSSetupPrimCodeGenerator.cpp
+    Renderers/SW/GSSetupPrimCodeGenerator.all.cpp
     Renderers/SW/GSSetupPrimCodeGenerator.x64.cpp
     Renderers/SW/GSSetupPrimCodeGenerator.x64.avx.cpp
     Renderers/SW/GSSetupPrimCodeGenerator.x64.avx2.cpp
@@ -166,6 +167,7 @@ set(GSdxHeaders
     Renderers/SW/GSRendererSW.h
     Renderers/SW/GSScanlineEnvironment.h
     Renderers/SW/GSSetupPrimCodeGenerator.h
+    Renderers/SW/GSSetupPrimCodeGenerator.all.h
     Renderers/SW/GSTextureCacheSW.h
     Renderers/SW/GSTextureSW.h
     Renderers/SW/GSVertexSW.h
