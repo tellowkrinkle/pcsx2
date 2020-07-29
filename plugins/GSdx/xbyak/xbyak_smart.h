@@ -102,24 +102,24 @@ namespace Xbyak
 
 		const bool hasSSE2, hasSSE3, hasSSE41, hasAVX, hasAVX2, hasFMA;
 
-		const Xmm xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10, xmm11, xmm12, xmm13, xmm14, xmm15;
-		const Ymm ymm0, ymm1, ymm2, ymm3, ymm4, ymm5, ymm6, ymm7, ymm8, ymm9, ymm10, ymm11, ymm12, ymm13, ymm14, ymm15;
-		const AddressReg rax, rcx, rdx, rbx, rsp, rbp, rsi, rdi, r8,  r9,  r10,  r11,  r12,  r13,  r14,  r15;
-		const Reg32      eax, ecx, edx, ebx, esp, ebp, esi, edi, r8d, r9d, r10d, r11d, r12d, r13d, r14d, r15d;
-		const Reg16       ax,  cx,  dx,  bx,  sp,  bp,  si,  di;
-		const Reg8        al,  cl,  dl,  bl,  ah,  ch,  dh,  bh;
+		const Xmm xmm0{0}, xmm1{1}, xmm2{2}, xmm3{3}, xmm4{4}, xmm5{5}, xmm6{6}, xmm7{7}, xmm8{8}, xmm9{9}, xmm10{10}, xmm11{11}, xmm12{12}, xmm13{13}, xmm14{14}, xmm15{15};
+		const Ymm ymm0{0}, ymm1{1}, ymm2{2}, ymm3{3}, ymm4{4}, ymm5{5}, ymm6{6}, ymm7{7}, ymm8{8}, ymm9{9}, ymm10{10}, ymm11{11}, ymm12{12}, ymm13{13}, ymm14{14}, ymm15{15};
+		const AddressReg rax{Operand::RAX}, rcx{Operand::RCX}, rdx{Operand::RDX}, rbx{Operand::RBX}, rsp{Operand::RSP}, rbp{Operand::RBP}, rsi{Operand::RSI}, rdi{Operand::RDI}, r8{8},  r9{9},  r10{10},  r11{11},  r12{12},  r13{13},  r14{14},  r15{15};
+		const Reg32      eax{Operand::EAX}, ecx{Operand::ECX}, edx{Operand::EDX}, ebx{Operand::EBX}, esp{Operand::ESP}, ebp{Operand::EBP}, esi{Operand::ESI}, edi{Operand::EDI}, r8d{8}, r9d{9}, r10d{10}, r11d{11}, r12d{12}, r13d{13}, r14d{14}, r15d{15};
+		const Reg16       ax{Operand::AX},   cx{Operand::CX},   dx{Operand::DX},   bx{Operand::BX},   sp{Operand::SP},   bp{Operand::BP},   si{Operand::SI},   di{Operand::DI};
+		const Reg8        al{Operand::AL},   cl{Operand::CL},   dl{Operand::DL},   bl{Operand::BL},   ah{Operand::AH},   ch{Operand::CH},   dh{Operand::DH},   bh{Operand::BH};
 
 		const RipType rip{};
 		const AddressFrame ptr{0}, byte{8}, word{16}, dword{32}, qword{64}, xword{128}, yword{256}, zword{512};
 
 		SmartCodeGenerator(CodeGenerator* actual, SSEVersion::SSEVersion sse, bool hasFMA)
-			: actual(*actual), hasSSE2(sse >= SSEVersion::SSE2), hasSSE3(sse >= SSEVersion::SSE3), hasSSE41(sse >= SSEVersion::SSE41), hasAVX(sse >= SSEVersion::AVX), hasAVX2(sse >= SSEVersion::AVX2), hasFMA(hasFMA)
-			, xmm0(0), xmm1(1), xmm2(2), xmm3(3), xmm4(4), xmm5(5), xmm6(6), xmm7(7), xmm8(8), xmm9(9), xmm10(10), xmm11(11), xmm12(12), xmm13(13), xmm14(14), xmm15(15)
-			, ymm0(0), ymm1(1), ymm2(2), ymm3(3), ymm4(4), ymm5(5), ymm6(6), ymm7(7), ymm8(8), ymm9(9), ymm10(10), ymm11(11), ymm12(12), ymm13(13), ymm14(14), ymm15(15)
-			, rax(Operand::RAX), rcx(Operand::RCX), rdx(Operand::RDX), rbx(Operand::RBX), rsp(Operand::RSP), rbp(Operand::RBP), rsi(Operand::RSI), rdi(Operand::RDI), r8(8), r9(9), r10(10), r11(11), r12(12), r13(13), r14(14), r15(15)
-			, eax(Operand::EAX), ecx(Operand::ECX), edx(Operand::EDX), ebx(Operand::EBX), esp(Operand::ESP), ebp(Operand::EBP), esi(Operand::ESI), edi(Operand::EDI), r8d(8), r9d(9), r10d(10), r11d(11), r12d(12), r13d(13), r14d(14), r15d(15)
-			, ax(Operand::AX), cx(Operand::CX), dx(Operand::DX), bx(Operand::BX), sp(Operand::SP), bp(Operand::BP), si(Operand::SI), di(Operand::DI)
-			, al(Operand::AL), cl(Operand::CL), dl(Operand::DL), bl(Operand::BL), ah(Operand::AH), ch(Operand::CH), dh(Operand::DH), bh(Operand::BH)
+			: actual(*actual)
+			, hasSSE2(sse >= SSEVersion::SSE2)
+			, hasSSE3(sse >= SSEVersion::SSE3)
+			, hasSSE41(sse >= SSEVersion::SSE41)
+			, hasAVX(sse >= SSEVersion::AVX)
+			, hasAVX2(sse >= SSEVersion::AVX2)
+			, hasFMA(hasFMA)
 		{
 		}
 
