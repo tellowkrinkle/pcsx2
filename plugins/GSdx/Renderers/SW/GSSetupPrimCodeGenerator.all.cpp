@@ -31,7 +31,7 @@ using namespace Xbyak;
 
 #define _rip_local(field) ((is32 || m_rip) ? ptr[rip + (size_t)&m_local.field] : ptr[_m_local + offsetof(GSScanlineLocalData, field)])
 
-#define _64_m_local t0
+#define _64_m_local _64_t0
 
 /// On AVX, does a v-prefixed separate destination operation
 /// On SSE, moves src1 into dst using movdqa, then does the operation
@@ -67,13 +67,15 @@ GSSetupPrimCodeGenerator2::GSSetupPrimCodeGenerator2(Xbyak::CodeGenerator* base,
 	, m_local(*(GSScanlineLocalData*)param)
 	, m_rip(false), many_regs(false)
 #ifdef _WIN32
-	, a0(rcx) , a1(rdx)
-	, a2(is64 ? r8 : rcx)  , a3(r9)
-	, t0(rdi) , t1(rsi)
+	, _64_vertex(is64 ? rcx : r8)
+	, _index(is64 ? rdx : rcx)
+	, _dscan(is64 ? r8 : rdx)
+	, _64_t0(r9)
 #else
-	, a0(is64 ? rdi : rcx), a1(is64 ? rsi : rdx)
-	, a2(is64 ? rdx : rbx), a3(is64 ? rcx : r9)
-	, t0(is64 ? r8  : rdi), t1(is64 ? r9  : rsi)
+	, _64_vertex(is64 ? rdi : r8)
+	, _index(is64 ? rsi : rcx)
+	, _dscan(rdx)
+	, _64_t0(is64 ? rcx : r8)
 #endif
 	, _m_local(chooseLocal(&m_local, _64_m_local))
 {
@@ -110,7 +112,7 @@ void GSSetupPrimCodeGenerator2::Generate()
 	if(needs_shift)
 	{
 		if (is32)
-			mov(a2, ptr[rsp + _dscan]);
+			mov(_dscan, ptr[rsp + _32_dscan]);
 
 		if (isXmm)
 			mov(rax, (size_t)g_const->m_shift_128b);
@@ -157,7 +159,7 @@ void GSSetupPrimCodeGenerator2::Depth_XMM()
 		// GSVector4 p = dscan.p;
 
 
-		movaps(xmm0, ptr[a2 + offsetof(GSVertexSW, p)]);
+		movaps(xmm0, ptr[_dscan + offsetof(GSVertexSW, p)]);
 
 		if(m_en.f)
 		{
@@ -210,13 +212,13 @@ void GSSetupPrimCodeGenerator2::Depth_XMM()
 		// GSVector4 p = vertex[index[1]].p;
 
 		if (is32)
-			mov(a1, ptr[rsp + _index]);
-		mov(eax, ptr[a1 + sizeof(uint32) * 1]);
+			mov(_index, ptr[rsp + _32_index]);
+		mov(eax, ptr[_index + sizeof(uint32) * 1]);
 		shl(eax, 6); // * sizeof(GSVertexSW)
 		if (is64)
-			add(rax, a0);
+			add(rax, _64_vertex);
 		else
-			add(rax, ptr[rsp + _vertex]);
+			add(rax, ptr[rsp + _32_vertex]);
 
 		if(m_en.f)
 		{
@@ -251,7 +253,7 @@ void GSSetupPrimCodeGenerator2::Depth_YMM()
 	{
 		// GSVector4 dp8 = dscan.p * GSVector4::broadcast32(&shift[0]);
 
-		BROADCAST_OR_LOAD(vbroadcastf128, movaps, ymm0, ptr[a2 + offsetof(GSVertexSW, p)]);
+		BROADCAST_OR_LOAD(vbroadcastf128, movaps, ymm0, ptr[_dscan + offsetof(GSVertexSW, p)]);
 
 		vmulps(ymm1, ymm0, ymm3);
 
@@ -308,13 +310,13 @@ void GSSetupPrimCodeGenerator2::Depth_YMM()
 		// GSVector4 p = vertex[index[1]].p;
 
 		if (is32)
-			mov(a1, ptr[rsp + _index]);
-		mov(eax, ptr[a1 + sizeof(uint32) * 1]);
+			mov(_index, ptr[rsp + _32_index]);
+		mov(eax, ptr[_index + sizeof(uint32) * 1]);
 		shl(eax, 6); // * sizeof(GSVertexSW)
 		if (is64)
-			add(rax, a0);
+			add(rax, _64_vertex);
 		else
-			add(rax, ptr[rsp + _vertex]);
+			add(rax, ptr[rsp + _32_vertex]);
 
 		if(m_en.f)
 		{
@@ -329,8 +331,8 @@ void GSSetupPrimCodeGenerator2::Depth_YMM()
 		{
 			// m_local.p.z = vertex[index[1]].t.u32[3]; // uint32 z is bypassed in t.w
 
-			mov(is64 ? t1.cvt32() : eax, ptr[rax + offsetof(GSVertexSW, t.w)]);
-			mov(_rip_local(p.z), is64 ? t1.cvt32() : eax);
+			mov(eax, ptr[rax + offsetof(GSVertexSW, t.w)]);
+			mov(_rip_local(p.z), eax);
 		}
 	}
 }
@@ -344,7 +346,7 @@ void GSSetupPrimCodeGenerator2::Texture()
 
 	// GSVector4 t = dscan.t;
 
-	BROADCAST_OR_LOAD(vbroadcastf128, movaps, xym0, ptr[a2 + offsetof(GSVertexSW, t)]);
+	BROADCAST_OR_LOAD(vbroadcastf128, movaps, xym0, ptr[_dscan + offsetof(GSVertexSW, t)]);
 
 	THREEARG(mulps, xmm1, xmm0, xmm3);
 
@@ -418,7 +420,7 @@ void GSSetupPrimCodeGenerator2::Color()
 	{
 		// GSVector4 c = dscan.c;
 
-		BROADCAST_OR_LOAD(vbroadcastf128, movaps, xym0, ptr[a2 + offsetof(GSVertexSW, c)]);
+		BROADCAST_OR_LOAD(vbroadcastf128, movaps, xym0, ptr[_dscan + offsetof(GSVertexSW, c)]);
 
 		// m_local.d4.c = GSVector4i(c * 4.0f).xzyw().ps32();
 
@@ -467,7 +469,7 @@ void GSSetupPrimCodeGenerator2::Color()
 
 		// GSVector4 c = dscan.c;
 
-		BROADCAST_OR_LOAD(vbroadcastf128, movaps, xym0, ptr[a2 + offsetof(GSVertexSW, c)]); // not enough regs, have to reload it
+		BROADCAST_OR_LOAD(vbroadcastf128, movaps, xym0, ptr[_dscan + offsetof(GSVertexSW, c)]); // not enough regs, have to reload it
 
 		// GSVector4 dg = c.yyyy();
 		// GSVector4 da = c.wwww();
@@ -518,13 +520,13 @@ void GSSetupPrimCodeGenerator2::Color()
 		if(!(m_sel.prim == GS_SPRITE_CLASS && (m_en.z || m_en.f))) // if this is a sprite, the last vertex was already loaded in Depth()
 		{
 			if (is32)
-				mov(a1, ptr[rsp + _index]);
-			mov(eax, ptr[a1 + sizeof(uint32) * last]);
+				mov(_index, ptr[rsp + _32_index]);
+			mov(eax, ptr[_index + sizeof(uint32) * last]);
 			shl(eax, 6); // * sizeof(GSVertexSW)
 			if (is64)
-				add(rax, a0);
+				add(rax, _64_vertex);
 			else
-				add(rax, ptr[rsp + _vertex]);
+				add(rax, ptr[rsp + _32_vertex]);
 		}
 
 		if (isXmm)
