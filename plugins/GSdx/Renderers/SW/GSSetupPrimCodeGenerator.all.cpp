@@ -475,7 +475,7 @@ void GSSetupPrimCodeGenerator2::Color()
 		THREEARG(shufps, xym2, xym0, xym0, _MM_SHUFFLE(1, 1, 1, 1));
 		THREEARG(shufps, xym3, xym0, xym0, _MM_SHUFFLE(3, 3, 3, 3));
 
-		for(int i = 0; i < (m_sel.notest ? 1 : 4); i++)
+		for(int i = 0; i < (m_sel.notest ? 1 : dsize); i++)
 		{
 			// GSVector4i g = GSVector4i(dg * m_shift[i]).ps32();
 
