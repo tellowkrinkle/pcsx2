@@ -62,9 +62,9 @@ class GSSetupPrimCodeGenerator2 : public Xbyak::SmartCodeGenerator
 
 	constexpr static int _32_args = 0;
 	constexpr static int _invalid = 0xaaaaaaaa;
-	constexpr static int _vertex = is64 ? _invalid : _32_args + 4;
-	constexpr static int _index  = is64 ? _invalid : _32_args + 8;
-	constexpr static int _dscan  = is64 ? _invalid : _32_args + 12;
+	constexpr static int _32_vertex = is64 ? _invalid : _32_args + 4;
+	constexpr static int _32_index  = is64 ? _invalid : _32_args + 8;
+	constexpr static int _32_dscan  = is64 ? _invalid : _32_args + 12;
 
 	GSScanlineSelector m_sel;
 	GSScanlineLocalData& m_local;
@@ -74,7 +74,7 @@ class GSSetupPrimCodeGenerator2 : public Xbyak::SmartCodeGenerator
 	struct {uint32 z:1, f:1, t:1, c:1;} m_en;
 
 	const XYm xym0{0}, xym1{1}, xym2{2}, xym3{3}, xym4{4}, xym5{5}, xym6{6}, xym7{7}, xym8{8}, xym9{9}, xym10{10}, xym11{11}, xym12{12}, xym13{13}, xym14{14}, xym15{15};
-	const AddressReg a0, a1, a2, a3, t0, t1;
+	const AddressReg _64_vertex, _index, _dscan, _64_t0;
 	const LocalAddr _m_local;
 	/// Returns the first arg on 32-bit, second on 64-bit
 	static LocalAddr chooseLocal(const void *addr32, AddressReg reg64)
