@@ -43,6 +43,8 @@ public:
     wxSpinCtrl *thread_spin;
 
     RendererTab(wxWindow *parent);
+    void Load();
+    void Save();
 };
 
 class HacksTab : public wxPanel
@@ -56,6 +58,8 @@ public:
     wxSpinCtrl *skip_x_spin, *skip_y_spin, *tex_off_x_spin, *tex_off_y_spin;
 
     HacksTab(wxWindow *parent);
+    void Load();
+    void Save();
 };
 
 class DebugTab : public wxPanel
@@ -64,7 +68,10 @@ public:
     wxCheckBox *glsl_debug_check, *gl_debug_check, *gs_dump_check, *gs_save_check, *gs_savef_check, *gs_savet_check, *gs_savez_check;
     wxSpinCtrl *start_dump_spin, *end_dump_spin;
     wxChoice *m_geo_shader_select, *m_image_load_store_select, *m_sparse_select;
+
     DebugTab(wxWindow *parent);
+    void Load();
+    void Save();
 };
 
 class RecTab : public wxPanel
@@ -75,6 +82,8 @@ public:
     wxDirPickerCtrl *dir_select;
 
     RecTab(wxWindow *parent);
+    void Load();
+    void Save();
 };
 
 class PostTab : public wxPanel
@@ -84,7 +93,10 @@ public:
     wxSlider *sb_brightness_slider, *sb_contrast_slider, *sb_saturation_slider;
     wxDirPickerCtrl *glsl_select, *config_select;
     wxChoice *m_tv_select;
+
     PostTab(wxWindow *parent);
+    void Load();
+    void Save();
 };
 
 class OSDTab : public wxPanel
@@ -93,7 +105,10 @@ public:
     wxCheckBox *monitor_check, *log_check;
     wxSpinCtrl *size_spin, *timeout_spin, *max_spin;
     wxSlider *red_slider, *green_slider, *blue_slider, *opacity_slider;
+
     OSDTab(wxWindow *parent);
+    void Load();
+    void Save();
 };
 
 class Dialog : public wxDialog
@@ -110,7 +125,7 @@ class Dialog : public wxDialog
 public:
     Dialog();
     ~Dialog();
-    void Reset();
+    void Load();
     void Save();
 };
 
