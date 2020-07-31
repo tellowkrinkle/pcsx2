@@ -144,6 +144,8 @@ void GSSetupPrimCodeGenerator2::Generate()
 		add(rsp, 8 + 16*6)
 	}
 #endif
+	if (isYmm)
+		vzeroupper();
 	ret();
 }
 
