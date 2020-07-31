@@ -389,7 +389,7 @@ L("loop");
 	// a0 = steps
 	// t1 = fza_base
 	// t0 = fza_offset
-	// ebp = za
+	// t2 = za
 	// xym2 = s/u (tme) | rb (!tme)
 	// xym3 = t/v (tme) | gb (!tme)
 	// xym4 = q (tme)   | free
@@ -410,7 +410,7 @@ L("loop");
 	// a0 = steps
 	// t1 = fza_base
 	// t0 = fza_offset
-	// ebp = za
+	// t2 = za
 	// xym2 = free | rb
 	// xym3 = free | ga
 	// xym4 = free | free
@@ -424,7 +424,7 @@ L("loop");
 	// a0 = steps
 	// t1 = fza_base
 	// t0 = fza_offset
-	// ebp = za
+	// t2 = za
 	// xym2 = gaf (TFX_HIGHLIGHT || TFX_HIGHLIGHT2 && !tcc) | rb
 	// xym3 = free | ga
 	// xym4 = free | free
@@ -438,7 +438,7 @@ L("loop");
 	// a0 = steps
 	// t1 = fza_base
 	// t0 = fza_offset
-	// ebp = za
+	// t2 = za
 	// xym2 = gaf (TFX_HIGHLIGHT || TFX_HIGHLIGHT2 && !tcc) | rb
 	// xym3 = fm   | ga
 	// xym4 = zm   | fm
@@ -452,7 +452,7 @@ L("loop");
 	// a0 = steps
 	// t1 = fza_base
 	// t0 = fza_offset
-	// ebp = za
+	// t2 = za
 	// xym2 = gaf (TFX_HIGHLIGHT || TFX_HIGHLIGHT2 && !tcc) | rb
 	// xym3 = fm   | ga
 	// xym4 = zm   | fm
@@ -466,7 +466,7 @@ L("loop");
 	// a0 = steps
 	// t1 = fza_base
 	// t0 = fza_offset
-	// ebp = za
+	// t2 = za
 	// xym2 = free | rb
 	// xym3 = fm   | ga
 	// xym4 = zm   | fm
@@ -480,7 +480,7 @@ L("loop");
 	// a0 = steps
 	// t1 = fza_base
 	// t0 = fza_offset
-	// ebp = za
+	// t2 = za
 	// xym2 = free | rb
 	// xym3 = fm   | ga
 	// xym4 = zm   | fm
@@ -494,7 +494,7 @@ L("loop");
 	// a0 = steps
 	// t1 = fza_base
 	// t0 = fza_offset
-	// ebp = za
+	// t2 = za
 	// ebx = fa
 	// xym2 = fd   | rb
 	// xym3 = fm   | ga
@@ -509,7 +509,7 @@ L("loop");
 	// a0 = steps
 	// t1 = fza_base
 	// t0 = fza_offset
-	// ebp = za
+	// t2 = za
 	// ebx = fa
 	// xym2 = fd   | rb
 	// xym3 = fm   | ga
@@ -524,8 +524,8 @@ L("loop");
 	// a0 = steps
 	// t1 = fza_base
 	// t0 = fza_offset
+	// t2 = za
 	// edx = fzm
-	// ebp = za
 	// ebx = fa
 	// xym2 = fd   | rb
 	// xym3 = fm   | ga
@@ -1132,7 +1132,7 @@ void GSDrawScanlineCodeGenerator2::Step()
 }
 
 /// Inputs: xym0[x86]=z, t1=fza_base, t0=fza_offset, _test
-/// Outputs: rbp=za
+/// Outputs: t2=za
 /// Destroys: rax, xym0, temp1, temp2
 void GSDrawScanlineCodeGenerator2::TestZ(const XYm& temp1, const XYm& temp2)
 {
@@ -1145,9 +1145,9 @@ void GSDrawScanlineCodeGenerator2::TestZ(const XYm& temp1, const XYm& temp2)
 
 	// int za = fza_base.y + fza_offset->y;
 
-	mov(ebp, dword[t1 + 4]);
-	add(ebp, dword[t0 + 4]);
-	and(ebp, HALF_VM_SIZE - 1);
+	mov(t2.cvt32(), dword[t1 + 4]);
+	add(t2.cvt32(), dword[t0 + 4]);
+	and(t2.cvt32(), HALF_VM_SIZE - 1);
 
 	// GSVector4i zs = zi;
 
@@ -1219,7 +1219,7 @@ void GSDrawScanlineCodeGenerator2::TestZ(const XYm& temp1, const XYm& temp2)
 
 	if(m_sel.ztest)
 	{
-		ReadPixel(temp2, temp1, rbp);
+		ReadPixel(temp2, temp1, t2);
 
 		if(m_sel.zwrite && m_sel.zpsm < 2)
 		{
@@ -1740,9 +1740,9 @@ void GSDrawScanlineCodeGenerator2::SampleTextureLOD()
 
 	if(is32)
 	{
-		push(ebp);
+		push(t2);
 
-		mov(ebp, (size_t)m_local.gd->tex);
+		mov(t2, (size_t)m_local.gd->tex);
 
 		if(m_sel.tlu)
 		{
@@ -2149,7 +2149,7 @@ void GSDrawScanlineCodeGenerator2::SampleTextureLOD()
 	}
 
 	if (is32)
-		pop(ebp);
+		pop(t2);
 }
 
 void GSDrawScanlineCodeGenerator2::WrapLOD(const XYm& uv)
@@ -2773,7 +2773,7 @@ void GSDrawScanlineCodeGenerator2::WriteMask()
 	not(edx);
 }
 
-/// Inputs: rbp=za, edx=fzm, _zm
+/// Inputs: t2=za, edx=fzm, _zm
 /// Destroys: xym0, xym1, xym7
 void GSDrawScanlineCodeGenerator2::WriteZBuf()
 {
@@ -2837,9 +2837,9 @@ void GSDrawScanlineCodeGenerator2::WriteZBuf()
 	bool fast = m_sel.ztest ? m_sel.zpsm < 2 : m_sel.zpsm == 0 && m_sel.notest;
 
 #if USING_XMM
-	WritePixel(xym1, rbp, dh, fast, m_sel.zpsm, 1);
+	WritePixel(xym1, t2, dh, fast, m_sel.zpsm, 1);
 #else
-	WritePixel(xym1, rbp, edx, fast, m_sel.zpsm, 1);
+	WritePixel(xym1, t2, edx, fast, m_sel.zpsm, 1);
 #endif
 }
 
@@ -3402,8 +3402,8 @@ void GSDrawScanlineCodeGenerator2::WritePixel(const Xmm& src, const AddressReg& 
 
 /// Input:
 ///  rbx = m_local.tex[0]  (x86 && !use_lod)
-///  rbp  = m_local.tex (x86 && use_lod)
-///  rdx  = m_local.clut (x86 && m_sel.tlu)
+///  t2  = m_local.tex (x86 && use_lod)
+///  rdx = m_local.clut (x86 && m_sel.tlu)
 /// Destroys: rax, src, tmp1, tmp2
 /// Destroys rbx (!use_lod)
 void GSDrawScanlineCodeGenerator2::ReadTexel1(const XYm& dst, const XYm& src, const XYm& tmp1, const XYm& tmp2, int mip_offset)
@@ -3418,8 +3418,8 @@ void GSDrawScanlineCodeGenerator2::ReadTexel1(const XYm& dst, const XYm& src, co
 /// Will preserve tmp2
 /// Input:
 ///  rbx = m_local.tex[0]  (x86 && !use_lod)
-///  rbp  = m_local.tex (x86 && use_lod)
-///  rdx  = m_local.clut (x86 && m_sel.tlu)
+///  t2  = m_local.tex (x86 && use_lod)
+///  rdx = m_local.clut (x86 && m_sel.tlu)
 /// Destroys: rax
 /// Destroys rbx (!use_lod)
 void GSDrawScanlineCodeGenerator2::ReadTexel4(
@@ -3452,7 +3452,7 @@ void GSDrawScanlineCodeGenerator2::ReadTexelImpl(
 
 void GSDrawScanlineCodeGenerator2::ReadTexelImplLoadTexLOD(int lod, int mip_offset)
 {
-	AddressReg texIn = is64 ? _64_m_local__gd__tex : rbp;
+	AddressReg texIn = is64 ? _64_m_local__gd__tex : t2;
 	Address lod_addr = m_sel.lcm ? _rip_global(lod.i.u32[lod]) : _rip_local(temp.lod.i.u32[lod]);
 	mov(ebx, lod_addr);
 	mov(rbx, ptr[texIn + rbx*wordsize + mip_offset]);
