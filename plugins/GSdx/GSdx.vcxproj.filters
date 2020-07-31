@@ -192,43 +192,7 @@
     <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.all.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x64.avx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x64.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x86.avx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x86.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.all.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x64.avx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x64.avx2.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x64.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x86.avx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x86.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x86.avx2.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x86.avx2.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x64.avx2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Renderers\OpenCL\GSRendererCL.cpp">

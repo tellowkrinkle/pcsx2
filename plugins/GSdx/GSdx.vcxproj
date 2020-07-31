@@ -111,12 +111,6 @@
     <ClCompile Include="Renderers\SW\GSDrawScanline.cpp" />
     <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.cpp" />
     <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.all.cpp" />
-    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x64.avx.cpp" />
-    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x64.avx2.cpp" />
-    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x64.cpp" />
-    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x86.avx.cpp" />
-    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x86.avx2.cpp" />
-    <ClCompile Include="Renderers\SW\GSDrawScanlineCodeGenerator.x86.cpp" />
     <ClCompile Include="GSDump.cpp" />
     <ClCompile Include="GSdx.cpp" />
     <ClCompile Include="Renderers\Common\GSFunctionMap.cpp" />
@@ -138,12 +132,6 @@
     <ClCompile Include="Window\GSSettingsDlg.cpp" />
     <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.cpp" />
     <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.all.cpp" />
-    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x64.avx.cpp" />
-    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x64.avx2.cpp" />
-    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x64.cpp" />
-    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x86.avx.cpp" />
-    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x86.avx2.cpp" />
-    <ClCompile Include="Renderers\SW\GSSetupPrimCodeGenerator.x86.cpp" />
     <ClCompile Include="Renderers\OpenGL\GSShaderOGL.cpp" />
     <ClCompile Include="GSState.cpp" />
     <ClCompile Include="GSTables.cpp" />
