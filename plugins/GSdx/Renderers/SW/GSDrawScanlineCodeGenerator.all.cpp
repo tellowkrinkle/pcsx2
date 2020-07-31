@@ -1286,11 +1286,11 @@ void GSDrawScanlineCodeGenerator2::SampleTexture()
 
 	if (is32)
 	{
-		mov(a3.cvt32(), ptr[&m_local.gd->tex[0]]);
+		mov(ebx, ptr[&m_local.gd->tex[0]]);
 
 		if(m_sel.tlu)
 		{
-			mov(a1.cvt32(), ptr[&m_local.gd->clut]);
+			mov(edx, ptr[&m_local.gd->clut]);
 		}
 	}
 
@@ -3401,11 +3401,11 @@ void GSDrawScanlineCodeGenerator2::WritePixel(const Xmm& src, const AddressReg& 
 }
 
 /// Input:
-///  a3 = m_local.tex[0]  (x86 && !m_sel.mmin)
-///  rbp  = m_local.tex (x86 && m_sel.mmin)
-///  a1  = m_local.clut (x86 && m_sel.tlu)
+///  rbx = m_local.tex[0]  (x86 && !use_lod)
+///  rbp  = m_local.tex (x86 && use_lod)
+///  rdx  = m_local.clut (x86 && m_sel.tlu)
 /// Destroys: rax, src, tmp1, tmp2
-/// Destroys a3 (!m_sel.mmin)
+/// Destroys rbx (!use_lod)
 void GSDrawScanlineCodeGenerator2::ReadTexel1(const XYm& dst, const XYm& src, const XYm& tmp1, const XYm& tmp2, int mip_offset)
 {
 	const XYm no(-1); // Hopefully this will assert if we accidentally use it
@@ -3417,11 +3417,11 @@ void GSDrawScanlineCodeGenerator2::ReadTexel1(const XYm& dst, const XYm& src, co
 /// Destroys tmp1 if <sse41 or isYmm
 /// Will preserve tmp2
 /// Input:
-///  a3 = m_local.tex[0]  (x86 && !use_lod)
+///  rbx = m_local.tex[0]  (x86 && !use_lod)
 ///  rbp  = m_local.tex (x86 && use_lod)
-///  a1  = m_local.clut (x86 && m_sel.tlu)
+///  rdx  = m_local.clut (x86 && m_sel.tlu)
 /// Destroys: rax
-/// Destroys a3 (!use_lod)
+/// Destroys rbx (!use_lod)
 void GSDrawScanlineCodeGenerator2::ReadTexel4(
 	const XYm& d0,   const XYm& d1,
 	const XYm& d2s0, const XYm& d3s1,
@@ -3454,8 +3454,8 @@ void GSDrawScanlineCodeGenerator2::ReadTexelImplLoadTexLOD(int lod, int mip_offs
 {
 	AddressReg texIn = is64 ? _64_m_local__gd__tex : rbp;
 	Address lod_addr = m_sel.lcm ? _rip_global(lod.i.u32[lod]) : _rip_local(temp.lod.i.u32[lod]);
-	mov(a3.cvt32(), lod_addr);
-	mov(a3, ptr[texIn + a3*wordsize + mip_offset]);
+	mov(ebx, lod_addr);
+	mov(rbx, ptr[texIn + rbx*wordsize + mip_offset]);
 }
 
 void GSDrawScanlineCodeGenerator2::ReadTexelImplYmm(
@@ -3470,11 +3470,11 @@ void GSDrawScanlineCodeGenerator2::ReadTexelImplYmm(
 	const Ymm t1[]  = { d1,   d2s0, d3s1,   s2 };
 	const Ymm t2[]  = { tmp,  tmp,  tmp,  tmp  };
 
-	bool texInA3 = is32;
+	bool texInRBX = is32;
 	if(use_lod && m_sel.lcm)
 	{
 		ReadTexelImplLoadTexLOD(0, mip_offset);
-		texInA3 = true;
+		texInRBX = true;
 	}
 
 	for (int i = 0; i < pixels; i++) {
@@ -3485,7 +3485,7 @@ void GSDrawScanlineCodeGenerator2::ReadTexelImplYmm(
 
 		if(use_lod && !m_sel.lcm)
 		{
-			texInA3 = true;
+			texInRBX = true;
 
 			vextracti128(xt1, src[i], 1);
 
@@ -3493,18 +3493,18 @@ void GSDrawScanlineCodeGenerator2::ReadTexelImplYmm(
 			{
 				ReadTexelImplLoadTexLOD(j, mip_offset);
 
-				ReadTexelImpl(xdst, xsrc, j, texInA3, false);
+				ReadTexelImpl(xdst, xsrc, j, texInRBX, false);
 
 				ReadTexelImplLoadTexLOD(j+4, mip_offset);
 
-				ReadTexelImpl(xt2, xt1, j, texInA3, false);
+				ReadTexelImpl(xt2, xt1, j, texInRBX, false);
 			}
 
 			vinserti128(dst[i], dst[i], xt2, 1);
 		}
 		else
 		{
-			AddressReg tex  = texInA3 ? a3 : _64_m_local__gd__tex;
+			AddressReg tex  = texInRBX ? rbx : _64_m_local__gd__tex;
 			if (!m_sel.tlu)
 			{
 				pcmpeqd(t1[i], t1[i]);
@@ -3516,8 +3516,8 @@ void GSDrawScanlineCodeGenerator2::ReadTexelImplYmm(
 
 				for (int j = 0; j < 4; j++)
 				{
-					ReadTexelImpl(xdst, xsrc, j, texInA3, false);
-					ReadTexelImpl(xt2, xt1, j, texInA3, false);
+					ReadTexelImpl(xdst, xsrc, j, texInRBX, false);
+					ReadTexelImpl(xt2, xt1, j, texInRBX, false);
 				}
 
 				vinserti128(dst[i], dst[i], xt2, 1);
@@ -3561,19 +3561,19 @@ void GSDrawScanlineCodeGenerator2::ReadTexelImplSSE4(
 	else
 	{
 		bool preserve = false;
-		bool texInA3 = is32;
+		bool texInRBX = is32;
 
 		if (use_lod && m_sel.lcm)
 		{
 			ReadTexelImplLoadTexLOD(0, mip_offset);
-			texInA3 = true;
+			texInRBX = true;
 		}
 
 		for (int i = 0; i < pixels; i++)
 		{
 			for (int j = 0; j < 4; j++)
 			{
-				ReadTexelImpl(dst[i], src[i], j, texInA3, preserve);
+				ReadTexelImpl(dst[i], src[i], j, texInRBX, preserve);
 			}
 		}
 	}
@@ -3586,16 +3586,16 @@ void GSDrawScanlineCodeGenerator2::ReadTexelImplSSE3(
 	const Xmm& tmp1, const Xmm& tmp2,
 	int pixels,      int mip_offset)
 {
-	bool texInA3 = is32;
+	bool texInRBX = is32;
 	auto Read = [&](const Xmm& dst, const Xmm& src)
 	{
-		ReadTexelImpl(dst, src, 0, texInA3, /*preserveDst=*/false);
+		ReadTexelImpl(dst, src, 0, texInRBX, /*preserveDst=*/false);
 	};
 
 	// Note: Should use d1 and tmp1 as temp if pixels == 1
 	if(use_lod && !m_sel.lcm)
 	{
-		texInA3 = true;
+		texInRBX = true;
 		if (pixels == 1)
 		{
 			ReadTexelImplLoadTexLOD(0, mip_offset);
@@ -3668,7 +3668,7 @@ void GSDrawScanlineCodeGenerator2::ReadTexelImplSSE3(
 		if(use_lod && m_sel.lcm)
 		{
 			ReadTexelImplLoadTexLOD(0, mip_offset);
-			texInA3 = true;
+			texInRBX = true;
 		}
 
 		const Xmm dst[] = { d0,   d1,   d2s0, d3s1 };
@@ -3693,12 +3693,12 @@ void GSDrawScanlineCodeGenerator2::ReadTexelImplSSE3(
 	}
 }
 
-void GSDrawScanlineCodeGenerator2::ReadTexelImpl(const Xmm& dst, const Xmm& addr, uint8 i, bool texInA3, bool preserveDst)
+void GSDrawScanlineCodeGenerator2::ReadTexelImpl(const Xmm& dst, const Xmm& addr, uint8 i, bool texInRBX, bool preserveDst)
 {
 	ASSERT(i < 4);
 
-	AddressReg clut = is64 ? _64_m_local__gd__clut : a1;
-	AddressReg tex  = texInA3 ? a3 : _64_m_local__gd__tex;
+	AddressReg clut = is64 ? _64_m_local__gd__clut : rdx;
+	AddressReg tex  = texInRBX ? rbx : _64_m_local__gd__tex;
 	Address src = m_sel.tlu ? ptr[clut + rax*4] : ptr[tex + rax*4];
 
 	// Extract address offset
