@@ -232,11 +232,7 @@ typedef int64 sint64;
 
 // Convert gcc see define into GSdx (windows) define
 #if defined(__AVX2__)
-	#if defined(__x86_64__)
-		#define _M_SSE 0x500 // TODO
-	#else
-		#define _M_SSE 0x501
-	#endif
+	#define _M_SSE 0x501
 #elif defined(__AVX__)
 	#define _M_SSE 0x500
 #elif defined(__SSE4_1__)
