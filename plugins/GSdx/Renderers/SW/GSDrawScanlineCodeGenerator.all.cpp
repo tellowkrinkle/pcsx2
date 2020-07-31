@@ -32,7 +32,7 @@ using namespace Xbyak;
 #define _64_g_const r10
 #define _64_m_local r12
 #define _64_m_local__gd r13
-#define _64_m_local__gd__vm a1
+#define _64_m_local__gd__vm t3
 #define _64_m_local__gd__clut r11
 // If use_lod, m_local.gd->tex, else m_local.gd->tex[0]
 #define _64_m_local__gd__tex r14
@@ -127,10 +127,12 @@ GSDrawScanlineCodeGenerator2::GSDrawScanlineCodeGenerator2(Xbyak::CodeGenerator*
 	, a0(rcx) , a1(rdx)
 	, a2(r8)  , a3(is64 ? r9 : rbx)
 	, t0(rdi) , t1(rsi)
+	, t2(is64 ? r8 : rbp), t3(r9)
 #else
 	, a0(is64 ? rdi : rcx), a1(is64 ? rsi : rdx)
 	, a2(is64 ? rdx : r8),  a3(is64 ? rcx : rbx)
 	, t0(is64 ? r8  : rdi), t1(is64 ? r9  : rsi)
+	, t2(is64 ? rcx : rbp), t3(is64 ? rsi : r8)
 #endif
 	, _g_const(chooseLocal(&*g_const, _64_g_const))
 	, _m_local(chooseLocal(&m_local, _64_m_local))
@@ -668,7 +670,10 @@ void GSDrawScanlineCodeGenerator2::Init()
 
 	// a0 = steps
 	// a1 = skip
+	// a2[x64] = top
+	// a3[x64] = v
 	// rbx = left
+	// Free: rax, t0, t1
 
 	if (is64)
 	{
@@ -708,6 +713,14 @@ void GSDrawScanlineCodeGenerator2::Init()
 			mov(a3, ptr[rsp + _v]);
 		}
 	}
+
+	// a0 = steps      (rcx | rdi)
+	// a1 = skip       (rdx | rsi)
+	// a2[x64] = top   (r8  | rdx)
+	// a3 = v          (rbx | rcx)
+	// t0 = fza_offset (rdi | r8 )
+	// t1 = fza_base   (rsi | r9 )
+	// Free: rax
 
 	const XYm& f = is64 ? _f : xym1;
 	const XYm& z = is64 ? _z : xym0;
