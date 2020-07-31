@@ -617,6 +617,8 @@ L("exit");
 		mov(r15, ptr[rsp + _64_rz_r15]);
 #endif
 		pop(rbp);
+		if (isYmm)
+			vzeroupper();
 		ret();
 	}
 }
