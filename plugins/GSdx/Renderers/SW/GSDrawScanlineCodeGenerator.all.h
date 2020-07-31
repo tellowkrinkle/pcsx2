@@ -97,8 +97,9 @@ class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator
 	bool use_lod;
 
 	const XYm xym0{0}, xym1{1}, xym2{2}, xym3{3}, xym4{4}, xym5{5}, xym6{6}, xym7{7}, xym8{8}, xym9{9}, xym10{10}, xym11{11}, xym12{12}, xym13{13}, xym14{14}, xym15{15};
-	/// Note: a2 is only available on x86-64
-	const AddressReg a0, a1, a2, a3, t0, t1;
+	/// Note: a2 and t3 are only available on x86-64
+	/// Outside of Init, usable registers are a0, t0, t1, t2, t3[x64], rax, rbx, rdx, r10+
+	const AddressReg a0, a1, a2, a3, t0, t1, t2, t3;
 	const LocalAddr _g_const, _m_local, _m_local__gd, _m_local__gd__vm;
 	/// Available on both x86 and x64, not always valid
 	const XYm _rb, _ga, _fm, _zm, _fd, _test;
