@@ -37,8 +37,8 @@ using namespace Xbyak;
 // If use_lod, m_local.gd->tex, else m_local.gd->tex[0]
 #define _64_m_local__gd__tex r14
 
-#define _rip_local(field) ((is32 || m_rip) ? ptr[rip + (size_t)&m_local.field] : ptr[_m_local + offsetof(GSScanlineLocalData, field)])
-#define _rip_global(field) ((is32 || m_rip) ? ptr[rip + (size_t)&m_local.gd->field] : ptr[_m_local__gd + offsetof(GSScanlineGlobalData, field)])
+#define _rip_local(field) ((is32 || m_rip) ? ptr[rip + (char*)&m_local.field] : ptr[_m_local + offsetof(GSScanlineLocalData, field)])
+#define _rip_global(field) ((is32 || m_rip) ? ptr[rip + (char*)&m_local.gd->field] : ptr[_m_local__gd + offsetof(GSScanlineGlobalData, field)])
 
 /// Executes the given code only if targeting 32-bit
 #define ONLY32(code) if (is32) (code)
