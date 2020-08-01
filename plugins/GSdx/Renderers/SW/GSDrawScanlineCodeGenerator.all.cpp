@@ -3474,14 +3474,14 @@ void GSDrawScanlineCodeGenerator2::ReadTexelImplSSE4(
 
 	if (use_lod && !m_sel.lcm)
 	{
-		bool texInA3 = true;
+		bool texInRBX = true;
 		for (int j = 0; j < 4; j++)
 		{
 			ReadTexelImplLoadTexLOD(j, mip_offset);
 
 			for (int i = 0; i < pixels; i++)
 			{
-				ReadTexelImpl(dst[i], src[i], j, texInA3, preserve[i]);
+				ReadTexelImpl(dst[i], src[i], j, texInRBX, preserve[i]);
 			}
 		}
 	}
