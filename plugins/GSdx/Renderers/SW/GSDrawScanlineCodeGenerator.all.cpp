@@ -333,7 +333,6 @@ void GSDrawScanlineCodeGenerator2::Generate()
 		push(r12);
 		push(r13);
 		push(r14);
-		push(r15);
 
 		sub(rsp, _64_win_stack_size);
 
@@ -599,7 +598,6 @@ L("exit");
 		}
 		add(rsp, _64_win_stack_size);
 
-		pop(r15);
 		pop(r14);
 		pop(r13);
 		pop(r12);
