@@ -66,16 +66,17 @@ GSSetupPrimCodeGenerator2::GSSetupPrimCodeGenerator2(Xbyak::CodeGenerator* base,
 	: _parent(base, sseVersion, hasFMA)
 	, m_local(*(GSScanlineLocalData*)param)
 	, m_rip(false), many_regs(false)
+	// On x86 arg registers are very temporary but on x64 they aren't, so on x86 some registers overlap
 #ifdef _WIN32
 	, _64_vertex(is64 ? rcx : r8)
 	, _index(is64 ? rdx : rcx)
 	, _dscan(is64 ? r8 : rdx)
-	, _64_t0(r9)
+	, _64_t0(r9), t1(is64 ? r10 : rcx)
 #else
 	, _64_vertex(is64 ? rdi : r8)
 	, _index(is64 ? rsi : rcx)
 	, _dscan(rdx)
-	, _64_t0(is64 ? rcx : r8)
+	, _64_t0(is64 ? rcx : r8), t1(is64 ? r8 : rcx)
 #endif
 	, _m_local(chooseLocal(&m_local, _64_m_local))
 {
@@ -98,7 +99,7 @@ void GSSetupPrimCodeGenerator2::Generate()
 #ifdef _WIN64
 	if (many_regs)
 	{
-		sub(rsp, 8 + 16*6)
+		sub(rsp, 8 + 16 * 6);
 		for (int i = 0; i < 6; i++)
 		{
 			movdqa(ptr[rsp + i*16], Xmm(i + 6));
@@ -137,11 +138,11 @@ void GSSetupPrimCodeGenerator2::Generate()
 #ifdef _WIN64
 	if (many_regs)
 	{
-		for (int i = 0; i < 6 : 2); i++)
+		for (int i = 0; i < 6; i++)
 		{
 			movdqa(Xmm(i + 6), ptr[rsp + i*16]);
 		}
-		add(rsp, 8 + 16*6)
+		add(rsp, 8 + 16*6);
 	}
 #endif
 	if (isYmm)
@@ -333,8 +334,8 @@ void GSSetupPrimCodeGenerator2::Depth_YMM()
 		{
 			// m_local.p.z = vertex[index[1]].t.u32[3]; // uint32 z is bypassed in t.w
 
-			mov(eax, ptr[rax + offsetof(GSVertexSW, t.w)]);
-			mov(_rip_local(p.z), eax);
+			mov(t1.cvt32(), ptr[rax + offsetof(GSVertexSW, t.w)]);
+			mov(_rip_local(p.z), t1.cvt32());
 		}
 	}
 }
