@@ -74,7 +74,7 @@ class GSSetupPrimCodeGenerator2 : public Xbyak::SmartCodeGenerator
 	struct {uint32 z:1, f:1, t:1, c:1;} m_en;
 
 	const XYm xym0{0}, xym1{1}, xym2{2}, xym3{3}, xym4{4}, xym5{5}, xym6{6}, xym7{7}, xym8{8}, xym9{9}, xym10{10}, xym11{11}, xym12{12}, xym13{13}, xym14{14}, xym15{15};
-	const AddressReg _64_vertex, _index, _dscan, _64_t0;
+	const AddressReg _64_vertex, _index, _dscan, _64_t0, t1;
 	const LocalAddr _m_local;
 	/// Returns the first arg on 32-bit, second on 64-bit
 	static LocalAddr chooseLocal(const void *addr32, AddressReg reg64)
