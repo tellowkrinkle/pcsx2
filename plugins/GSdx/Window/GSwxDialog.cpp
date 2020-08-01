@@ -81,7 +81,7 @@ RendererTab::RendererTab(wxWindow *parent)
     eight_bit_check = new wxCheckBox(this, wxID_ANY, "Allow 8 bit textures");
     framebuffer_check = new wxCheckBox(this, wxID_ANY, "Large Framebuffer");
 
-    auto *hw_choice_grid = new wxGridSizer(2, 0, 0);
+    auto *hw_choice_grid = new wxFlexGridSizer(2, 0, 0);
 
     add_label_and_combo_box(this, hw_choice_grid, m_res_select, "Internal Resolution:", theApp.m_gs_upscale_multiplier);
     add_label_and_combo_box(this, hw_choice_grid, m_anisotropic_select, "Anisotropic Filtering:", theApp.m_gs_hw_mipmapping);
@@ -119,6 +119,12 @@ RendererTab::RendererTab(wxWindow *parent)
     tab_box->Add(software_box, wxSizerFlags().Centre().Expand());
 
     SetSizerAndFit(tab_box);
+    Bind(wxEVT_CHECKBOX, &RendererTab::CallUpdate, this);
+}
+
+void RendererTab::CallUpdate(wxCommandEvent &event)
+{
+    Update();
 }
 
 void RendererTab::Load()
@@ -137,6 +143,7 @@ void RendererTab::Load()
     m_crc_select->SetSelection(get_config_index(theApp.m_gs_crc_level, "crc_hack_level"));
     m_date_select->SetSelection(get_config_index(theApp.m_gs_acc_date_level, "accurate_date"));
     m_blend_select->SetSelection(get_config_index(theApp.m_gs_acc_blend_level, "accurate_blending_unit"));
+    Update();
 }
 
 void RendererTab::Save()
@@ -155,6 +162,11 @@ void RendererTab::Save()
     set_config_from_choice(m_crc_select, theApp.m_gs_crc_level, "crc_hack_level");
     set_config_from_choice(m_date_select, theApp.m_gs_acc_date_level, "accurate_date");
     set_config_from_choice(m_blend_select, theApp.m_gs_acc_blend_level, "accurate_blending_unit");
+}
+
+void RendererTab::Update()
+{
+
 }
 
 HacksTab::HacksTab(wxWindow *parent)
@@ -240,6 +252,12 @@ HacksTab::HacksTab(wxWindow *parent)
     tab_box->Add(upscale_hacks_box, wxSizerFlags().Centre().Expand());
 
     SetSizerAndFit(tab_box);
+    Bind(wxEVT_CHECKBOX, &HacksTab::CallUpdate, this);
+}
+
+void HacksTab::CallUpdate(wxCommandEvent &event)
+{
+    Update();
 }
 
 void HacksTab::Load()
@@ -266,6 +284,7 @@ void HacksTab::Load()
     skip_y_spin->SetValue(theApp.GetConfigI("UserHacks_SkipDraw"));
     tex_off_x_spin->SetValue(theApp.GetConfigI("UserHacks_TCOffsetX"));
     tex_off_y_spin->SetValue(theApp.GetConfigI("UserHacks_TCOffsetY"));
+    Update();
 }
 
 void HacksTab::Save()
@@ -292,6 +311,33 @@ void HacksTab::Save()
     theApp.SetConfig("UserHacks_SkipDraw", skip_y_spin->GetValue());
     theApp.SetConfig("UserHacks_TCOffsetX", tex_off_x_spin->GetValue());
     theApp.SetConfig("UserHacks_TCOffsetY", tex_off_y_spin->GetValue());
+}
+
+void HacksTab::Update()
+{
+    bool hacks_enabled = hacks_check->GetValue();
+
+    align_sprite_check->Enable(hacks_enabled);
+    fb_convert_check->Enable(hacks_enabled);
+    auto_flush_check->Enable(hacks_enabled);
+    mem_wrap_check->Enable(hacks_enabled);
+    dis_depth_check->Enable(hacks_enabled);
+    merge_sprite_check->Enable(hacks_enabled);
+    dis_safe_features_check->Enable(hacks_enabled);
+    preload_gs_check->Enable(hacks_enabled);
+    fast_inv_check->Enable(hacks_enabled);
+    wild_arms_check->Enable(hacks_enabled);
+
+    m_half_select->Enable(hacks_enabled);
+    m_tri_select->Enable(hacks_enabled);
+    m_gs_offset_hack_select->Enable(hacks_enabled);
+    m_round_hack_select->Enable(hacks_enabled);
+
+    skip_x_spin->Enable(hacks_enabled);
+    skip_y_spin->Enable(hacks_enabled);
+    tex_off_x_spin->Enable(hacks_enabled);
+    tex_off_y_spin->Enable(hacks_enabled);
+
 }
 
 RecTab::RecTab(wxWindow *parent)
@@ -330,6 +376,12 @@ RecTab::RecTab(wxWindow *parent)
     tab_box->Add(record_check, wxSizerFlags().Left());
     tab_box->Add(record_box, wxSizerFlags().Centre().Expand());
     SetSizerAndFit(tab_box);
+    Bind(wxEVT_CHECKBOX, &RecTab::CallUpdate, this);
+}
+
+void RecTab::CallUpdate(wxCommandEvent &event)
+{
+    Update();
 }
 
 void RecTab::Load()
@@ -342,6 +394,7 @@ void RecTab::Load()
     png_spin->SetValue(theApp.GetConfigI("png_compression_level"));
 
     dir_select->SetInitialDirectory(theApp.GetConfigS("capture_out_dir"));
+    Update();
 }
 
 void RecTab::Save()
@@ -354,6 +407,18 @@ void RecTab::Save()
     theApp.SetConfig("png_compression_level", png_spin->GetValue());
 
     theApp.SetConfig("capture_out_dir", dir_select->GetPath());
+}
+
+void RecTab::Update()
+{
+    bool capture_enabled = record_check->GetValue();
+
+    res_x_spin->Enable(capture_enabled);
+    res_y_spin->Enable(capture_enabled);
+    thread_spin->Enable(capture_enabled);
+    png_spin->Enable(capture_enabled);
+
+    dir_select->Enable(capture_enabled);
 }
 
 PostTab::PostTab(wxWindow *parent)
@@ -371,7 +436,7 @@ PostTab::PostTab(wxWindow *parent)
     shade_boost_check = new wxCheckBox(this, wxID_ANY, "Enable Shade Boost");
     shader_box->Add(shade_boost_check);
 
-    auto *shade_boost_box = new wxStaticBoxSizer(wxVERTICAL, this, "Shade Boost");
+    shade_boost_box = new wxStaticBoxSizer(wxVERTICAL, this, "Shade Boost");
     auto *shader_boost_grid = new wxFlexGridSizer(2, 0, 0);
     
     add_label(this, shader_boost_grid, "Brightness:");
@@ -393,7 +458,7 @@ PostTab::PostTab(wxWindow *parent)
     ext_shader_check = new wxCheckBox(this, wxID_ANY, "Enable External Shader");
     shader_box->Add(ext_shader_check);
 
-    auto *ext_shader_box = new wxStaticBoxSizer(wxVERTICAL, this, "External Shader (Home)");
+    ext_shader_box = new wxStaticBoxSizer(wxVERTICAL, this, "External Shader (Home)");
     auto *ext_shader_grid = new wxFlexGridSizer(4, 0, 0);
 
     ext_shader_grid->Add(new wxStaticText(this, wxID_ANY, "GLSL fx File:", wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT), wxSizerFlags().Centre());
@@ -414,6 +479,12 @@ PostTab::PostTab(wxWindow *parent)
 
     tab_box->Add(shader_box, wxSizerFlags().Centre().Expand());
     SetSizerAndFit(tab_box);
+    Bind(wxEVT_CHECKBOX, &PostTab::CallUpdate, this);
+}
+
+void PostTab::CallUpdate(wxCommandEvent &event)
+{
+    Update();
 }
 
 void PostTab::Load()
@@ -431,6 +502,7 @@ void PostTab::Load()
     sb_brightness_slider->SetValue(theApp.GetConfigI("ShadeBoost_Brightness"));
     sb_contrast_slider->SetValue(theApp.GetConfigI("ShadeBoost_Contrast"));
     sb_saturation_slider->SetValue(theApp.GetConfigI("ShadeBoost_Saturation"));
+    Update();
 }
 
 void PostTab::Save()
@@ -448,7 +520,21 @@ void PostTab::Save()
     theApp.SetConfig("ShadeBoost_Brightness", sb_brightness_slider->GetValue());
     theApp.SetConfig("ShadeBoost_Contrast", sb_contrast_slider->GetValue());
     theApp.SetConfig("ShadeBoost_Saturation", sb_saturation_slider->GetValue());
-    
+}
+
+void PostTab::Update()
+{
+    bool shade_boost_enabled = shade_boost_check->GetValue();
+    bool ext_shader_enabled = ext_shader_check->GetValue();
+
+    shade_boost_box->GetStaticBox()->Enable(shade_boost_enabled);
+    sb_brightness_slider->Enable(shade_boost_enabled);
+    sb_contrast_slider->Enable(shade_boost_enabled);
+    sb_saturation_slider->Enable(shade_boost_enabled);
+
+    ext_shader_box->GetStaticBox()->Enable(ext_shader_enabled);
+    glsl_select->Enable(ext_shader_enabled);
+    config_select->Enable(ext_shader_enabled);
 }
 
 OSDTab::OSDTab(wxWindow *parent)
@@ -459,7 +545,7 @@ OSDTab::OSDTab(wxWindow *parent)
     monitor_check = new wxCheckBox(this, wxID_ANY, "Enable Monitor");
     tab_box->Add(monitor_check);
 
-    auto *font_box = new wxStaticBoxSizer(wxVERTICAL, this, "Font");
+    font_box = new wxStaticBoxSizer(wxVERTICAL, this, "Font");
     auto *font_grid = new wxFlexGridSizer(2, 0, 0);
 
     add_label(this, font_grid, "Size:");
@@ -488,7 +574,7 @@ OSDTab::OSDTab(wxWindow *parent)
     log_check = new wxCheckBox(this, wxID_ANY, "Enable Log");
     tab_box->Add(log_check);
 
-    auto *log_box = new wxStaticBoxSizer(wxVERTICAL, this, "Log Messages");
+    log_box = new wxStaticBoxSizer(wxVERTICAL, this, "Log Messages");
     auto *log_grid = new wxFlexGridSizer(2, 0, 0);
 
     add_label(this, log_grid, "Timeout (seconds):");
@@ -503,6 +589,12 @@ OSDTab::OSDTab(wxWindow *parent)
     tab_box->Add(log_box, wxSizerFlags().Centre());
 
     SetSizerAndFit(tab_box);
+    Bind(wxEVT_CHECKBOX, &OSDTab::CallUpdate, this);
+}
+
+void OSDTab::CallUpdate(wxCommandEvent &event)
+{
+    Update();
 }
 
 void OSDTab::Load()
@@ -518,6 +610,7 @@ void OSDTab::Load()
     green_slider->SetValue(theApp.GetConfigI("osd_color_g"));
     blue_slider->SetValue(theApp.GetConfigI("osd_color_b"));
     opacity_slider->SetValue(theApp.GetConfigI("osd_color_opacity"));
+    Update();
 
 }
 
@@ -535,6 +628,23 @@ void OSDTab::Save()
     theApp.SetConfig("osd_color_b", blue_slider->GetValue());
     theApp.SetConfig("osd_color_opacity", opacity_slider->GetValue());
     
+}
+
+void OSDTab::Update()
+{
+    bool font_enabled = monitor_check->GetValue();
+    bool log_enabled = log_check->GetValue();
+
+    font_box->GetStaticBox()->Enable(font_enabled);
+    size_spin->Enable(font_enabled);
+    red_slider->Enable(font_enabled);
+    green_slider->Enable(font_enabled);
+    blue_slider->Enable(font_enabled);
+    opacity_slider->Enable(font_enabled);
+
+    log_box->GetStaticBox()->Enable(log_enabled);
+    timeout_spin->Enable(log_enabled);
+    max_spin->Enable(log_enabled);
 }
 
 DebugTab::DebugTab(wxWindow *parent)
@@ -571,7 +681,7 @@ DebugTab::DebugTab(wxWindow *parent)
     debug_box->Add(debug_check_box);
     debug_box->Add(debug_save_check_box);
 
-    auto *dump_grid = new wxFlexGridSizer(4, 0, 0);
+    auto *dump_grid = new wxFlexGridSizer(2, 0, 0);
 
     add_label(this, dump_grid, "Start of Dump:");
     start_dump_spin = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, pow(10, 9), 0);
@@ -594,6 +704,12 @@ DebugTab::DebugTab(wxWindow *parent)
     tab_box->Add(ogl_box, wxSizerFlags().Centre().Expand());
 
     SetSizerAndFit(tab_box);
+    Bind(wxEVT_CHECKBOX, &DebugTab::CallUpdate, this);
+}
+
+void DebugTab::CallUpdate(wxCommandEvent &event)
+{
+    Update();
 }
 
 void DebugTab::Load()
@@ -612,6 +728,7 @@ void DebugTab::Load()
     m_geo_shader_select->SetSelection(get_config_index(theApp.m_gs_generic_list, "override_geometry_shader"));
     m_image_load_store_select->SetSelection(get_config_index(theApp.m_gs_generic_list, "override_GL_ARB_shader_image_load_store"));
     m_sparse_select->SetSelection(get_config_index(theApp.m_gs_generic_list, "override_GL_ARB_sparse_texture"));
+    Update();
 }
 
 void DebugTab::Save()
@@ -630,6 +747,11 @@ void DebugTab::Save()
     set_config_from_choice(m_geo_shader_select, theApp.m_gs_generic_list, "override_geometry_shader");
     set_config_from_choice(m_image_load_store_select, theApp.m_gs_generic_list, "override_GL_ARB_shader_image_load_store");
     set_config_from_choice(m_sparse_select, theApp.m_gs_generic_list, "override_GL_ARB_sparse_texture");
+}
+
+void DebugTab::Update()
+{
+
 }
 
 Dialog::Dialog()
@@ -656,12 +778,11 @@ Dialog::Dialog()
     m_adapter_str.Add("Default");
     m_adapter_select = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_adapter_str);
     top_grid->Add(m_adapter_select, wxSizerFlags().Expand());
-    m_adapter_select->Disable();
 
     add_label_and_combo_box(this, top_grid, m_interlace_select, "Interlacing(F5):", theApp.m_gs_interlace);
     add_label_and_combo_box(this, top_grid, m_texture_select, "Texture Filtering:", theApp.m_gs_bifilter);
 
-    auto *book = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxSize(450,-1));
+    auto *book = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 
     m_renderer_panel = new RendererTab(book);
     m_hacks_panel = new HacksTab(book);
@@ -686,11 +807,17 @@ Dialog::Dialog()
     m_top_box->Add(CreateStdDialogButtonSizer(wxOK | wxCANCEL), wxSizerFlags().Right());	
 
     SetSizerAndFit(padding);
+    Bind(wxEVT_CHECKBOX, &Dialog::CallUpdate, this);
 
 }
 
 Dialog::~Dialog()
 {
+}
+
+void Dialog::CallUpdate(wxCommandEvent &event)
+{
+    Update();
 }
 
 void Dialog::Load()
@@ -720,6 +847,18 @@ void Dialog::Save()
     m_post_panel->Save();
     m_osd_panel->Save();
     m_debug_panel->Save();
+}
+
+void Dialog::Update()
+{
+    m_adapter_select->Disable();
+
+    m_hacks_panel->Update();
+    m_renderer_panel->Update();
+    m_rec_panel->Update();
+    m_post_panel->Update();
+    m_osd_panel->Update();
+    m_debug_panel->Update();
 }
 
 bool RunwxDialog()

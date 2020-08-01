@@ -45,6 +45,8 @@ public:
     RendererTab(wxWindow *parent);
     void Load();
     void Save();
+    void Update();
+    void CallUpdate(wxCommandEvent &event);
 };
 
 class HacksTab : public wxPanel
@@ -60,6 +62,8 @@ public:
     HacksTab(wxWindow *parent);
     void Load();
     void Save();
+    void Update();
+    void CallUpdate(wxCommandEvent &event);
 };
 
 class DebugTab : public wxPanel
@@ -72,6 +76,8 @@ public:
     DebugTab(wxWindow *parent);
     void Load();
     void Save();
+    void Update();
+    void CallUpdate(wxCommandEvent &event);
 };
 
 class RecTab : public wxPanel
@@ -84,6 +90,8 @@ public:
     RecTab(wxWindow *parent);
     void Load();
     void Save();
+    void Update();
+    void CallUpdate(wxCommandEvent &event);
 };
 
 class PostTab : public wxPanel
@@ -93,10 +101,13 @@ public:
     wxSlider *sb_brightness_slider, *sb_contrast_slider, *sb_saturation_slider;
     wxDirPickerCtrl *glsl_select, *config_select;
     wxChoice *m_tv_select;
+    wxStaticBoxSizer *shade_boost_box, *ext_shader_box;
 
     PostTab(wxWindow *parent);
     void Load();
     void Save();
+    void Update();
+    void CallUpdate(wxCommandEvent &event);
 };
 
 class OSDTab : public wxPanel
@@ -105,10 +116,13 @@ public:
     wxCheckBox *monitor_check, *log_check;
     wxSpinCtrl *size_spin, *timeout_spin, *max_spin;
     wxSlider *red_slider, *green_slider, *blue_slider, *opacity_slider;
+    wxStaticBoxSizer *font_box, *log_box;
 
     OSDTab(wxWindow *parent);
     void Load();
     void Save();
+    void Update();
+    void CallUpdate(wxCommandEvent &event);
 };
 
 class Dialog : public wxDialog
@@ -127,6 +141,8 @@ public:
     ~Dialog();
     void Load();
     void Save();
+    void Update();
+    void CallUpdate(wxCommandEvent &event);
 };
 
 extern bool RunwxDialog();
