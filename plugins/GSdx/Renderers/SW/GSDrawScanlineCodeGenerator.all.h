@@ -25,13 +25,6 @@
 #include "GSScanlineEnvironment.h"
 #include "xbyak/xbyak_smart.h"
 
-#undef a0
-#undef a1
-#undef a2
-#undef a3
-#undef t0
-#undef t1
-
 #if _M_SSE >= 0x501
 # define DRAW_SCANLINE_VECTOR_REGISTER Xbyak::Ymm
 # define DRAW_SCANLINE_USING_XMM 0
