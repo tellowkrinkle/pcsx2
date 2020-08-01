@@ -29,7 +29,7 @@
 
 using namespace Xbyak;
 
-#define _rip_local(field) ((is32 || m_rip) ? ptr[rip + (size_t)&m_local.field] : ptr[_m_local + offsetof(GSScanlineLocalData, field)])
+#define _rip_local(field) ((is32 || m_rip) ? ptr[rip + (char*)&m_local.field] : ptr[_m_local + offsetof(GSScanlineLocalData, field)])
 
 #define _64_m_local _64_t0
 
