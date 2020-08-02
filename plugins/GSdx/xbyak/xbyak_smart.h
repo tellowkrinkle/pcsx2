@@ -29,13 +29,15 @@
 #pragma once
 
 #include "xbyak.h"
+#include "xbyak_util.h"
 
 namespace Xbyak
 {
 
 	namespace SSEVersion
 	{
-		enum SSEVersion {
+		enum SSEVersion
+		{
 			AVX2  = 0x501,
 			AVX   = 0x500,
 			SSE41 = 0x401,
@@ -43,6 +45,30 @@ namespace Xbyak
 			SSE2  = 0x200,
 		};
 	}
+
+	/// Similar to Xbyak::util::cpu but more open to us putting in extra flags (e.g. "vpgatherdd is fast"), as well as making it easier to test other configurations by artifically limiting features
+	struct CPUInfo
+	{
+		bool hasFMA = false;
+		SSEVersion::SSEVersion sseVersion = SSEVersion::SSE2;
+
+		CPUInfo() = default;
+		CPUInfo(const util::Cpu& cpu)
+		{
+			auto version = SSEVersion::SSE2;
+			if (cpu.has(util::Cpu::tSSE3))
+				version = SSEVersion::SSE3;
+			if (cpu.has(util::Cpu::tSSE41))
+				version = SSEVersion::SSE41;
+			if (cpu.has(util::Cpu::tAVX))
+				version = SSEVersion::AVX;
+			if (cpu.has(util::Cpu::tAVX2))
+				version = SSEVersion::AVX2;
+
+			hasFMA = cpu.has(util::Cpu::tFMA);
+			sseVersion = version;
+		}
+	};
 
 	/// Code generator that automatically selects between SSE and AVX, x86 and x64 so you don't have to
 	/// Should make combined SSE and AVX codegen much easier
@@ -116,14 +142,14 @@ namespace Xbyak
 		const RipType rip{};
 		const AddressFrame ptr{0}, byte{8}, word{16}, dword{32}, qword{64}, xword{128}, yword{256}, zword{512};
 
-		SmartCodeGenerator(CodeGenerator* actual, SSEVersion::SSEVersion sse, bool hasFMA)
+		SmartCodeGenerator(CodeGenerator* actual, CPUInfo cpu)
 			: actual(*actual)
-			, hasSSE2(sse >= SSEVersion::SSE2)
-			, hasSSE3(sse >= SSEVersion::SSE3)
-			, hasSSE41(sse >= SSEVersion::SSE41)
-			, hasAVX(sse >= SSEVersion::AVX)
-			, hasAVX2(sse >= SSEVersion::AVX2)
-			, hasFMA(hasFMA)
+			, hasSSE2(cpu.sseVersion >= SSEVersion::SSE2)
+			, hasSSE3(cpu.sseVersion >= SSEVersion::SSE3)
+			, hasSSE41(cpu.sseVersion >= SSEVersion::SSE41)
+			, hasAVX(cpu.sseVersion >= SSEVersion::AVX)
+			, hasAVX2(cpu.sseVersion >= SSEVersion::AVX2)
+			, hasFMA(cpu.hasFMA)
 		{
 		}
 

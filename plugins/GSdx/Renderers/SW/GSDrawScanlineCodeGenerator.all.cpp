@@ -119,8 +119,8 @@ using namespace Xbyak;
 # define _rip_local_d_p(x) _rip_local_d(x)
 #endif
 
-GSDrawScanlineCodeGenerator2::GSDrawScanlineCodeGenerator2(Xbyak::CodeGenerator* base, SSEVersion::SSEVersion sseVersion, bool hasFMA, void* param, uint64 key)
-	: _parent(base, sseVersion, hasFMA)
+GSDrawScanlineCodeGenerator2::GSDrawScanlineCodeGenerator2(Xbyak::CodeGenerator* base, Xbyak::CPUInfo cpu, void* param, uint64 key)
+	: _parent(base, cpu)
 	, m_local(*(GSScanlineLocalData*)param)
 	, m_rip(false)
 #ifdef _WIN32
