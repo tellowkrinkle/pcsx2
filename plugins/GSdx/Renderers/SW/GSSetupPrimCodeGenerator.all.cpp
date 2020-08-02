@@ -62,8 +62,8 @@ using namespace Xbyak;
 # define _rip_local_d_p(x) _rip_local_d(x)
 #endif
 
-GSSetupPrimCodeGenerator2::GSSetupPrimCodeGenerator2(Xbyak::CodeGenerator* base, Xbyak::SSEVersion::SSEVersion sseVersion, bool hasFMA, void* param, uint64 key)
-	: _parent(base, sseVersion, hasFMA)
+GSSetupPrimCodeGenerator2::GSSetupPrimCodeGenerator2(Xbyak::CodeGenerator* base, Xbyak::CPUInfo cpu, void* param, uint64 key)
+	: _parent(base, cpu)
 	, m_local(*(GSScanlineLocalData*)param)
 	, m_rip(false), many_regs(false)
 	// On x86 arg registers are very temporary but on x64 they aren't, so on x86 some registers overlap
