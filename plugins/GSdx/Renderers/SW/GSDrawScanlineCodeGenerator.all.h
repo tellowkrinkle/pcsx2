@@ -60,15 +60,12 @@ class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator
 	constexpr static int _32_args = 16;
 	constexpr static int _invalid = 0xaaaaaaaa;
 #ifdef _WIN32
-	// Windows has no redzone and also has 10 xmm registers to save
-	constexpr static int _64_win_stack_size = 8 * 4 + 16 * 10;
+	constexpr static int _64_top = 8 * 0;
 	// XMM registers will be saved to `rsp + _64_win_xmm_start + id - 6`
 	// Which will put xmm6 after the temporaries, them xmm7, etc
-	constexpr static int _64_win_xmm_start = 8 * 4;
-	constexpr static int _64_top = 8 * 3;
-	constexpr static int _64_zs  = 8 * 2;
-	constexpr static int _64_zd  = 8 * 1;
-	constexpr static int _64_cov = 8 * 0;
+	constexpr static int _64_win_xmm_start = 8 * 2;
+	// Windows has no redzone and also has 10 xmm registers to save
+	constexpr static int _64_win_stack_size = _64_win_xmm_start + 16*10;
 #else
 	// System-V has a redzone so stick everything there
 	constexpr static int _64_rz_rbx = -8 * 1;
@@ -77,9 +74,6 @@ class GSDrawScanlineCodeGenerator2 : public Xbyak::SmartCodeGenerator
 	constexpr static int _64_rz_r14 = -8 * 4;
 	constexpr static int _64_rz_r15 = -8 * 5;
 	constexpr static int _64_top    = -8 * 6;
-	constexpr static int _64_zs     = -8 * 8;
-	constexpr static int _64_zd     = -8 * 10;
-	constexpr static int _64_cov    = -8 * 12;
 #endif
 	constexpr static int _top = is64 ? _64_top  : _32_args + 4;
 	constexpr static int _v   = is64 ? _invalid : _32_args + 8;

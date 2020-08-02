@@ -792,11 +792,6 @@ void GSDrawScanlineCodeGenerator2::Init()
 			psrlw(xym3, 9);
 
 			movdqa(_rip_local(temp.cov), xym3);
-//#ifdef _WIN64
-//			vmovdqa(_rip_local(temp.cov), xym3);
-//#else
-//			vmovdqa(ptr[rsp + _rz_cov], xym3);
-//#endif
 		}
 
 		if(m_sel.tfx != TFX_NONE)
@@ -1205,11 +1200,7 @@ void GSDrawScanlineCodeGenerator2::TestZ(const XYm& temp1, const XYm& temp2)
 
 		if(m_sel.zwrite)
 		{
-//#ifdef _WIN64
 			movdqa(_rip_local(temp.zs), xym0);
-//#else
-//			movdqa(ptr[rsp + _rz_zs], xym0);
-//#endif
 		}
 	}
 	else
@@ -1223,11 +1214,7 @@ void GSDrawScanlineCodeGenerator2::TestZ(const XYm& temp1, const XYm& temp2)
 
 		if(m_sel.zwrite && m_sel.zpsm < 2)
 		{
-//#ifdef _WIN64
 			movdqa(_rip_local(temp.zd), temp2);
-//#else
-//			movdqa(ptr[rsp + _rz_zd], temp2);
-//#endif
 		}
 
 		// zd &= 0xffffffff >> m_sel.zpsm * 8;
@@ -2363,11 +2350,7 @@ void GSDrawScanlineCodeGenerator2::AlphaTFX()
 
 			if(m_sel.edge)
 			{
-//#ifdef _WIN64
 				movdqa(xym0, _rip_local(temp.cov));
-//#else
-//				movdqa(xym0, ptr[rsp + _rz_cov]);
-//#endif
 			}
 			else
 			{
@@ -2388,11 +2371,7 @@ void GSDrawScanlineCodeGenerator2::AlphaTFX()
 
 			if(m_sel.edge)
 			{
-//#ifdef _WIN64
 				movdqa(xym1, _rip_local(temp.cov));
-//#else
-//				movdqa(xym1, ptr[rsp + _rz_cov]);
-//#endif
 			}
 			else
 			{
@@ -2742,11 +2721,7 @@ void GSDrawScanlineCodeGenerator2::WriteZBuf()
 	}
 
 	if (m_sel.prim != GS_SPRITE_CLASS)
-//#ifdef _WIN64
 		movdqa(xym1, _rip_local(temp.zs));
-//#else
-//		movdqa(xym1, ptr[rsp + _rz_zs]);
-//#endif
 	else
 		BROADCAST_OR_LOAD(vpbroadcastd, movdqa, xym1, _rip_local(p.z));
 
@@ -2756,11 +2731,7 @@ void GSDrawScanlineCodeGenerator2::WriteZBuf()
 
 		if (hasAVX)
 		{
-//#ifdef _WIN64
 			vpblendvb(xym1, xym1, _rip_local(temp.zd), _zm);
-//#else
-//			pblendvb(xym1, ptr[rsp + _rz_zd], _zm);
-//#endif
 		}
 		else
 		{
