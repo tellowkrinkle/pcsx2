@@ -25,17 +25,7 @@
 
 void GSDrawScanlineCodeGenerator::Generate()
 {
-	auto version = SSEVersion::SSE2;
-	if (m_cpu.has(util::Cpu::tSSE3))
-		version = SSEVersion::SSE3;
-	if (m_cpu.has(util::Cpu::tSSE41))
-		version = SSEVersion::SSE41;
-	if (m_cpu.has(util::Cpu::tAVX))
-		version = SSEVersion::AVX;
-	if (m_cpu.has(util::Cpu::tAVX2))
-		version = SSEVersion::AVX2;
-
-	GSDrawScanlineCodeGenerator2(this, version, m_cpu.has(util::Cpu::tFMA), (void*)&m_local, m_sel.key).Generate();
+	GSDrawScanlineCodeGenerator2(this, CPUInfo(m_cpu), (void*)&m_local, m_sel.key).Generate();
 }
 
 GSDrawScanlineCodeGenerator::GSDrawScanlineCodeGenerator(void* param, uint64 key, void* code, size_t maxsize)
