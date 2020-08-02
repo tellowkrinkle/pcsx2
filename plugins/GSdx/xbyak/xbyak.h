@@ -415,8 +415,8 @@ public:
 		AX = 0, CX, DX, BX, SP, BP, SI, DI,
 		AL = 0, CL, DL, BL, AH, CH, DH, BH
 	};
-	constexpr Operand() : idx_(0), kind_(0), bit_(0), zero_(0), mask_(0), rounding_(0) { }
-	constexpr Operand(int idx, Kind kind, int bit, bool ext8bit = 0)
+	Operand() : idx_(0), kind_(0), bit_(0), zero_(0), mask_(0), rounding_(0) { }
+	Operand(int idx, Kind kind, int bit, bool ext8bit = 0)
 		: idx_(static_cast<uint8>(idx | (ext8bit ? EXT8BIT : 0)))
 		, kind_(static_cast<uint8>(kind))
 		, bit_(bit)
@@ -541,7 +541,7 @@ struct Reg64;
 class Reg : public Operand {
 public:
 	Reg() { }
-	constexpr Reg(int idx, Kind kind, int bit = 0, bool ext8bit = false) : Operand(idx, kind, bit, ext8bit) { }
+	Reg(int idx, Kind kind, int bit = 0, bool ext8bit = false) : Operand(idx, kind, bit, ext8bit) { }
 	Reg changeBit(int bit) const { return Reg(getIdx(), getKind(), bit, isExt8bit()); }
 	uint8 getRexW() const { return isREG(64) ? 8 : 0; }
 	uint8 getRexR() const { return isExtIdx() ? 4 : 0; }
@@ -562,15 +562,15 @@ public:
 };
 
 struct Reg8 : public Reg {
-	constexpr explicit Reg8(int idx = 0, bool ext8bit = false) : Reg(idx, Operand::REG, 8, ext8bit) { }
+	explicit Reg8(int idx = 0, bool ext8bit = false) : Reg(idx, Operand::REG, 8, ext8bit) { }
 };
 
 struct Reg16 : public Reg {
-	constexpr explicit Reg16(int idx = 0) : Reg(idx, Operand::REG, 16) { }
+	explicit Reg16(int idx = 0) : Reg(idx, Operand::REG, 16) { }
 };
 
 struct Mmx : public Reg {
-	constexpr explicit Mmx(int idx = 0, Kind kind = Operand::MMX, int bit = 64) : Reg(idx, kind, bit) { }
+	explicit Mmx(int idx = 0, Kind kind = Operand::MMX, int bit = 64) : Reg(idx, kind, bit) { }
 };
 
 struct EvexModifierRounding {
@@ -580,7 +580,7 @@ struct EvexModifierRounding {
 struct EvexModifierZero{};
 
 struct Xmm : public Mmx {
-	constexpr explicit Xmm(int idx = 0, Kind kind = Operand::XMM, int bit = 128) : Mmx(idx, kind, bit) { }
+	explicit Xmm(int idx = 0, Kind kind = Operand::XMM, int bit = 128) : Mmx(idx, kind, bit) { }
 	Xmm(Kind kind, int idx) : Mmx(idx, kind, kind == XMM ? 128 : kind == YMM ? 256 : 512) { }
 	Xmm operator|(const EvexModifierRounding& emr) const { Xmm r(*this); r.setRounding(emr.rounding); return r; }
 	Xmm copyAndSetIdx(int idx) const { Xmm ret(*this); ret.setIdx(idx); return ret; }
@@ -623,7 +623,7 @@ struct RegRip {
 	sint64 disp_;
 	Label* label_;
 	bool isAddr_;
-	constexpr explicit RegRip(sint64 disp = 0, Label* label = 0, bool isAddr = false) : disp_(disp), label_(label), isAddr_(isAddr) {}
+	explicit RegRip(sint64 disp = 0, Label* label = 0, bool isAddr = false) : disp_(disp), label_(label), isAddr_(isAddr) {}
 	friend const RegRip operator+(const RegRip& r, sint64 disp) {
 		return RegRip(r.disp_ + disp, r.label_, r.isAddr_);
 	}
