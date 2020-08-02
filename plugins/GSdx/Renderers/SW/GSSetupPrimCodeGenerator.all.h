@@ -83,7 +83,7 @@ class GSSetupPrimCodeGenerator2 : public Xbyak::SmartCodeGenerator
 	}
 
 public:
-	GSSetupPrimCodeGenerator2(Xbyak::CodeGenerator* base, Xbyak::SSEVersion::SSEVersion sseVersion, bool hasFMA, void* param, uint64 key);
+	GSSetupPrimCodeGenerator2(Xbyak::CodeGenerator* base, Xbyak::CPUInfo cpu, void* param, uint64 key);
 	void Generate();
 
 private:
