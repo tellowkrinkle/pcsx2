@@ -29,7 +29,8 @@
 
 using namespace Xbyak;
 
-#define _rip_local(field) ((is32 || m_rip) ? ptr[rip + (char*)&m_local.field] : ptr[_m_local + offsetof(GSScanlineLocalData, field)])
+// The lambda works around a GCC bug where it doesn't like `offsetof(thing, arr[localVariable])`
+#define _rip_local(field) [&]{ return ((is32 || m_rip) ? ptr[rip + (char*)&m_local.field] : ptr[_m_local + offsetof(GSScanlineLocalData, field)]); }()
 
 #define _64_m_local _64_t0
 
