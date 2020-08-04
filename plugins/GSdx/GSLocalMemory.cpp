@@ -879,6 +879,9 @@ void GSLocalMemory::WriteImageTopBottom(int l, int r, int y, int h, const uint8*
 
 		if(h2 > 0)
 		{
+#if UNALIGNED_IS_FAST
+			WriteImageColumn<psm, bsx, bsy, 0>(l, r, y, h2, src, srcpitch, BITBLTBUF);
+#else
 			size_t addr = (size_t)&src[l * trbpp >> 3];
 
 			if((addr & 31) == 0 && (srcpitch & 31) == 0)
@@ -893,6 +896,7 @@ void GSLocalMemory::WriteImageTopBottom(int l, int r, int y, int h, const uint8*
 			{
 				WriteImageColumn<psm, bsx, bsy, 0>(l, r, y, h2, src, srcpitch, BITBLTBUF);
 			}
+#endif
 
 			src += srcpitch * h2;
 			y += h2;
@@ -1026,6 +1030,9 @@ void GSLocalMemory::WriteImage(int& tx, int& ty, const uint8* src, int len, GIFR
 
 				if(h2 > 0)
 				{
+#if UNALIGNED_IS_FAST
+					WriteImageBlock<psm, bsx, bsy, 0>(la, ra, ty, h2, s, srcpitch, BITBLTBUF);
+#else
 					size_t addr = (size_t)&s[la * trbpp >> 3];
 
 					if((addr & 31) == 0 && (srcpitch & 31) == 0)
@@ -1040,6 +1047,7 @@ void GSLocalMemory::WriteImage(int& tx, int& ty, const uint8* src, int len, GIFR
 					{
 						WriteImageBlock<psm, bsx, bsy, 0>(la, ra, ty, h2, s, srcpitch, BITBLTBUF);
 					}
+#endif
 
 					s += srcpitch * h2;
 					ty += h2;

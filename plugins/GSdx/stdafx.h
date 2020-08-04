@@ -257,6 +257,13 @@ typedef int64 sint64;
 
 #endif
 
+#if _M_SSE >= 0x501
+// None of the AVX2-supporting processors have enough trouble with unaligned loads to warrant separate code paths for them
+# define UNALIGNED_IS_FAST 1
+#else
+# define UNALIGNED_IS_FAST 0
+#endif
+
 #if !defined(_M_SSE) && (!defined(_WIN32) || defined(_M_AMD64) || defined(_M_IX86_FP) && _M_IX86_FP >= 2)
 
 	#define _M_SSE 0x200

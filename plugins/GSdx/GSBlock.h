@@ -64,48 +64,10 @@ public:
 
 		GSVector8i v0, v1;
 
-		if(alignment == 32)
-		{
-			v0 = GSVector8i::load<true>(s0).acbd();
-			v1 = GSVector8i::load<true>(s1).acbd();
+		v0 = GSVector8i::load<alignment >= 32>(s0).acbd();
+		v1 = GSVector8i::load<alignment >= 32>(s1).acbd();
 
-			GSVector8i::sw64(v0, v1);
-		}
-		else
-		{
-			if(alignment == 16)
-			{
-				v0 = GSVector8i::load(&s0[0], &s0[16]).acbd();
-				v1 = GSVector8i::load(&s1[0], &s1[16]).acbd();
-
-				GSVector8i::sw64(v0, v1);
-			}
-			else
-			{
-				//v0 = GSVector8i::load(&s0[0], &s0[16], &s0[8], &s0[24]);
-				//v1 = GSVector8i::load(&s1[0], &s1[16], &s1[8], &s1[24]);
-
-				GSVector4i v4 = GSVector4i::load(&s0[0], &s1[0]);
-				GSVector4i v5 = GSVector4i::load(&s0[8], &s1[8]);
-				GSVector4i v6 = GSVector4i::load(&s0[16], &s1[16]);
-				GSVector4i v7 = GSVector4i::load(&s0[24], &s1[24]);
-
-				if(mask == 0xffffffff)
-				{
-					// just write them out directly
-
-					((GSVector4i*)dst)[i * 4 + 0] = v4;
-					((GSVector4i*)dst)[i * 4 + 1] = v5;
-					((GSVector4i*)dst)[i * 4 + 2] = v6;
-					((GSVector4i*)dst)[i * 4 + 3] = v7;
-
-					return;
-				}
-
-				v0 = GSVector8i::cast(v4).insert<1>(v5);
-				v1 = GSVector8i::cast(v6).insert<1>(v7);
-			}
-		}
+		GSVector8i::sw64(v0, v1);
 
 		if(mask == 0xffffffff)
 		{
@@ -200,29 +162,12 @@ public:
 
 		GSVector8i v0, v1;
 
-		if(alignment == 32)
-		{
-			v0 = GSVector8i::load<true>(s0);
-			v1 = GSVector8i::load<true>(s1);
+		v0 = GSVector8i::load<alignment >= 32>(s0);
+		v1 = GSVector8i::load<alignment >= 32>(s1);
 
-			GSVector8i::sw128(v0, v1);
-			GSVector8i::sw16(v0, v1);
-		}
-		else
-		{
-			if(alignment == 16)
-			{
-				v0 = GSVector8i::load(&s0[0], &s1[0]);
-				v1 = GSVector8i::load(&s0[16], &s1[16]);
-			}
-			else
-			{
-				v0 = GSVector8i::load(&s0[0], &s0[8], &s1[0], &s1[8]);
-				v1 = GSVector8i::load(&s0[16], &s0[24], &s1[16], &s1[24]);
-			}
-
-			GSVector8i::sw16(v0, v1);
-		}
+		// TODO: Check if using split load (vinsertf128) instead of sw128 is faster
+		GSVector8i::sw128(v0, v1);
+		GSVector8i::sw16(v0, v1);
 
 		v0 = v0.acbd();
 		v1 = v1.acbd();
