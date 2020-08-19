@@ -183,15 +183,6 @@ else()
 	message(FATAL_ERROR "Unsupported architecture: ${PCSX2_TARGET_ARCHITECTURES}")
 endif()
 
-# Print a clear message that most architectures are not supported
-if(NOT (${PCSX2_TARGET_ARCHITECTURES} MATCHES "x86_64" OR ${PCSX2_TARGET_ARCHITECTURES} MATCHES "i386"))
-    message(WARNING "
-    PCSX2 does not support the ${PCSX2_TARGET_ARCHITECTURES} architecture and has no plans yet to support it.
-    It would need a complete rewrite of the core emulator and a lot of time.
-
-    You can still run a i386 binary if you install all the i386 libraries (runtime and dev).")
-endif()
-
 if(${PCSX2_TARGET_ARCHITECTURES} MATCHES "i386")
     # * -fPIC option was removed for multiple reasons.
     #     - Code only supports the x86 architecture.
