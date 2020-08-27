@@ -139,6 +139,28 @@ linux_after_success() {
 	ccache -s
 }
 
+
+osx_64_before_install() {
+	# Packages we don't need that depend on packages that are updated when we install our dependencies
+	# If we don't uninstall them we end up sitting around waiting for them and all their dependencies to be updated as well
+	brew remove ansible boost cgal gdal git jasper geos gnupg gnutls libdap libevent libgeotiff libpq libspatialite libssh libxml2 little-cms2 mercurial node numpy openjpeg p11-kit poppler postgis postgresql pyenv sfcgal tmate unbound webp
+	brew install sound-touch portaudio wxmac gtk+ sdl2
+	brew upgrade cmake # PCH support
+}
+
+osx_64_script() {
+	mkdir build
+	cd build
+
+	cmake \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_BUILD_PO=FALSE \
+		..
+
+	# Documentation says 1.5 cores, so 2 or 3 threads should work ok.
+	make -j2 install
+}
+
 # Just in case I do manual testing and accidentally insert "rm -rf /"
 case "${1}" in
 before_install|script)
