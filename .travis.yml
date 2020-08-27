@@ -1,6 +1,6 @@
 language: cpp
 
-os: linux
+sudo: required
 
 cache: ccache
 
@@ -11,16 +11,22 @@ branches:
   only:
     - master
 
-jobs:
+matrix:
   include:
     - env: VERSION=8 BITS=64
       compiler: gcc
+      os: linux
     - env: VERSION=8 BITS=32
       compiler: gcc
+      os: linux
     - env: VERSION=7 BITS=32
       compiler: gcc
+      os: linux
     - env: VERSION=3.8 BITS=32
       compiler: clang
+      os: linux
+    - env: BITS=64
+      os: osx
 
 before_install:
   - ./travis.sh before_install
