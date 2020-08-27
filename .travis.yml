@@ -20,6 +20,8 @@ matrix:
     - env: VERSION=3.8 BITS=32
       compiler: clang
       os: linux
+    - env: BITS=64
+      os: osx
 
 before_install:
   - ./travis.sh before_install
