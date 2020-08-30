@@ -42,14 +42,7 @@ static HRESULT s_hr = E_FAIL;
 #else
 
 #include "Window/GSWndEGL.h"
-
-#ifdef __APPLE__
-#include <gtk/gtk.h>
-#include <CoreFoundation/CoreFoundation.h>
-#endif
-
-extern bool RunLinuxDialog();
-extern bool RunwxDialog();
+#include "Window/GSwxDialog.h"
 
 #endif
 
@@ -752,29 +745,9 @@ EXPORT_C GSconfigure()
 			theApp.SetCurrentRendererType(GSRendererType::Undefined);
 		}
 
-#elif defined(__APPLE__)
-		// Rest of macOS UI doesn't use GTK so we need to init it now
-		gtk_init(nullptr, nullptr);
-		// GTK expects us to be using its event loop, rather than Cocoa's
-		// If we call its stuff right now, it'll attempt to drain a static autorelease pool that was already drained by Cocoa (see https://github.com/GNOME/gtk/blob/8c1072fad1cb6a2e292fce2441b4a571f173ce0f/gdk/quartz/gdkeventloop-quartz.c#L640-L646)
-		// We can convince it that touching that pool would be unsafe by running all GTK calls within a CFRunLoop
-		// (Blocks submitted to the main queue by dispatch_async are run by its CFRunLoop)
-		dispatch_async(dispatch_get_main_queue(), ^{
-			if (RunLinuxDialog()) {
-				theApp.ReloadConfig();
-				// Force a reload of the gs state
-				theApp.SetCurrentRendererType(GSRendererType::Undefined);
-			}
-		});
 #else
-
-		/*if (RunLinuxDialog()) {
-			theApp.ReloadConfig();
-			// Force a reload of the gs state
-			theApp.SetCurrentRendererType(GSRendererType::Undefined);
-		}*/
-
-		if (RunwxDialog()) {
+		if (RunwxDialog())
+		{
 			theApp.ReloadConfig();
 			// Force a reload of the gs state
 			theApp.SetCurrentRendererType(GSRendererType::Undefined);
