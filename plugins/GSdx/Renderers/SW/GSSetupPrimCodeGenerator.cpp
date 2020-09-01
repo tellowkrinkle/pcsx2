@@ -22,6 +22,7 @@
 #include "stdafx.h"
 #include "GSSetupPrimCodeGenerator.h"
 #include "GSSetupPrimCodeGenerator.all.h"
+#include "JITDbg.h"
 
 using namespace Xbyak;
 
@@ -38,7 +39,18 @@ GSSetupPrimCodeGenerator::GSSetupPrimCodeGenerator(void* param, uint64 key, void
 	m_en.c = m_sel.fb && !(m_sel.tfx == TFX_DECAL && m_sel.tcc) ? 1 : 0;
 
 	try {
+		auto before = reinterpret_cast<size_t>(this->getCurr());
+
 		GSSetupPrimCodeGenerator2(this, CPUInfo(m_cpu), param, key).Generate();
+
+		auto after = reinterpret_cast<size_t>(this->getCurr());
+		char name[64];
+		snprintf(name, sizeof(name), "GSSetupPrim_%llx", key);
+		JITDebugGenerator dbg(0, "GSdx JIT", name);
+		dbg.newFunction(name, before, after);
+		dbg.doRegister();
+		if (!dbg.isOkay())
+			fprintf(stderr, "Failed to generate debug info for %s: %s\n", name, dbg.getErrorDescription());
 	} catch (std::exception& e) {
 		fprintf(stderr, "ERR:GSSetupPrimCodeGenerator %s\n", e.what());
 	}

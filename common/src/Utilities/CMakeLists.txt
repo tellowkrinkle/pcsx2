@@ -26,6 +26,7 @@ set(UtilitiesSources
 	Exceptions.cpp
 	FastFormatString.cpp
 	IniInterface.cpp
+	JITDbg.cpp
 	Linux/LnxHostSys.cpp
 	Mutex.cpp
 	PathUtils.cpp
@@ -57,6 +58,7 @@ set(UtilitiesHeaders
 	../../include/Utilities/Exceptions.h
 	../../include/Utilities/FixedPointTypes.h
 	../../include/Utilities/General.h
+	../../include/Utilities/JITDbg.h
 	../../include/Utilities/MakeUnique.h
 	../../include/Utilities/MemcpyFast.h
 	../../include/Utilities/MemsetFast.inl
@@ -79,6 +81,7 @@ set(UtilitiesHeaders
 	../../include/Utilities/wxAppWithHelpers.h
 	../../include/Utilities/wxBaseTools.h
 	../../include/Utilities/wxGuiTools.h
+	ELFDefs.h
 	PrecompiledHeader.h
 	ThreadingInternal.h
 )
@@ -116,6 +119,11 @@ set(UtilitiesFinalLibs
 
 add_pcsx2_lib(${Output} "${UtilitiesFinalSources}" "${UtilitiesFinalLibs}" "${UtilitiesFinalFlags}")
 add_pcsx2_lib(${Output}_NO_TLS "${UtilitiesFinalSources}" "${UtilitiesFinalLibs}" "${UtilitiesFinalFlags} -DPCSX2_THREAD_LOCAL=0")
+
+target_compile_definitions(${Output} PRIVATE ENABLE_JIT_DEBUG)
+target_link_libraries(${Output} Dwarf::Dwarf)
+target_compile_definitions(${Output}_NO_TLS PRIVATE ENABLE_JIT_DEBUG)
+target_link_libraries(${Output}_NO_TLS Dwarf::Dwarf)
 
 if(COMMAND target_precompile_headers)
 	target_precompile_headers(${Output} PRIVATE PrecompiledHeader.h)

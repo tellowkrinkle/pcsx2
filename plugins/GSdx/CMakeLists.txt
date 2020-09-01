@@ -234,6 +234,7 @@ set(GSdxFinalSources
 )
 
 set(GSdxFinalLibs
+	Utilities
     ${X11_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${EGL_LIBRARIES}

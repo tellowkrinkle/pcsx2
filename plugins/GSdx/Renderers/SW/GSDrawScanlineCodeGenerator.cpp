@@ -22,6 +22,7 @@
 #include "stdafx.h"
 #include "GSDrawScanlineCodeGenerator.h"
 #include "GSDrawScanlineCodeGenerator.all.h"
+#include "JITDbg.h"
 
 void GSDrawScanlineCodeGenerator::Generate()
 {
@@ -39,7 +40,18 @@ GSDrawScanlineCodeGenerator::GSDrawScanlineCodeGenerator(void* param, uint64 key
 		db(0xCC);
 
 	try {
+		auto before = reinterpret_cast<size_t>(this->getCurr());
+
 		Generate();
+
+		auto after = reinterpret_cast<size_t>(this->getCurr());
+		char name[64];
+		snprintf(name, sizeof(name), "GSDrawScanline_%llx", key);
+		JITDebugGenerator dbg(0, "GSdx JIT", name);
+		dbg.newFunction(name, before, after);
+		dbg.doRegister();
+		if (!dbg.isOkay())
+			fprintf(stderr, "Failed to generate debug info for %s: %s\n", name, dbg.getErrorDescription());
 	} catch (std::exception& e) {
 		fprintf(stderr, "ERR:GSDrawScanlineCodeGenerator %s\n", e.what());
 	}

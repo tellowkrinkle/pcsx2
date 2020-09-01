@@ -43,6 +43,7 @@ endif()
 
 # make common
 if(common_libs)
+	add_subdirectory(3rdparty/libdwarf)
     add_subdirectory(common/src/Utilities)
     add_subdirectory(common/src/x86emitter)
 endif()
