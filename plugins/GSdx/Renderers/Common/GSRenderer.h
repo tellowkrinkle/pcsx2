@@ -63,7 +63,7 @@ public:
 	virtual bool CreateDevice(GSDevice* dev);
 	virtual void ResetDevice();
 	virtual void VSync(int field);
-	virtual bool MakeSnapshot(const std::string& path);
+	virtual bool MakeSnapshot(const std::string& path, bool is_filename);
 	virtual void KeyEvent(GSKeyEventData* e);
 	virtual bool CanUpscale() {return false;}
 	virtual int GetUpscaleMultiplier() {return 1;}

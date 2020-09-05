@@ -723,12 +723,24 @@ EXPORT_C_(uint32) GSmakeSnapshot(char* path)
 	{
 		std::string s{path};
 
-		if(!s.empty() && s[s.length() - 1] != DIRECTORY_SEPARATOR)
+		bool is_filename = false;
+
+		if(!s.empty())
 		{
-			s = s + DIRECTORY_SEPARATOR;
+			if (s.back() == '!')
+			{
+				is_filename = true;
+				s.pop_back();
+			}
+			else
+			{
+				if (s.back() != DIRECTORY_SEPARATOR)
+					s = s + DIRECTORY_SEPARATOR;
+				s += "gsdx";
+			}
 		}
 
-		return s_gs->MakeSnapshot(s + "gsdx");
+		return s_gs->MakeSnapshot(s, is_filename);
 	}
 	catch (GSDXRecoverableError)
 	{

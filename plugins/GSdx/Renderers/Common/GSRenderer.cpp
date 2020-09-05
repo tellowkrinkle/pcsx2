@@ -498,10 +498,15 @@ void GSRenderer::VSync(int field)
 	}
 }
 
-bool GSRenderer::MakeSnapshot(const std::string& path)
+bool GSRenderer::MakeSnapshot(const std::string& path, bool is_filename)
 {
 	if(m_snapshot.empty())
 	{
+		if (is_filename)
+		{
+			m_snapshot = path;
+			return true;
+		}
 		time_t cur_time = time(nullptr);
 		static time_t prev_snap;
 		// The variable 'n' is used for labelling the screenshots when multiple screenshots are taken in
