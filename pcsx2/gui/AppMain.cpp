@@ -417,13 +417,19 @@ wxMessageOutput* Pcsx2AppTraits::CreateMessageOutput()
 //  Pcsx2StandardPaths
 // --------------------------------------------------------------------------------------
 #ifdef wxUSE_STDPATHS
+#ifdef __APPLE__
+class Pcsx2StandardPaths : public wxStandardPathsCF
+#else
 class Pcsx2StandardPaths : public wxStandardPaths
+#endif
 {
 public:
+#ifndef __APPLE__
 	wxString GetResourcesDir() const
 	{
 		return Path::Combine( GetDataDir(), L"Langs" );
 	}
+#endif
 
 #ifdef __POSIX__
 	wxString GetUserLocalDataDir() const
