@@ -82,9 +82,6 @@ using namespace Xbyak;
 #define USING_YMM DRAW_SCANLINE_USING_YMM
 
 #if _M_SSE >= 0x501
-/// On AVX2, uses the given broadcast to load from memory, otherwise uses the load
-# define BROADCAST_OR_LOAD(broadcast, load, dst, src) \
-	broadcast(dst, src)
 /// On AVX2, uses the given broadcast to load into the temp register, then applies the given op
 /// Otherwise, applies the given op directly
 # define BROADCAST_AND_OP(broadcast, op, dst, tmpReg, src) \
@@ -93,28 +90,13 @@ using namespace Xbyak;
 		broadcast(tmpReg, src); \
 		op(dst, tmpReg); \
 	} while (0)
-# define BROADCAST_GPR_TO_VEC(vec, gpr) \
-	do \
-	{ \
-		movd(Xmm(vec.getIdx()), gpr); \
-		vpbroadcastd(vec, Xmm(vec.getIdx())); \
-	} while (0)
 # define _rip_local_d(x) _rip_local(d8.x)
 # define _rip_local_d_p(x) _rip_local_d(p.x)
 #else
-/// On AVX2, uses the given broadcast to load from memory, otherwise uses a the load
-# define BROADCAST_OR_LOAD(broadcast, load, dst, src) \
-	load(dst, src)
 /// On AVX2, uses the given broadcast to load into the temp register, then applies the given op
 /// Otherwise, applies the given op directly
 # define BROADCAST_AND_OP(broadcast, op, dst, tmpReg, src) \
 	op(dst, src)
-# define BROADCAST_GPR_TO_VEC(vec, gpr) \
-	do \
-	{ \
-		movd(vec, gpr); \
-		pshufd(vec, vec, _MM_SHUFFLE(0, 0, 0, 0)); \
-	} while (0)
 # define _rip_local_d(x) _rip_local(d4.x)
 # define _rip_local_d_p(x) _rip_local_d(x)
 #endif
@@ -154,6 +136,70 @@ GSDrawScanlineCodeGenerator2::LocalAddr GSDrawScanlineCodeGenerator2::loadAddres
 	if (is64)
 		mov(reg, (size_t)addr);
 	return choose3264((size_t)addr, reg);
+}
+
+void GSDrawScanlineCodeGenerator2::broadcastf128(const XYm& reg, const Address& mem)
+{
+#if USING_YMM
+	vbroadcastf128(reg, mem);
+#else
+	movaps(reg, mem);
+#endif
+}
+
+void GSDrawScanlineCodeGenerator2::broadcasti128(const XYm& reg, const Address& mem)
+{
+#if USING_YMM
+	vbroadcasti128(reg, mem);
+#else
+	movdqa(reg, mem);
+#endif
+}
+
+void GSDrawScanlineCodeGenerator2::broadcastssLocal(const XYm& reg, const Address& mem)
+{
+#if USING_YMM
+	vbroadcastss(reg, mem);
+#else
+	movaps(reg, mem);
+#endif
+}
+
+void GSDrawScanlineCodeGenerator2::pbroadcastqLocal(const XYm& reg, const Address& mem)
+{
+#if USING_YMM
+	vpbroadcastq(reg, mem);
+#else
+	movdqa(reg, mem);
+#endif
+}
+
+void GSDrawScanlineCodeGenerator2::pbroadcastdLocal(const XYm& reg, const Address& mem)
+{
+#if USING_YMM
+	vpbroadcastd(reg, mem);
+#else
+	movdqa(reg, mem);
+#endif
+}
+
+void GSDrawScanlineCodeGenerator2::pbroadcastwLocal(const XYm& reg, const Address& mem)
+{
+#if USING_YMM
+	vpbroadcastw(reg, mem);
+#else
+	movdqa(reg, mem);
+#endif
+}
+
+void GSDrawScanlineCodeGenerator2::broadcastGPRToVec(const XYm& vec, const Xbyak::Reg32& gpr)
+{
+	movd(Xmm(vec), gpr);
+#if USING_YMM
+	vpbroadcastd(vec, Xmm(vec));
+#else
+	pshufd(vec, vec, _MM_SHUFFLE(0, 0, 0, 0));
+#endif
 }
 
 void GSDrawScanlineCodeGenerator2::modulate16(const XYm& a, const Operand& f, uint8 shift)
@@ -730,7 +776,7 @@ void GSDrawScanlineCodeGenerator2::Init()
 	{
 		if(m_sel.fwrite && m_sel.fge || m_sel.zb)
 		{
-			BROADCAST_OR_LOAD(vbroadcastf128, movaps, z, ptr[a3 + offsetof(GSVertexSW, p)]); // v.p
+			broadcastf128(z, ptr[a3 + offsetof(GSVertexSW, p)]); // v.p
 
 			if(m_sel.fwrite && m_sel.fge)
 			{
@@ -767,11 +813,11 @@ void GSDrawScanlineCodeGenerator2::Init()
 	{
 		if(m_sel.ztest)
 		{
-			BROADCAST_OR_LOAD(vpbroadcastd, movdqa, z, _rip_local(p.z));
+			pbroadcastdLocal(z, _rip_local(p.z));
 		}
 
 		if(m_sel.fwrite && m_sel.fge && is64)
-			BROADCAST_OR_LOAD(vpbroadcastd, movdqa, _f, _rip_local(p.f));
+			pbroadcastdLocal(_f, _rip_local(p.f));
 	}
 
 	const XYm& vt = xym4;
@@ -780,7 +826,7 @@ void GSDrawScanlineCodeGenerator2::Init()
 	{
 		if(m_sel.edge || m_sel.tfx != TFX_NONE)
 		{
-			BROADCAST_OR_LOAD(vbroadcastf128, movaps, vt, ptr[a3 + offsetof(GSVertexSW, t)]); // v.t
+			broadcastf128(vt, ptr[a3 + offsetof(GSVertexSW, t)]); // v.t
 		}
 
 		if(m_sel.edge)
@@ -960,7 +1006,7 @@ void GSDrawScanlineCodeGenerator2::Step()
 		{
 			if (is32)
 			{
-				BROADCAST_OR_LOAD(vbroadcastss, movaps, z, _rip_local_d_p(z));
+				broadcastssLocal(z, _rip_local_d_p(z));
 				addps(z, _rip_local(temp.zo));
 				movaps(_rip_local(temp.zo), z);
 				addps(z, _rip_local(temp.z));
@@ -977,7 +1023,7 @@ void GSDrawScanlineCodeGenerator2::Step()
 		{
 			if (is32)
 			{
-				BROADCAST_OR_LOAD(vpbroadcastw, movdqa, f, _rip_local_d_p(f));
+				pbroadcastwLocal(f, _rip_local_d_p(f));
 				paddw(f, _rip_local(temp.f));
 				movdqa(_rip_local(temp.f), f);
 			}
@@ -991,7 +1037,7 @@ void GSDrawScanlineCodeGenerator2::Step()
 	{
 		if(is32 && m_sel.ztest)
 		{
-			BROADCAST_OR_LOAD(vpbroadcastd, movdqa, z, _rip_local(p.z));
+			pbroadcastdLocal(z, _rip_local(p.z));
 		}
 	}
 
@@ -1007,7 +1053,7 @@ void GSDrawScanlineCodeGenerator2::Step()
 				// s += stq.xxxx();
 				// if(!sprite) t += st.yyyy();
 
-				BROADCAST_OR_LOAD(vbroadcasti128, movdqa, stq, _rip_local_d(stq));
+				broadcasti128(stq, _rip_local_d(stq));
 
 				XYm s = is64 ? xym1 : xym2;
 				pshufd(s, stq, _MM_SHUFFLE(0, 0, 0, 0));
@@ -1039,7 +1085,7 @@ void GSDrawScanlineCodeGenerator2::Step()
 
 				if (hasAVX)
 				{
-					BROADCAST_OR_LOAD(vbroadcastf128, movaps, q, _rip_local_d(stq));
+					broadcastf128(q, _rip_local_d(stq));
 
 					vshufps(s, q, q, _MM_SHUFFLE(0, 0, 0, 0));
 					vshufps(t, q, q, _MM_SHUFFLE(1, 1, 1, 1));
@@ -1076,7 +1122,7 @@ void GSDrawScanlineCodeGenerator2::Step()
 				// rb = rb.add16(c.xxxx());
 				// ga = ga.add16(c.yyyy());
 
-				BROADCAST_OR_LOAD(vpbroadcastq, movdqa, c, _rip_local_d(c));
+				pbroadcastqLocal(c, _rip_local_d(c));
 
 				pshufd(_rb, c, _MM_SHUFFLE(0, 0, 0, 0));
 				pshufd(_ga, c, _MM_SHUFFLE(1, 1, 1, 1));
@@ -1299,7 +1345,7 @@ void GSDrawScanlineCodeGenerator2::SampleTexture()
 			// v -= 0x8000;
 
 			mov(eax, 0x8000);
-			BROADCAST_GPR_TO_VEC(xym1, eax);
+			broadcastGPRToVec(xym1, eax);
 
 			psubd(xym2, xym1);
 			psubd(xym3, xym1);
@@ -1590,9 +1636,9 @@ void GSDrawScanlineCodeGenerator2::Wrap(const XYm& uv)
 	}
 	else
 	{
-		BROADCAST_OR_LOAD(vbroadcasti128, movdqa, min, _rip_global(t.min));
-		BROADCAST_OR_LOAD(vbroadcasti128, movdqa, max, _rip_global(t.max));
-		BROADCAST_OR_LOAD(vbroadcasti128, movdqa, mask, _rip_global(t.mask));
+		broadcasti128(min, _rip_global(t.min));
+		broadcasti128(max, _rip_global(t.max));
+		broadcasti128(mask, _rip_global(t.mask));
 
 		// GSVector4i repeat = (t & m_local.gd->t.min) | m_local.gd->t.max;
 		THREEARG(pand, tmp, uv, min);
@@ -1627,7 +1673,7 @@ void GSDrawScanlineCodeGenerator2::Wrap(const XYm& uv0, const XYm& uv1)
 		{
 			if(region)
 			{
-				BROADCAST_OR_LOAD(vbroadcasti128, movdqa, min, _rip_global(t.min));
+				broadcasti128(min, _rip_global(t.min));
 				pmaxsw(uv0, min);
 				pmaxsw(uv1, min);
 			}
@@ -1638,19 +1684,19 @@ void GSDrawScanlineCodeGenerator2::Wrap(const XYm& uv0, const XYm& uv1)
 				pmaxsw(uv1, tmp);
 			}
 
-			BROADCAST_OR_LOAD(vbroadcasti128, movdqa, max, _rip_global(t.max));
+			broadcasti128(max, _rip_global(t.max));
 			pminsw(uv0, max);
 			pminsw(uv1, max);
 		}
 		else
 		{
-			BROADCAST_OR_LOAD(vbroadcasti128, movdqa, min, _rip_global(t.min));
+			broadcasti128(min, _rip_global(t.min));
 			pand(uv0, min);
 			pand(uv1, min);
 
 			if(region)
 			{
-				BROADCAST_OR_LOAD(vbroadcasti128, movdqa, max, _rip_global(t.max));
+				broadcasti128(max, _rip_global(t.max));
 				por(uv0, max);
 				por(uv1, max);
 			}
@@ -1659,11 +1705,11 @@ void GSDrawScanlineCodeGenerator2::Wrap(const XYm& uv0, const XYm& uv1)
 	else
 	{
 		const XYm& mask2 = is64 ? xym7 : xym4; // <SSE4.1 only
-		BROADCAST_OR_LOAD(vbroadcasti128, movdqa, min, _rip_global(t.min));
-		BROADCAST_OR_LOAD(vbroadcasti128, movdqa, max, _rip_global(t.max));
+		broadcasti128(min, _rip_global(t.min));
+		broadcasti128(max, _rip_global(t.max));
 		if (hasSSE41)
 		{
-			BROADCAST_OR_LOAD(vbroadcasti128, movdqa, mask, _rip_global(t.mask));
+			broadcasti128(mask, _rip_global(t.mask));
 		}
 		else
 		{
@@ -1805,7 +1851,7 @@ void GSDrawScanlineCodeGenerator2::SampleTextureLOD()
 		if(m_sel.mmin == 1) // round-off mode
 		{
 			mov(eax, 0x8000);
-			BROADCAST_GPR_TO_VEC(xym0, eax);
+			broadcastGPRToVec(xym0, eax);
 			paddd(xym4, xym0);
 		}
 
@@ -1839,14 +1885,14 @@ void GSDrawScanlineCodeGenerator2::SampleTextureLOD()
 
 			pxor(xym1, xym1);
 
-			BROADCAST_OR_LOAD(vbroadcasti128, movdqa, xym4, _rip_global(t.min));
+			broadcasti128(xym4, _rip_global(t.min));
 			vpunpcklwd(xym5, xym4, xym1); // minu
 			vpunpckhwd(xym6, xym4, xym1); // minv
 			vpsrlvd(xym5, xym5, xym0);
 			vpsrlvd(xym6, xym6, xym0);
 			packusdw(xym5, xym6);
 
-			BROADCAST_OR_LOAD(vbroadcasti128, movdqa, xym4, _rip_global(t.max));
+			broadcasti128(xym4, _rip_global(t.max));
 			vpunpcklwd(xym6, xym4, xym1); // maxu
 			vpunpckhwd(xym4, xym4, xym1); // maxv
 			vpsrlvd(xym6, xym6, xym0);
@@ -1945,7 +1991,7 @@ void GSDrawScanlineCodeGenerator2::SampleTextureLOD()
 		// v -= 0x8000;
 
 		mov(eax, 0x8000);
-		BROADCAST_GPR_TO_VEC(xym4, eax);
+		broadcastGPRToVec(xym4, eax);
 
 		psubd(xym2, xym4);
 		psubd(xym3, xym4);
@@ -2029,7 +2075,7 @@ void GSDrawScanlineCodeGenerator2::SampleTextureLOD()
 			// v -= 0x8000;
 
 			mov(eax, 0x8000);
-			BROADCAST_GPR_TO_VEC(xym4, eax);
+			broadcastGPRToVec(xym4, eax);
 
 			psubd(xym2, xym4);
 			psubd(xym3, xym4);
@@ -2143,7 +2189,7 @@ void GSDrawScanlineCodeGenerator2::WrapLOD(const XYm& uv)
 	}
 	else
 	{
-		BROADCAST_OR_LOAD(vbroadcasti128, movdqa, mask, _rip_global(t.mask));
+		broadcasti128(mask, _rip_global(t.mask));
 
 		// GSVector4i repeat = (t & m_local.gd->t.min) | m_local.gd->t.max;
 		THREEARG(pand, tmp, uv, min);
@@ -2206,7 +2252,7 @@ void GSDrawScanlineCodeGenerator2::WrapLOD(const XYm& uv0, const XYm& uv1)
 		const XYm& mask2 = is64 ? xym7 : xym4; // <SSE4.1 only
 		if (hasSSE41)
 		{
-			BROADCAST_OR_LOAD(vbroadcasti128, movdqa, mask, _rip_global(t.mask));
+			broadcasti128(mask, _rip_global(t.mask));
 		}
 		else
 		{
@@ -2392,12 +2438,12 @@ void GSDrawScanlineCodeGenerator2::ReadMask()
 {
 	if(m_sel.fwrite)
 	{
-		BROADCAST_OR_LOAD(vpbroadcastd, movdqa, _fm, _rip_global(fm));
+		pbroadcastdLocal(_fm, _rip_global(fm));
 	}
 
 	if(m_sel.zwrite)
 	{
-		BROADCAST_OR_LOAD(vpbroadcastd, movdqa, _zm, _rip_global(zm));
+		pbroadcastdLocal(_zm, _rip_global(zm));
 	}
 }
 
@@ -2434,7 +2480,7 @@ void GSDrawScanlineCodeGenerator2::TestAlpha()
 		case ATST_GREATER:
 			// t = (ga >> 16) < m_local.gd->aref;
 			THREEARG(psrld, xym0, _ga, 16);
-			BROADCAST_OR_LOAD(vbroadcasti128, movdqa, xym1, _rip_global(aref));
+			broadcasti128(xym1, _rip_global(aref));
 			pcmpgtd(xym1, xym0);
 			break;
 
@@ -2582,15 +2628,15 @@ void GSDrawScanlineCodeGenerator2::Fog()
 	}
 	else
 	{
-		ONLY32(BROADCAST_OR_LOAD(vpbroadcastw, movdqa, f, _rip_local(p.f)));
+		ONLY32(pbroadcastwLocal(f, _rip_local(p.f)));
 	}
 
 	movdqa(xym1, _ga);
 
-	BROADCAST_OR_LOAD(vpbroadcastd, movdqa, tmp, _rip_global(frb));
+	pbroadcastdLocal(tmp, _rip_global(frb));
 	lerp16(_rb, tmp, f, 0);
 
-	BROADCAST_OR_LOAD(vpbroadcastd, movdqa, tmp, _rip_global(fga));
+	pbroadcastdLocal(tmp, _rip_global(fga));
 	lerp16(_ga, tmp, f, 0);
 
 	mix16(_ga, xym1, xym0);
@@ -2723,7 +2769,7 @@ void GSDrawScanlineCodeGenerator2::WriteZBuf()
 	if (m_sel.prim != GS_SPRITE_CLASS)
 		movdqa(xym1, _rip_local(temp.zs));
 	else
-		BROADCAST_OR_LOAD(vpbroadcastd, movdqa, xym1, _rip_local(p.z));
+		pbroadcastdLocal(xym1, _rip_local(p.z));
 
 	if(m_sel.ztest && m_sel.zpsm < 2)
 	{
@@ -2879,7 +2925,7 @@ void GSDrawScanlineCodeGenerator2::AlphaBlend()
 					psllw(tmp1, 7);
 					break;
 				case 2:
-					BROADCAST_OR_LOAD(vpbroadcastw, movdqa, tmp1, _rip_global(afix));
+					pbroadcastwLocal(tmp1, _rip_global(afix));
 					break;
 			}
 
@@ -3074,10 +3120,10 @@ void GSDrawScanlineCodeGenerator2::WriteFrame()
 		// GSVector4i ga = fs & 0x8000f800;
 
 		mov(eax, 0x00f800f8);
-		BROADCAST_GPR_TO_VEC(xym0, eax);
+		broadcastGPRToVec(xym0, eax);
 
 		mov(eax, 0x8000f800);
-		BROADCAST_GPR_TO_VEC(xym1, eax);
+		broadcastGPRToVec(xym1, eax);
 
 		pand(xym0, xym5);
 		pand(xym1, xym5);
