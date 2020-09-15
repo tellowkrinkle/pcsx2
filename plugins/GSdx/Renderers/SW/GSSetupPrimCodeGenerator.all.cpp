@@ -55,15 +55,9 @@ using namespace Xbyak;
 	} while (0)
 
 #if _M_SSE >= 0x501
-/// On AVX2, uses the given broadcast to load from memory, otherwise uses the load
-# define BROADCAST_OR_LOAD(broadcast, load, dst, src) \
-	broadcast(dst, src)
 # define _rip_local_d(x) _rip_local(d8.x)
 # define _rip_local_d_p(x) _rip_local_d(p.x)
 #else
-/// On AVX2, uses the given broadcast to load from memory, otherwise uses a the load
-# define BROADCAST_OR_LOAD(broadcast, load, dst, src) \
-	load(dst, src)
 # define _rip_local_d(x) _rip_local(d4.x)
 # define _rip_local_d_p(x) _rip_local_d(x)
 #endif
@@ -92,6 +86,15 @@ GSSetupPrimCodeGenerator2::GSSetupPrimCodeGenerator2(Xbyak::CodeGenerator* base,
 	m_en.f = m_sel.fb && m_sel.fge ? 1 : 0;
 	m_en.t = m_sel.fb && m_sel.tfx != TFX_NONE ? 1 : 0;
 	m_en.c = m_sel.fb && !(m_sel.tfx == TFX_DECAL && m_sel.tcc) ? 1 : 0;
+}
+
+void GSSetupPrimCodeGenerator2::broadcastf128(const XYm& reg, const Address& mem)
+{
+#if SETUP_PRIM_USING_YMM
+	vbroadcastf128(reg, mem);
+#else
+	movaps(reg, mem);
+#endif
 }
 
 void GSSetupPrimCodeGenerator2::Generate()
@@ -262,7 +265,7 @@ void GSSetupPrimCodeGenerator2::Depth_YMM()
 	{
 		// GSVector4 dp8 = dscan.p * GSVector4::broadcast32(&shift[0]);
 
-		BROADCAST_OR_LOAD(vbroadcastf128, movaps, ymm0, ptr[_dscan + offsetof(GSVertexSW, p)]);
+		broadcastf128(xym0, ptr[_dscan + offsetof(GSVertexSW, p)]);
 
 		vmulps(ymm1, ymm0, ymm3);
 
@@ -355,7 +358,7 @@ void GSSetupPrimCodeGenerator2::Texture()
 
 	// GSVector4 t = dscan.t;
 
-	BROADCAST_OR_LOAD(vbroadcastf128, movaps, xym0, ptr[_dscan + offsetof(GSVertexSW, t)]);
+	broadcastf128(xym0, ptr[_dscan + offsetof(GSVertexSW, t)]);
 
 	THREEARG(mulps, xmm1, xmm0, xmm3);
 
@@ -429,7 +432,7 @@ void GSSetupPrimCodeGenerator2::Color()
 	{
 		// GSVector4 c = dscan.c;
 
-		BROADCAST_OR_LOAD(vbroadcastf128, movaps, xym0, ptr[_dscan + offsetof(GSVertexSW, c)]);
+		broadcastf128(xym0, ptr[_dscan + offsetof(GSVertexSW, c)]);
 
 		// m_local.d4.c = GSVector4i(c * 4.0f).xzyw().ps32();
 
@@ -478,7 +481,7 @@ void GSSetupPrimCodeGenerator2::Color()
 
 		// GSVector4 c = dscan.c;
 
-		BROADCAST_OR_LOAD(vbroadcastf128, movaps, xym0, ptr[_dscan + offsetof(GSVertexSW, c)]); // not enough regs, have to reload it
+		broadcastf128(xym0, ptr[_dscan + offsetof(GSVertexSW, c)]); // not enough regs, have to reload it
 
 		// GSVector4 dg = c.yyyy();
 		// GSVector4 da = c.wwww();
