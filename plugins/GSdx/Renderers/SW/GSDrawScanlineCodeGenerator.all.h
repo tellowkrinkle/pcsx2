@@ -106,6 +106,28 @@ public:
 private:
 	/// Loads the given address into the given register if needed, and returns something that can be used in a `ptr[]`
 	LocalAddr loadAddress(AddressReg reg, const void *addr);
+	/// Broadcast 128 bits of floats from memory to the whole register, whatever size that register might be
+	void broadcastf128(const XYm& reg, const Xbyak::Address& mem);
+	/// Broadcast 128 bits of integers from memory to the whole register, whatever size that register might be
+	void broadcasti128(const XYm& reg, const Xbyak::Address& mem);
+	/// Broadcast a floating-point variable stored in GSScanlineLocalData to the whole register
+	/// On YMM registers this will be a broadcast from a 32-bit value
+	/// On XMM registers this will be a load of a full 128-bit value, with the broadcast happening before storing to the local data
+	void broadcastssLocal(const XYm& reg, const Xbyak::Address& mem);
+	/// Broadcast a qword variable stored in GSScanlineLocalData to the whole register
+	/// On YMM registers this will be a broadcast from a 64-bit value
+	/// On XMM registers this will be a load of a full 128-bit value, with the broadcast happening before storing to the local data
+	void pbroadcastqLocal(const XYm& reg, const Xbyak::Address& mem);
+	/// Broadcast a dword variable stored in GSScanlineLocalData to the whole register
+	/// On YMM registers this will be a broadcast from a 32-bit value
+	/// On XMM registers this will be a load of a full 128-bit value, with the broadcast happening before storing to the local data
+	void pbroadcastdLocal(const XYm& reg, const Xbyak::Address& mem);
+	/// Broadcast a word variable stored in GSScanlineLocalData to the whole register
+	/// On YMM registers this will be a broadcast from a 16-bit value
+	/// On XMM registers this will be a load of a full 128-bit value, with the broadcast happening before storing to the local data
+	void pbroadcastwLocal(const XYm& reg, const Xbyak::Address& mem);
+	/// Broadcast a 32-bit GPR to a vector register
+	void broadcastGPRToVec(const XYm& vec, const Xbyak::Reg32& gpr);
 	void modulate16(const XYm& a, const Xbyak::Operand& f, uint8 shift);
 	void lerp16(const XYm& a, const XYm& b, const XYm& f, uint8 shift);
 	void lerp16_4(const XYm& a, const XYm& b, const XYm& f);

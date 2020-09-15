@@ -80,6 +80,9 @@ public:
 	void Generate();
 
 private:
+	/// Broadcast 128 bits of floats from memory to the whole register, whatever size that register might be
+	void broadcastf128(const XYm& reg, const Xbyak::Address& mem);
+
 	void Depth_XMM();
 	void Depth_YMM();
 	void Texture();
