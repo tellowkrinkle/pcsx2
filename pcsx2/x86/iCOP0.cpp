@@ -157,10 +157,7 @@ void recMFC0()
 		if( !_Rt_ ) return;
 
 		_deleteEEreg(_Rt_, 0);
-		xMOV(ptr[&cpuRegs.GPR.r[_Rt_].UL[0]], eax);
-
-		xCDQ();
-		xMOV(ptr[&cpuRegs.GPR.r[_Rt_].UL[1]], edx);
+		eeSignExtendTo(_Rt_);
 		return;
 	}
 
@@ -185,10 +182,7 @@ void recMFC0()
 			xMOV(eax, ptr[&cpuRegs.PERF.n.pcr1]);
 		}
 		_deleteEEreg(_Rt_, 0);
-		xMOV(ptr[&cpuRegs.GPR.r[_Rt_].UL[0]], eax);
-
-		xCDQ();
-		xMOV(ptr[&cpuRegs.GPR.r[_Rt_].UL[1]], edx);
+		eeSignExtendTo(_Rt_);
 
 		return;
 	}
@@ -199,9 +193,7 @@ void recMFC0()
 	_eeOnWriteReg(_Rt_, 1);
 	_deleteEEreg(_Rt_, 0);
 	xMOV(eax, ptr[&cpuRegs.CP0.r[ _Rd_ ]]);
-	xCDQ();
-	xMOV(ptr[&cpuRegs.GPR.r[_Rt_].UL[0]], eax);
-	xMOV(ptr[&cpuRegs.GPR.r[_Rt_].UL[1]], edx);
+	eeSignExtendTo(_Rt_);
 }
 
 void recMTC0()
