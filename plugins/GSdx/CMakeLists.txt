@@ -217,11 +217,14 @@ elseif(APPLE)
     LIST(APPEND GSdxSources
         Window/GSLinuxDialog.cpp
         Window/GSWndCGL.mm
+        Window/GSWndMTL.mm
         )
 
     LIST(APPEND GSdxHeaders
         Window/GSWndCGL.h
         Window/GSWndCGLShim.h
+        Window/GSWndMTL.h
+        Window/GSWndMTLShim.h
         )
 else()
     LIST(APPEND GSdxSources
@@ -262,8 +265,9 @@ endif()
 
 if(APPLE)
     find_library(APPKIT_LIBRARY AppKit)
+    find_library(QUARTZ_LIBRARY QuartzCore)
     set(GSdxFinalFlags ${GSdxFinalFlags} -fobjc-arc)
-    set(GSdxFinalLibs ${GSdxFinalLibs} ${APPKIT_LIBRARY} -fobjc-link-runtime)
+    set(GSdxFinalLibs ${GSdxFinalLibs} ${APPKIT_LIBRARY} ${QUARTZ_LIBRARY} -fobjc-link-runtime)
 endif()
 
 set(RESOURCE_FILES
