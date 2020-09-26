@@ -453,7 +453,7 @@ private:
 
 	struct {
 		GLuint vs;		// program object
-		GLuint ps[ShaderConvert_Count];	// program object
+		GLuint ps[(int)ShaderConvert::Count];	// program object
 		GLuint ln;		// sampler object
 		GLuint pt;		// sampler object
 		GSDepthStencilOGL* dss;
@@ -552,11 +552,11 @@ public:
 	void InitPrimDateTexture(GSTexture* rt, const GSVector4i& area);
 	void RecycleDateTexture();
 
-	GSTexture* CopyOffscreen(GSTexture* src, const GSVector4& sRect, int w, int h, int format = 0, int ps_shader = 0) final override;
+	GSTexture* CopyOffscreen(GSTexture* src, const GSVector4& sRect, int w, int h, int format = 0, ShaderConvert ps_shader = ShaderConvert::COPY) final override;
 
 	void CopyRect(GSTexture* sTex, GSTexture* dTex, const GSVector4i& r) final override;
 	void CopyRectConv(GSTexture* sTex, GSTexture* dTex, const GSVector4i& r, bool at_origin);
-	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, int shader = 0, bool linear = true) final override;
+	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, ShaderConvert shader = ShaderConvert::COPY, bool linear = true) final override;
 	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GLuint ps, bool linear = true);
 	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, bool red, bool green, bool blue, bool alpha) override;
 	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GLuint ps, int bs, OMColorMaskSelector cms, bool linear = true);
