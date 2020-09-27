@@ -268,11 +268,29 @@ if(OPENCL_FOUND)
     set(GSdxFinalLibs ${GSdxFinalLibs} ${OPENCL_LIBRARIES})
 endif()
 
+set(GSdxMetalShaders
+    res/metal/convert.metal
+    res/metal/interlace.metal
+    res/metal/merge.metal
+    res/metal/tfx.metal)
+
 if(APPLE)
     find_library(APPKIT_LIBRARY AppKit)
+    find_library(METAL_LIBRARY Metal)
     find_library(QUARTZ_LIBRARY QuartzCore)
     set(GSdxFinalFlags ${GSdxFinalFlags} -fobjc-arc)
-    set(GSdxFinalLibs ${GSdxFinalLibs} ${APPKIT_LIBRARY} ${QUARTZ_LIBRARY} -fobjc-link-runtime)
+    set(GSdxFinalLibs ${GSdxFinalLibs} ${APPKIT_LIBRARY} ${METAL_LIBRARY} ${QUARTZ_LIBRARY} -fobjc-link-runtime)
+
+    foreach(shader ${GSdxMetalShaders})
+        # If we're generating an xcode project, you can just add the shaders to the main pcsx2 target and xcode will deal with them properly
+        # This will make sure xcode supplies code completion, etc (if you use a custom command, it won't)
+        if (CMAKE_GENERATOR MATCHES "Xcode")
+            target_sources(PCSX2 PRIVATE ${shader})
+            set_source_files_properties(${shader} DIRECTORY ../../pcsx2 PROPERTIES LANGUAGE METAL)
+        else()
+            # TODO: Compile metal with custom command
+        endif()
+    endforeach()
 endif()
 
 set(RESOURCE_FILES

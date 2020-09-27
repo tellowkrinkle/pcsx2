@@ -20,6 +20,7 @@
 
 #include "stdafx.h"
 #include "GSDeviceMTL.h"
+#include "GSTextureMTL.h"
 
 #if ! __has_feature(objc_arc)
 #error "Compile this with -fobjc-arc"
@@ -27,12 +28,134 @@
 
 #ifdef __APPLE__
 
+#define THROWING_ASSERT(value, ...) \
+	do { \
+		if (__builtin_expect(!(value), 0)) \
+		{ \
+			NSString* msg = [NSString stringWithFormat:__VA_ARGS__]; \
+			fputs([msg cStringUsingEncoding:[NSString defaultCStringEncoding]], stderr); \
+			throw GSDXRecoverableError(); \
+		} \
+	} while (0)
+
+#define NSERROR_CHECK(err, ...) THROWING_ASSERT(!(err), __VA_ARGS__)
+
+GSRenderPipelineMTL::GSRenderPipelineMTL(NSString* name, id<MTLFunction> vs, id<MTLFunction> ps)
+{
+	m_pipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+	m_pipelineDescriptor.label = name;
+	m_pipelineDescriptor.vertexFunction = vs;
+	m_pipelineDescriptor.fragmentFunction = ps;
+	m_renderDescriptor = [MTLRenderPassDescriptor new];
+	m_renderDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
+	m_renderDescriptor.depthAttachment.storeAction = MTLStoreActionStore;
+	m_pipelineDescriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+	m_pipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOne;
+	m_pipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorZero;
+}
+
+void GSRenderPipelineMTL::invalidateCachedPipeline()
+{
+	if (!m_cachedPipeline)
+		return;
+	m_cachedPipeline = nil;
+	if (m_invalidationCount == 100)
+	{
+		fprintf(stderr, "Metal: shader pipeline %s is getting invalidated a lot\n", [m_pipelineDescriptor.label cStringUsingEncoding:[NSString defaultCStringEncoding]]);
+	}
+	if (m_invalidationCount <= 100)
+		m_invalidationCount++;
+}
+
+void GSRenderPipelineMTL::SetLoadActions(MTLLoadAction color, MTLLoadAction depth)
+{
+	m_renderDescriptor.colorAttachments[0].loadAction = color;
+	m_renderDescriptor.depthAttachment.loadAction = depth;
+}
+
+void GSRenderPipelineMTL::SetPixelFormats(MTLPixelFormat color, MTLPixelFormat depth)
+{
+	auto existing_color = m_pipelineDescriptor.colorAttachments[0].pixelFormat;
+	if (existing_color != color)
+	{
+		invalidateCachedPipeline();
+		m_pipelineDescriptor.colorAttachments[0].pixelFormat = color;
+	}
+
+	auto existing_depth = m_pipelineDescriptor.depthAttachmentPixelFormat;
+	if (existing_depth != depth)
+	{
+		invalidateCachedPipeline();
+		m_pipelineDescriptor.depthAttachmentPixelFormat = depth;
+	}
+}
+
+void GSRenderPipelineMTL::SetTargets(id<MTLTexture> color, id<MTLTexture> depth)
+{
+	m_renderDescriptor.colorAttachments[0].texture = color;
+	m_renderDescriptor.depthAttachment.texture = depth;
+
+	SetPixelFormats(color.pixelFormat, depth.pixelFormat);
+}
+
+void GSRenderPipelineMTL::SetBlend(GSDevice& dev, uint8 index, uint8 factor, bool is_constant, bool accumulation_blend)
+{
+	if (index)
+	{
+		bool needs_update = m_currentBlendIndex != index;
+		needs_update |= accumulation_blend != m_currentIsAccumulation;
+		needs_update |= (is_constant && m_currentBlendFactor != factor);
+		if (!needs_update)
+			return;
+
+		invalidateCachedPipeline();
+		m_currentIsAccumulation = accumulation_blend;
+		m_currentBlendFactor = factor;
+		m_currentBlendIndex = index;
+
+		HWBlend b = dev.GetBlend(index);
+		if (accumulation_blend)
+		{
+			b.src = MTLBlendFactorOne;
+			b.dst = MTLBlendFactorOne;
+		}
+
+		m_pipelineDescriptor.colorAttachments[0].rgbBlendOperation = (MTLBlendOperation)b.op;
+		m_pipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = (MTLBlendFactor)b.src;
+		m_pipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = (MTLBlendFactor)b.dst;
+	}
+	else if (m_currentBlendIndex)
+	{
+		invalidateCachedPipeline();
+		m_currentBlendIndex = 0;
+		m_pipelineDescriptor.colorAttachments[0].blendingEnabled = false;
+	}
+}
+
+id<MTLRenderPipelineState> GSRenderPipelineMTL::Pipeline(id<MTLDevice>& dev)
+{
+	if (!m_cachedPipeline)
+	{
+		NSError* err = nil;
+		m_cachedPipeline = [dev newRenderPipelineStateWithDescriptor:m_pipelineDescriptor error:&err];
+		NSERROR_CHECK(err, @"Metal: Failed to create pipeline %@: %@", m_pipelineDescriptor.label, err.localizedDescription);
+	}
+
+	return m_cachedPipeline;
+}
+
 GSDeviceMTL::GSDeviceMTL()
-	: m_dev(nil)
 {
 }
 GSDeviceMTL::~GSDeviceMTL()
 {
+}
+
+id<MTLFunction> GSDeviceMTL::loadShader(NSString* name)
+{
+	id<MTLFunction> output = [m_shaders newFunctionWithName:name];
+	THROWING_ASSERT(output, @"Failed to load shader %@", name);
+	return output;
 }
 
 bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
@@ -67,11 +190,60 @@ bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
 	ASSERT([m_layer isKindOfClass:[CAMetalLayer class]]);
 	m_layer.device = m_dev;
 
+	m_queue = [m_dev newCommandQueue];
+	THROWING_ASSERT(m_queue, @"Metal: Failed to create command queue\n");
+
 	// TODO: Load from resource
 	m_shaders = [m_dev newDefaultLibrary];
+	THROWING_ASSERT(m_shaders, @"Metal: Failed to load shaders\n");
 
+	auto vs_convert = loadShader(@"vs_convert");
+
+	for (size_t i = 0; i < countof(m_interlace); i++)
+	{
+		NSString* name = [NSString stringWithFormat:@"ps_interlace%zu", i];
+
+		auto ps = loadShader(name);
+
+		m_interlace[i] = GSRenderPipelineMTL(name, vs_convert, ps);
+		m_interlace[i].SetLoadActions(i < 2 ? MTLLoadActionLoad : MTLLoadActionDontCare, MTLLoadActionDontCare);
+		m_interlace[i].SetPixelFormats(MTLPixelFormatRGBA8Uint, MTLPixelFormatInvalid);
+	}
 
 	return true;
+}
+
+void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GSRenderPipelineMTL& pipeline, bool linear)
+{
+	bool draw_in_depth = pipeline.DepthPixelFormat() != MTLPixelFormatInvalid;
+
+	@autoreleasepool {
+		BeginScene();
+
+		GSTextureMTL* sT = static_cast<GSTextureMTL*>(sTex);
+		GSTextureMTL* dT = static_cast<GSTextureMTL*>(dTex);
+
+		if (draw_in_depth)
+			pipeline.SetTargets(nil, dT->GetTexture());
+		else
+			pipeline.SetTargets(dT->GetTexture(), nil);
+
+		auto buffer = [m_queue commandBuffer];
+
+		GSVector2i ds = dT->GetSize();
+
+		float left = dRect.x * 2 / ds.x - 1.0f;
+		float right = dRect.z * 2 / ds.x - 1.0f;
+		float top = 1.0f - dRect.y * 2 / ds.y;
+		float bottom = 1.0f - dRect.w * 2 / ds.y;
+
+		ConvertShaderVertex vertices[] =
+		{
+			{{left, top}, {0.f, 0.f}, {}}
+		};
+
+		EndScene();
+	}
 }
 
 //GSTexture* CreateSurface(int type, int w, int h, int format) override;

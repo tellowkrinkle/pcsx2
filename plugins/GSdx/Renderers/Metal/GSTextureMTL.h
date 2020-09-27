@@ -45,6 +45,7 @@ public:
 //	void GenerateMipmap() override;
 	bool Save(const std::string& fn) override;
 //	uint32 GetID() override;
+	id<MTLTexture> GetTexture() { return m_texture; }
 };
 
 #endif

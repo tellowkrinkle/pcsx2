@@ -31,14 +31,50 @@
 #include <Metal/Metal.h>
 #include <AppKit/AppKit.h>
 #include <QuartzCore/QuartzCore.h>
+#include "res/metal/uniforms.h"
+
+/// Holds the information required to make a MTLRenderPipelineState, and caches the most-recently-used one
+class GSRenderPipelineMTL
+{
+	MTLRenderPipelineDescriptor* m_pipelineDescriptor;
+	MTLRenderPassDescriptor* m_renderDescriptor;
+	id<MTLRenderPipelineState> m_cachedPipeline;
+	uint8 m_invalidationCount = 0;
+	uint8 m_currentBlendIndex = 0;
+	uint8 m_currentBlendFactor;
+	bool m_currentIsAccumulation;
+
+	void invalidateCachedPipeline();
+
+public:
+	GSRenderPipelineMTL() = default;
+	GSRenderPipelineMTL(NSString* name, id<MTLFunction> vs, id<MTLFunction> ps);
+
+	void SetLoadActions(MTLLoadAction color, MTLLoadAction depth);
+	void SetPixelFormats(MTLPixelFormat color, MTLPixelFormat depth);
+	void SetTargets(id<MTLTexture> color, id<MTLTexture> depth);
+	void SetBlend(GSDevice& dev, uint8 index, uint8 factor, bool is_constant, bool accumulation_blend);
+
+	MTLPixelFormat ColorPixelFormat() { return m_pipelineDescriptor.colorAttachments[0].pixelFormat; }
+	MTLPixelFormat DepthPixelFormat() { return m_pipelineDescriptor.depthAttachmentPixelFormat; }
+
+	MTLRenderPassDescriptor* RenderDescriptor() { return m_renderDescriptor; }
+	id<MTLRenderPipelineState> Pipeline(id<MTLDevice>& dev);
+};
 
 class GSDeviceMTL final : public GSDevice
 {
-	id<MTLDevice> m_dev;
-	CAMetalLayer* m_layer;
-	id<MTLLibrary> m_shaders;
+	id<MTLDevice> m_dev = nil;
+	id<MTLCommandQueue> m_queue = nil;
+	CAMetalLayer* m_layer = nil;
+	id<MTLLibrary> m_shaders = nil;
+
+	GSRenderPipelineMTL m_interlace[4];
+
 private:
-    GSTexture* CreateSurface(GSTexture::Type type, int w, int h, int format) override;
+	id<MTLFunction> loadShader(NSString* name);
+
+	GSTexture* CreateSurface(GSTexture::Type type, int w, int h, int format) override;
 //	GSTexture* FetchSurface(GSTexture::Type type, int w, int h, int format) override;
 
 	void DoMerge(GSTexture* sTex[3], GSVector4* sRect, GSTexture* dTex, GSVector4* dRect, const GSRegPMODE& PMODE, const GSRegEXTBUF& EXTBUF, const GSVector4& c) override;
@@ -61,11 +97,11 @@ public:
 
 	void SetVSync(int vsync) override;
 
-	void BeginScene() override;
+//	void BeginScene() override;
 	void DrawPrimitive() override;
 	void DrawIndexedPrimitive() override;
 	void DrawIndexedPrimitive(int offset, int count) override;
-	void EndScene() override;
+//	void EndScene() override;
 
 	bool HasDepthSparse() override;
 	bool HasColorSparse() override;
@@ -79,6 +115,7 @@ public:
 
 	void CopyRect(GSTexture* sTex, GSTexture* dTex, const GSVector4i& r) override;
 	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, ShaderConvert shader = ShaderConvert::COPY, bool linear = true) override;
+	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GSRenderPipelineMTL& pipeline, bool linear = true);
 	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, bool red, bool green, bool blue, bool alpha) override;
 
 	void StretchRect(GSTexture* sTex, GSTexture* dTex, const GSVector4& dRect, int shader = 0, bool linear = true);
