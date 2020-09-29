@@ -2,18 +2,17 @@
 
 #include <simd/simd.h>
 
-enum MetalInputIndex
+enum GSMetalInputIndex
 {
-	MetalInputIndexVertices = 0,
-	MetalInputIndexVertexUniforms = 1,
-	MetalInputIndexFragUniforms = 2,
+	GSMTLIndexVertices = 0,
+	GSMTLIndexUniforms = 1,
 };
 
 struct ConvertShaderVertex
 {
 	vector_float2 position;
 	vector_float2 texcoord0;
-	vector_float4 color;
+	vector_char4 color;
 };
 
 struct InterlaceFragShaderUniform

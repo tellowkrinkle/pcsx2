@@ -191,6 +191,7 @@ bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
 	m_layer.device = m_dev;
 
 	m_queue = [m_dev newCommandQueue];
+	m_cmdBuffer = [m_queue commandBuffer];
 	THROWING_ASSERT(m_queue, @"Metal: Failed to create command queue\n");
 
 	// TODO: Load from resource
@@ -207,13 +208,13 @@ bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
 
 		m_interlace[i] = GSRenderPipelineMTL(name, vs_convert, ps);
 		m_interlace[i].SetLoadActions(i < 2 ? MTLLoadActionLoad : MTLLoadActionDontCare, MTLLoadActionDontCare);
-		m_interlace[i].SetPixelFormats(MTLPixelFormatRGBA8Uint, MTLPixelFormatInvalid);
+		m_interlace[i].SetPixelFormats(MTLPixelFormatRGBA8Unorm, MTLPixelFormatInvalid);
 	}
 
 	return true;
 }
 
-void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GSRenderPipelineMTL& pipeline, bool linear)
+void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GSRenderPipelineMTL& pipeline, bool linear, void* fragUniform, size_t fragUniformLen)
 {
 	bool draw_in_depth = pipeline.DepthPixelFormat() != MTLPixelFormatInvalid;
 
@@ -228,8 +229,6 @@ void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture
 		else
 			pipeline.SetTargets(dT->GetTexture(), nil);
 
-		auto buffer = [m_queue commandBuffer];
-
 		GSVector2i ds = dT->GetSize();
 
 		float left = dRect.x * 2 / ds.x - 1.0f;
@@ -239,8 +238,32 @@ void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture
 
 		ConvertShaderVertex vertices[] =
 		{
-			{{left, top}, {0.f, 0.f}, {}}
+			{{left,  top},    {sRect.x, sRect.y}, {}},
+			{{right, top},    {sRect.z, sRect.y}, {}},
+			{{left,  bottom}, {sRect.x, sRect.w}, {}},
+			{{right, bottom}, {sRect.z, sRect.w}, {}}
 		};
+
+		auto encoder = [m_cmdBuffer renderCommandEncoderWithDescriptor:pipeline.RenderDescriptor()];
+
+		[encoder setFragmentTexture:sT->GetTexture() atIndex:0];
+
+		[encoder setVertexBytes:vertices
+		                 length:sizeof(vertices)
+		                atIndex:GSMTLIndexVertices];
+
+		if (fragUniform && fragUniformLen)
+		{
+			[encoder setFragmentBytes:fragUniform
+			                   length:fragUniformLen
+			                  atIndex:GSMTLIndexUniforms];
+		}
+
+		[encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip
+		            vertexStart:0
+		            vertexCount:4];
+
+		[encoder endEncoding];
 
 		EndScene();
 	}

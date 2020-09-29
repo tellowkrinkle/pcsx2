@@ -66,6 +66,7 @@ class GSDeviceMTL final : public GSDevice
 {
 	id<MTLDevice> m_dev = nil;
 	id<MTLCommandQueue> m_queue = nil;
+	id<MTLCommandBuffer> m_cmdBuffer = nil;
 	CAMetalLayer* m_layer = nil;
 	id<MTLLibrary> m_shaders = nil;
 
@@ -115,7 +116,7 @@ public:
 
 	void CopyRect(GSTexture* sTex, GSTexture* dTex, const GSVector4i& r) override;
 	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, ShaderConvert shader = ShaderConvert::COPY, bool linear = true) override;
-	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GSRenderPipelineMTL& pipeline, bool linear = true);
+	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GSRenderPipelineMTL& pipeline, bool linear = true, void* fragUniform = nil, size_t fragUniformLen = 0);
 	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, bool red, bool green, bool blue, bool alpha) override;
 
 	void StretchRect(GSTexture* sTex, GSTexture* dTex, const GSVector4& dRect, int shader = 0, bool linear = true);
