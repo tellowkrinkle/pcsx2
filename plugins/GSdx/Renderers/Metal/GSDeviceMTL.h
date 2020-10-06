@@ -58,8 +58,8 @@ public:
 	MTLPixelFormat ColorPixelFormat() { return m_pipelineDescriptor.colorAttachments[0].pixelFormat; }
 	MTLPixelFormat DepthPixelFormat() { return m_pipelineDescriptor.depthAttachmentPixelFormat; }
 
-	MTLRenderPassDescriptor* RenderDescriptor() { return m_renderDescriptor; }
-	id<MTLRenderPipelineState> Pipeline(id<MTLDevice>& dev);
+	id<MTLRenderCommandEncoder> CreateCommandEncoder(id<MTLCommandBuffer> buffer);
+	id<MTLRenderPipelineState> Pipeline(id<MTLDevice> dev);
 };
 
 class GSDeviceMTL final : public GSDevice
@@ -91,9 +91,6 @@ public:
 
 	bool Create(const std::shared_ptr<GSWnd> &wnd) override;
 	bool Reset(int w, int h) override;
-	bool IsLost(bool update = false) override;
-	void Present(const GSVector4i& r, int shader) override;
-	void Present(GSTexture* sTex, GSTexture* dTex, const GSVector4& dRect, ShaderConvert shader = ShaderConvert::COPY) override;
 	void Flip() override;
 
 	void SetVSync(int vsync) override;

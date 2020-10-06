@@ -132,7 +132,12 @@ void GSRenderPipelineMTL::SetBlend(GSDevice& dev, uint8 index, uint8 factor, boo
 	}
 }
 
-id<MTLRenderPipelineState> GSRenderPipelineMTL::Pipeline(id<MTLDevice>& dev)
+id<MTLRenderCommandEncoder> GSRenderPipelineMTL::CreateCommandEncoder(id<MTLCommandBuffer> buffer)
+{
+	return [buffer renderCommandEncoderWithDescriptor:m_renderDescriptor];
+}
+
+id<MTLRenderPipelineState> GSRenderPipelineMTL::Pipeline(id<MTLDevice> dev)
 {
 	if (!m_cachedPipeline)
 	{
@@ -182,6 +187,11 @@ bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
 	if (!m_dev)
 	{
 		m_dev = MTLCreateSystemDefaultDevice();
+		if (!m_dev)
+		{
+			fprintf(stderr, "Metal: No supported devices available!\n");
+			throw GSDXRecoverableError();
+		}
 		if (adapter_id != "default")
 			fprintf(stderr, "Metal: Missing device %s, using default\n", adapter_id.c_str());
 	}
@@ -214,6 +224,21 @@ bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
 	return true;
 }
 
+bool GSDeviceMTL::Reset(int w, int h)
+{
+	if(!GSDevice::Reset(w, h))
+		return false;
+
+	[m_layer setDrawableSize:CGSizeMake(w, h)];
+
+	return true;
+}
+
+void GSDeviceMTL::Flip()
+{
+	// TODO: Present
+}
+
 void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GSRenderPipelineMTL& pipeline, bool linear, void* fragUniform, size_t fragUniformLen)
 {
 	bool draw_in_depth = pipeline.DepthPixelFormat() != MTLPixelFormatInvalid;
@@ -244,7 +269,8 @@ void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture
 			{{right, bottom}, {sRect.z, sRect.w}, {}}
 		};
 
-		auto encoder = [m_cmdBuffer renderCommandEncoderWithDescriptor:pipeline.RenderDescriptor()];
+		auto encoder = pipeline.CreateCommandEncoder(m_cmdBuffer);
+		encoder.label = [NSString stringWithFormat:@"StretchRect from %d to %d", sTex->GetID(), dTex->GetID()];
 
 		[encoder setFragmentTexture:sT->GetTexture() atIndex:0];
 
@@ -301,11 +327,6 @@ uint16 GSDeviceMTL::ConvertBlendEnum(uint16 generic)
 	}
 }
 
-//bool Create(const std::shared_ptr<GSWnd> &wnd) override;
-//bool Reset(int w, int h) override;
-//bool IsLost(bool update = false) override;
-//void Present(const GSVector4i& r, int shader) override;
-//void Present(GSTexture* sTex, GSTexture* dTex, const GSVector4& dRect, ShaderConvert shader = ShaderConvert::COPY) override;
 //void Flip() override;
 //
 //void SetVSync(int vsync) override;
