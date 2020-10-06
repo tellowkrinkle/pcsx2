@@ -188,8 +188,14 @@ public:
 	virtual bool Create(const std::shared_ptr<GSWnd> &wnd);
 	virtual bool Reset(int w, int h);
 	virtual bool IsLost(bool update = false) {return false;}
+	/// Present the current frame
+	/// @param r the section of the framebuffer to render to, in pixels
+	/// @param shader 0 = none, 1 = scanline, 2 = diagonal, 3 = triangular, 4 = complex
 	virtual void Present(const GSVector4i& r, int shader);
+	/// Present `sTex` over `dTex` using the rect `dRect` (pixels) and the shader `shader`
 	virtual void Present(GSTexture* sTex, GSTexture* dTex, const GSVector4& dRect, ShaderConvert shader = ShaderConvert::COPY);
+	/// Swap m_backBuffer with the currently-on-screen buffer
+	/// @note Used internally by Present(const GSVector4i&,int), if you override that you can ignore this
 	virtual void Flip() {}
 
 	virtual void SetVSync(int vsync) {m_vsync = vsync;}
