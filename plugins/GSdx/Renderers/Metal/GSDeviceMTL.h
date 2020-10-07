@@ -33,6 +33,22 @@
 #include <QuartzCore/QuartzCore.h>
 #include "res/metal/uniforms.h"
 
+class GSScopedDebugGroupMTL
+{
+	id<MTLCommandBuffer> m_buffer;
+public:
+	GSScopedDebugGroupMTL(id<MTLCommandBuffer> buffer, NSString* name): m_buffer(buffer)
+	{
+		if (@available(macOS 10.13, *))
+			[m_buffer pushDebugGroup:name];
+	}
+	~GSScopedDebugGroupMTL()
+	{
+		if (@available(macOS 10.13, *))
+			[m_buffer popDebugGroup];
+	}
+};
+
 /// Holds the information required to make a MTLRenderPipelineState, and caches the most-recently-used one
 class GSRenderPipelineMTL
 {
@@ -43,14 +59,20 @@ class GSRenderPipelineMTL
 	uint8 m_currentBlendIndex = 0;
 	uint8 m_currentBlendFactor;
 	bool m_currentIsAccumulation;
+	bool m_targetsDepth;
+	bool m_isOpaque;
 
 	void invalidateCachedPipeline();
 
 public:
 	GSRenderPipelineMTL() = default;
-	GSRenderPipelineMTL(NSString* name, id<MTLFunction> vs, id<MTLFunction> ps);
+	GSRenderPipelineMTL(NSString* name, id<MTLFunction> vs, id<MTLFunction> ps, bool targets_depth, bool is_opaque);
+
+	bool TargetsDepth() { return m_targetsDepth; }
+	bool IsOpaque() { return m_isOpaque; }
 
 	void SetLoadActions(MTLLoadAction color, MTLLoadAction depth);
+	void SetClearConstants(MTLClearColor color, double depth);
 	void SetPixelFormats(MTLPixelFormat color, MTLPixelFormat depth);
 	void SetTargets(id<MTLTexture> color, id<MTLTexture> depth);
 	void SetBlend(GSDevice& dev, uint8 index, uint8 factor, bool is_constant, bool accumulation_blend);
@@ -91,7 +113,7 @@ public:
 
 	bool Create(const std::shared_ptr<GSWnd> &wnd) override;
 	bool Reset(int w, int h) override;
-	void Flip() override;
+	void Present(const GSVector4i& r, int shader) override;
 
 	void SetVSync(int vsync) override;
 

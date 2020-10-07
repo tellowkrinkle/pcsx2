@@ -40,7 +40,8 @@
 
 #define NSERROR_CHECK(err, ...) THROWING_ASSERT(!(err), __VA_ARGS__)
 
-GSRenderPipelineMTL::GSRenderPipelineMTL(NSString* name, id<MTLFunction> vs, id<MTLFunction> ps)
+GSRenderPipelineMTL::GSRenderPipelineMTL(NSString* name, id<MTLFunction> vs, id<MTLFunction> ps, bool targets_depth, bool is_opaque)
+	: m_targetsDepth(targets_depth), m_isOpaque(is_opaque)
 {
 	m_pipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
 	m_pipelineDescriptor.label = name;
@@ -71,6 +72,12 @@ void GSRenderPipelineMTL::SetLoadActions(MTLLoadAction color, MTLLoadAction dept
 {
 	m_renderDescriptor.colorAttachments[0].loadAction = color;
 	m_renderDescriptor.depthAttachment.loadAction = depth;
+}
+
+void GSRenderPipelineMTL::SetClearConstants(MTLClearColor color, double depth)
+{
+	m_renderDescriptor.colorAttachments[0].clearColor = color;
+	m_renderDescriptor.depthAttachment.clearDepth = depth;
 }
 
 void GSRenderPipelineMTL::SetPixelFormats(MTLPixelFormat color, MTLPixelFormat depth)
@@ -216,9 +223,7 @@ bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
 
 		auto ps = loadShader(name);
 
-		m_interlace[i] = GSRenderPipelineMTL(name, vs_convert, ps);
-		m_interlace[i].SetLoadActions(i < 2 ? MTLLoadActionLoad : MTLLoadActionDontCare, MTLLoadActionDontCare);
-		m_interlace[i].SetPixelFormats(MTLPixelFormatRGBA8Unorm, MTLPixelFormatInvalid);
+		m_interlace[i] = GSRenderPipelineMTL(name, vs_convert, ps, /*targets_depth=*/false, /*is_opaque=*/i >= 2);
 	}
 
 	return true;
@@ -229,32 +234,82 @@ bool GSDeviceMTL::Reset(int w, int h)
 	if(!GSDevice::Reset(w, h))
 		return false;
 
-	[m_layer setDrawableSize:CGSizeMake(w, h)];
+	// Note: We let m_layer figure out its own size from the view it's a part of for now
+	//[m_layer setDrawableSize:CGSizeMake(w, h)];
 
 	return true;
 }
 
-void GSDeviceMTL::Flip()
+void GSDeviceMTL::Present(const GSVector4i& r, int shader)
 {
-	// TODO: Present
+	// Note: We let m_layer figure out its own size from the view it's a part of for now
+
+	@autoreleasepool {
+		GSScopedDebugGroupMTL(m_cmdBuffer, @"Present");
+
+		id<CAMetalDrawable> drawable = [m_layer nextDrawable];
+
+		if (m_current)
+		{
+			GSTextureMTL backbuffer(drawable.texture, GSTexture::Type::Backbuffer);
+			GSDevice::Present(m_current, &backbuffer, GSVector4(r), PRESENT_SHADERS[shader]);
+			RenderOsd(&backbuffer);
+		}
+
+		[m_cmdBuffer presentDrawable:drawable];
+	}
+
+	[m_cmdBuffer commit];
+
+	m_cmdBuffer = [m_queue commandBuffer];
 }
 
 void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GSRenderPipelineMTL& pipeline, bool linear, void* fragUniform, size_t fragUniformLen)
 {
-	bool draw_in_depth = pipeline.DepthPixelFormat() != MTLPixelFormatInvalid;
-
 	@autoreleasepool {
 		BeginScene();
 
 		GSTextureMTL* sT = static_cast<GSTextureMTL*>(sTex);
 		GSTextureMTL* dT = static_cast<GSTextureMTL*>(dTex);
 
-		if (draw_in_depth)
-			pipeline.SetTargets(nil, dT->GetTexture());
-		else
-			pipeline.SetTargets(dT->GetTexture(), nil);
-
 		GSVector2i ds = dT->GetSize();
+		// If the destination rect completely covers the texture and the fragment shader is opaque, we don't need to load the old texture
+		// Note: I think this only affects performance on tile-based GPUs (which is only arm macs), but we might as well do it anyways
+		bool covers_target = pipeline.IsOpaque()
+			&& (int)dRect.x <= 0
+			&& (int)dRect.y <= 0
+			&& (int)dRect.z >= ds.x
+			&& (int)dRect.w >= ds.y;
+		MTLLoadAction action = covers_target ? MTLLoadActionDontCare : MTLLoadActionLoad;
+
+		if (pipeline.TargetsDepth())
+		{
+			pipeline.SetTargets(nil, dT->GetTexture());
+			float depth;
+			if (dT->GetResetNeedsDepthClear(depth))
+			{
+				pipeline.SetLoadActions(MTLLoadActionDontCare, MTLLoadActionClear);
+				pipeline.SetClearConstants({}, depth);
+			}
+			else
+			{
+				pipeline.SetLoadActions(MTLLoadActionDontCare, action);
+			}
+		}
+		else
+		{
+			pipeline.SetTargets(dT->GetTexture(), nil);
+			GSVector4 c;
+			if (dT->GetResetNeedsColorClear(c))
+			{
+				pipeline.SetLoadActions(MTLLoadActionClear, MTLLoadActionDontCare);
+				pipeline.SetClearConstants(MTLClearColorMake(c.r, c.g, c.b, c.a), 0);
+			}
+			else
+			{
+				pipeline.SetLoadActions(action, MTLLoadActionDontCare);
+			}
+		}
 
 		float left = dRect.x * 2 / ds.x - 1.0f;
 		float right = dRect.z * 2 / ds.x - 1.0f;

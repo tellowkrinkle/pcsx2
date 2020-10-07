@@ -35,8 +35,30 @@ class GSTextureMTL : public GSTexture
 	id<MTLTexture> m_texture;
 	int m_max_layer;
 
+	// In Metal clears happen as a part of render passes instead of as separate steps, but the GSDevice API has it as a separate step
+	// To deal with that, store the fact that a clear was requested here and it'll be applied on the next render pass
+	bool m_needs_color_clear = false;
+	bool m_needs_depth_clear = false;
+	bool m_needs_stencil_clear = false;
+	GSVector4 m_clear_color;
+	float m_clear_depth;
+	int m_clear_stencil;
+
 public:
-	GSTextureMTL(id<MTLTexture> texture, int type);
+	/// Requests the texture be cleared the next time a color render is done
+	void RequestColorClear(GSVector4 color);
+	/// Requests the texture be cleared the next time a depth render is done
+	void RequestDepthClear(float depth);
+	/// Requests the texture be cleared the next time a stencil render is done
+	void RequestStencilClear(int stencil);
+	/// Reads whether a color clear was requested, then clears the request
+	bool GetResetNeedsColorClear(GSVector4& colorOut);
+	/// Reads whether a depth clear was requested, then clears the request
+	bool GetResetNeedsDepthClear(float& depthOut);
+	/// Reads whether a stencil clear was requested, then clears the request
+	bool GetResetNeedsStencilClear(int& stencilOut);
+
+	GSTextureMTL(id<MTLTexture> texture, Type type);
 	~GSTextureMTL();
 
 	bool Update(const GSVector4i& r, const void* data, int pitch, int layer = 0) override;

@@ -148,6 +148,7 @@ protected:
 		OP_ADD, OP_SUBTRACT, OP_REV_SUBTRACT
 	};
 
+	static const ShaderConvert PRESENT_SHADERS[5];
 	static const int m_NO_BLEND     = 0;
 	static const int m_MERGE_BLEND  = m_blendMap.size() - 1;
 

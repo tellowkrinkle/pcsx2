@@ -39,6 +39,52 @@ GSTextureMTL::~GSTextureMTL()
 {
 }
 
+void GSTextureMTL::RequestColorClear(GSVector4 color)
+{
+	m_needs_color_clear = true;
+	m_clear_color = color;
+}
+void GSTextureMTL::RequestDepthClear(float depth)
+{
+	m_needs_depth_clear = true;
+	m_clear_depth = depth;
+}
+void GSTextureMTL::RequestStencilClear(int stencil)
+{
+	m_needs_stencil_clear;
+	m_clear_stencil = stencil;
+}
+bool GSTextureMTL::GetResetNeedsColorClear(GSVector4& colorOut)
+{
+	if (m_needs_color_clear)
+	{
+		m_needs_color_clear = false;
+		colorOut = m_clear_color;
+		return true;
+	}
+	return false;
+}
+bool GSTextureMTL::GetResetNeedsDepthClear(float& depthOut)
+{
+	if (m_needs_depth_clear)
+	{
+		m_needs_depth_clear = false;
+		depthOut = m_clear_depth;
+		return true;
+	}
+	return false;
+}
+bool GSTextureMTL::GetResetNeedsStencilClear(int& stencilOut)
+{
+	if (m_needs_stencil_clear)
+	{
+		m_needs_stencil_clear = false;
+		stencilOut = m_clear_stencil;
+		return true;
+	}
+	return false;
+}
+
 bool GSTextureMTL::Update(const GSVector4i& r, const void* data, int pitch, int layer)
 {
 	if(layer >= m_max_layer)

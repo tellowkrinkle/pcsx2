@@ -53,6 +53,10 @@ const char* shaderName(ShaderConvert value)
 	}
 }
 
+const ShaderConvert GSDevice::PRESENT_SHADERS[] = {ShaderConvert::COPY, ShaderConvert::SCANLINE,
+	ShaderConvert::DIAGONAL_FILTER, ShaderConvert::TRIANGULAR_FILTER,
+	ShaderConvert::COMPLEX_FILTER};
+
 GSDevice::GSDevice()
 	: m_wnd()
 	, m_vsync(false)
@@ -133,11 +137,7 @@ void GSDevice::Present(const GSVector4i& r, int shader)
 
 	if(m_current)
 	{
-		static constexpr ShaderConvert s_shader[5] = {ShaderConvert::COPY, ShaderConvert::SCANLINE,
-			ShaderConvert::DIAGONAL_FILTER, ShaderConvert::TRIANGULAR_FILTER,
-			ShaderConvert::COMPLEX_FILTER}; // FIXME
-
-		Present(m_current, m_backbuffer, GSVector4(r), s_shader[shader]);
+		Present(m_current, m_backbuffer, GSVector4(r), PRESENT_SHADERS[shader]);
 		RenderOsd(m_backbuffer);
 	}
 
