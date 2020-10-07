@@ -505,8 +505,8 @@ private:
 
 	std::unique_ptr<GSTexture> m_font;
 
-	GSTexture* CreateSurface(int type, int w, int h, int format) override;
-	GSTexture* FetchSurface(int type, int w, int h, int format) override;
+	GSTexture* CreateSurface(GSTexture::Type type, int w, int h, int format) override;
+	GSTexture* FetchSurface(GSTexture::Type type, int w, int h, int format) override;
 
 	void DoMerge(GSTexture* sTex[3], GSVector4* sRect, GSTexture* dTex, GSVector4* dRect, const GSRegPMODE& PMODE, const GSRegEXTBUF& EXTBUF, const GSVector4& c) final override;
 	void DoInterlace(GSTexture* sTex, GSTexture* dTex, int shader, bool linear, float yoffset = 0) final override;

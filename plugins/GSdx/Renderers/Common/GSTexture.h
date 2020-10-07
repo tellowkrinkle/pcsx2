@@ -25,19 +25,19 @@
 
 class GSTexture
 {
+public:
+	struct GSMap {uint8* bits; int pitch;};
+
+	enum class Type {Invalid = 0, RenderTarget = 1, DepthStencil, Texture, Offscreen, Backbuffer, SparseRenderTarget, SparseDepthStencil};
+
 protected:
 	GSVector2 m_scale;
 	GSVector2i m_size;
 	GSVector2i m_committed_size;
 	GSVector2i m_gpu_page_size;
-	int m_type;
+	Type m_type;
 	int m_format;
 	bool m_sparse;
-
-public:
-	struct GSMap {uint8* bits; int pitch;};
-
-	enum {RenderTarget = 1, DepthStencil, Texture, Offscreen, Backbuffer, SparseRenderTarget, SparseDepthStencil};
 
 public:
 	GSTexture();
@@ -59,7 +59,7 @@ public:
 	int GetHeight() const {return m_size.y;}
 	GSVector2i GetSize() const {return m_size;}
 
-	int GetType() const {return m_type;}
+	Type GetType() const {return m_type;}
 	int GetFormat() const {return m_format;}
 
 	virtual void CommitPages(const GSVector2i& region, bool commit) {};

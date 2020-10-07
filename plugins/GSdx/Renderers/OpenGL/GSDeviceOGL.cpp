@@ -229,7 +229,7 @@ void GSDeviceOGL::GenerateProfilerData()
 	}
 }
 
-GSTexture* GSDeviceOGL::CreateSurface(int type, int w, int h, int fmt)
+GSTexture* GSDeviceOGL::CreateSurface(GSTexture::Type type, int w, int h, int fmt)
 {
 	GL_PUSH("Create surface");
 
@@ -246,12 +246,14 @@ GSTexture* GSDeviceOGL::CreateSurface(int type, int w, int h, int fmt)
 
 		switch(type)
 		{
-			case GSTexture::RenderTarget:
+			case GSTexture::Type::RenderTarget:
 				ClearRenderTarget(t, 0);
 				break;
-			case GSTexture::DepthStencil:
+			case GSTexture::Type::DepthStencil:
 				ClearDepth(t);
 				// No need to clear the stencil now.
+				break;
+			default:
 				break;
 		}
 	}
@@ -259,10 +261,10 @@ GSTexture* GSDeviceOGL::CreateSurface(int type, int w, int h, int fmt)
 	return t;
 }
 
-GSTexture* GSDeviceOGL::FetchSurface(int type, int w, int h, int format)
+GSTexture* GSDeviceOGL::FetchSurface(GSTexture::Type type, int w, int h, int format)
 {
 	if (format == 0)
-		format = (type == GSTexture::DepthStencil || type == GSTexture::SparseDepthStencil) ? GL_DEPTH32F_STENCIL8 : GL_RGBA8;
+		format = (type == GSTexture::Type::DepthStencil || type == GSTexture::Type::SparseDepthStencil) ? GL_DEPTH32F_STENCIL8 : GL_RGBA8;
 
 	GSTexture* t = GSDevice::FetchSurface(type, w, h, format);
 
@@ -275,19 +277,21 @@ GSTexture* GSDeviceOGL::FetchSurface(int type, int w, int h, int format)
 		GSVector4 red(1.0f, 0.0f, 0.0f, 1.0f);
 		switch(type)
 		{
-			case GSTexture::RenderTarget:
+			case GSTexture::Type::RenderTarget:
 				ClearRenderTarget(t, 0);
 				break;
-			case GSTexture::DepthStencil:
+			case GSTexture::Type::DepthStencil:
 				ClearDepth(t);
 				// No need to clear the stencil now.
 				break;
-			case GSTexture::Texture:
+			case GSTexture::Type::Texture:
 				if (m_force_texture_clear > 1)
 					static_cast<GSTextureOGL*>(t)->Clear((void*)&red);
 				else if (m_force_texture_clear)
 					static_cast<GSTextureOGL*>(t)->Clear(NULL);
 
+				break;
+			default:
 				break;
 		}
 	}
@@ -560,7 +564,7 @@ bool GSDeviceOGL::Create(const std::shared_ptr<GSWnd> &wnd)
 	GSVector2i tex_font = m_osd.get_texture_font_size();
 
 	m_font = std::unique_ptr<GSTexture>(
-		new GSTextureOGL(GSTextureOGL::Texture, tex_font.x, tex_font.y, GL_R8, m_fbo_read, false)
+		new GSTextureOGL(GSTextureOGL::Type::Texture, tex_font.x, tex_font.y, GL_R8, m_fbo_read, false)
 	);
 
 	// ****************************************************************
@@ -626,7 +630,7 @@ bool GSDeviceOGL::Reset(int w, int h)
 	// Opengl allocate the backbuffer with the window. The render is done in the backbuffer when
 	// there isn't any FBO. Only a dummy texture is created to easily detect when the rendering is done
 	// in the backbuffer
-	m_backbuffer = new GSTextureOGL(GSTextureOGL::Backbuffer, w, h, 0, m_fbo_read, false);
+	m_backbuffer = new GSTextureOGL(GSTextureOGL::Type::Backbuffer, w, h, 0, m_fbo_read, false);
 
 	return true;
 }
