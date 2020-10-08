@@ -139,6 +139,15 @@ void GSRenderPipelineMTL::SetBlend(GSDevice& dev, uint8 index, uint8 factor, boo
 	}
 }
 
+void GSRenderPipelineMTL::SetColorMask(MTLColorWriteMask mask)
+{
+	if (m_pipelineDescriptor.colorAttachments[0].writeMask != mask)
+	{
+		invalidateCachedPipeline();
+		m_pipelineDescriptor.colorAttachments[0].writeMask = mask;
+	}
+}
+
 id<MTLRenderCommandEncoder> GSRenderPipelineMTL::CreateCommandEncoder(id<MTLCommandBuffer> buffer)
 {
 	return [buffer renderCommandEncoderWithDescriptor:m_renderDescriptor];
@@ -158,6 +167,7 @@ id<MTLRenderPipelineState> GSRenderPipelineMTL::Pipeline(id<MTLDevice> dev)
 
 GSDeviceMTL::GSDeviceMTL()
 {
+	m_mipmap = theApp.GetConfigI("mipmap");
 }
 GSDeviceMTL::~GSDeviceMTL()
 {
@@ -203,6 +213,12 @@ bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
 			fprintf(stderr, "Metal: Missing device %s, using default\n", adapter_id.c_str());
 	}
 
+
+	if ([m_dev supportsFeatureSet:MTLFeatureSet_macOS_GPUFamily1_v1])
+		m_max_texsize = 16384;
+	else
+		m_max_texsize = 8192;
+
 	m_layer = (__bridge CAMetalLayer*)m_wnd->GetHandle();
 	ASSERT([m_layer isKindOfClass:[CAMetalLayer class]]);
 	m_layer.device = m_dev;
@@ -225,6 +241,12 @@ bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
 
 		m_interlace[i] = GSRenderPipelineMTL(name, vs_convert, ps, /*targets_depth=*/false, /*is_opaque=*/i >= 2);
 	}
+
+	// Texture Font (OSD)
+	GSVector2i tex_font = m_osd.get_texture_font_size();
+	m_font = std::unique_ptr<GSTexture>(
+		CreateSurface(GSTexture::Type::Texture, tex_font.x, tex_font.y, MTLPixelFormatR8Unorm)
+	);
 
 	return true;
 }
@@ -264,7 +286,179 @@ void GSDeviceMTL::Present(const GSVector4i& r, int shader)
 	m_cmdBuffer = [m_queue commandBuffer];
 }
 
-void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GSRenderPipelineMTL& pipeline, bool linear, void* fragUniform, size_t fragUniformLen)
+void GSDeviceMTL::Flip()
+{
+	fprintf(stderr, "Metal: Flip called, use present instead!\n");
+}
+
+void GSDeviceMTL::SetVSync(int vsync)
+{
+	if (@available(macOS 10.13, *)) {
+		m_layer.displaySyncEnabled = vsync ? YES : NO;
+	}
+}
+
+bool GSDeviceMTL::HasDepthSparse()
+{
+	// TODO: Implement
+	return false;
+}
+
+bool GSDeviceMTL::HasColorSparse()
+{
+	// TODO: Implement
+	return false;
+}
+
+//void BeginScene() override;
+//void DrawPrimitive() override;
+//void DrawIndexedPrimitive() override;
+//void DrawIndexedPrimitive(int offset, int count) override;
+//void EndScene() override;
+
+void GSDeviceMTL::ClearRenderTarget(GSTexture* t, const GSVector4& c)
+{
+	if (!t) return;
+	static_cast<GSTextureMTL*>(t)->RequestColorClear(c);
+}
+
+void GSDeviceMTL::ClearRenderTarget(GSTexture* t, uint32 c)
+{
+	GSVector4 color = GSVector4::rgba32(c) * (1.f / 255.f);
+	ClearRenderTarget(t, color);
+}
+
+void GSDeviceMTL::ClearDepth(GSTexture* t)
+{
+	if (!t) return;
+	static_cast<GSTextureMTL*>(t)->RequestDepthClear(0);
+}
+
+void GSDeviceMTL::ClearStencil(GSTexture* t, uint8 c)
+{
+	if (!t) return;
+	static_cast<GSTextureMTL*>(t)->RequestStencilClear(c);
+}
+
+GSTexture* GSDeviceMTL::CreateSurface(GSTexture::Type type, int w, int h, int format)
+{
+	int layers = m_mipmap && format == MTLPixelFormatRGBA8Unorm ? (int)log2(std::max(w,h)) : 1;
+
+	MTLTextureDescriptor* desc = [MTLTextureDescriptor
+		texture2DDescriptorWithPixelFormat:(MTLPixelFormat)format
+		                             width:std::max(1, std::min(w, m_max_texsize))
+		                            height:std::max(1, std::min(h, m_max_texsize))
+		                         mipmapped:layers > 1];
+	switch (type)
+	{
+		case GSTexture::Type::Texture:
+			desc.usage = MTLTextureUsageShaderRead;
+			desc.mipmapLevelCount = layers;
+			break;
+		default:
+			desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
+	}
+
+	id<MTLTexture> tex = [m_dev newTextureWithDescriptor:desc];
+	if (tex)
+	{
+		GSTextureMTL* t = new GSTextureMTL(tex, type);
+		switch (type)
+		{
+			case GSTexture::Type::RenderTarget:
+				ClearRenderTarget(t, 0);
+				break;
+			case GSTexture::Type::DepthStencil:
+				ClearDepth(t);
+				break;
+			default:
+				break;
+		}
+		return t;
+	}
+	else
+	{
+		throw std::bad_alloc();
+	}
+}
+
+GSTexture* GSDeviceMTL::FetchSurface(GSTexture::Type type, int w, int h, int format)
+{
+	if (format == 0)
+	{
+		switch (type)
+		{
+			case GSTexture::Type::DepthStencil:
+			case GSTexture::Type::SparseDepthStencil:
+				format = MTLPixelFormatDepth32Float_Stencil8;
+				break;
+			default:
+				format = MTLPixelFormatRGBA8Unorm;
+		}
+	}
+
+	return GSDevice::FetchSurface(type, w, h, format);
+}
+
+GSTexture* GSDeviceMTL::CopyOffscreen(GSTexture* src, const GSVector4& sRect, int w, int h, int format, ShaderConvert ps_shader)
+{
+	if (format == 0)
+		format = MTLPixelFormatRGBA8Unorm;
+
+	ASSERT(format == MTLPixelFormatRGBA8Unorm || format == MTLPixelFormatR16Uint || format == MTLPixelFormatR32Uint);
+
+	if (GSTexture* dst = CreateRenderTarget(w, h, format))
+	{
+		GSVector4 dRect(0, 0, w, h);
+		StretchRect(src, sRect, dst, dRect, m_convert[(int)ps_shader]);
+	}
+
+	return nullptr;
+}
+
+void GSDeviceMTL::CopyRect(GSTexture* sTex, GSTexture* dTex, const GSVector4i& r)
+{
+	if (!sTex || !dTex)
+	{
+		ASSERT(0);
+		return;
+	}
+
+	auto sT = static_cast<GSTextureMTL*>(sTex);
+	auto dT = static_cast<GSTextureMTL*>(dTex);
+
+	auto blit = [m_cmdBuffer blitCommandEncoder];
+	blit.label = @"CopyRect";
+	[blit copyFromTexture:sT->GetTexture()
+	          sourceSlice:0
+	          sourceLevel:0
+	         sourceOrigin:MTLOriginMake(r.x, r.y, 0)
+	           sourceSize:MTLSizeMake(r.width(), r.height(), 1)
+	            toTexture:dT->GetTexture()
+	     destinationSlice:0
+	     destinationLevel:0
+	    destinationOrigin:MTLOriginMake(0, 0, 0)];
+
+	[blit endEncoding];
+}
+
+void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, ShaderConvert shader, bool linear)
+{
+	StretchRect(sTex, sRect, dTex, dRect, m_convert[(int)shader], linear);
+}
+
+void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, bool red, bool green, bool blue, bool alpha)
+{
+	MTLColorWriteMask mask = MTLColorWriteMaskNone;
+	if (red)   mask |= MTLColorWriteMaskRed;
+	if (green) mask |= MTLColorWriteMaskGreen;
+	if (blue)  mask |= MTLColorWriteMaskBlue;
+	if (alpha) mask |= MTLColorWriteMaskAlpha;
+
+	StretchRect(sTex, sRect, dTex, dRect, m_convert[(int)ShaderConvert::COPY], /*linear=*/false, mask);
+}
+
+void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GSRenderPipelineMTL& pipeline, bool linear, int bs, MTLColorWriteMask cms, void* fragUniform, size_t fragUniformLen)
 {
 	@autoreleasepool {
 		BeginScene();
@@ -276,11 +470,15 @@ void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture
 		// If the destination rect completely covers the texture and the fragment shader is opaque, we don't need to load the old texture
 		// Note: I think this only affects performance on tile-based GPUs (which is only arm macs), but we might as well do it anyways
 		bool covers_target = pipeline.IsOpaque()
+			&& bs == 0
 			&& (int)dRect.x <= 0
 			&& (int)dRect.y <= 0
 			&& (int)dRect.z >= ds.x
 			&& (int)dRect.w >= ds.y;
 		MTLLoadAction action = covers_target ? MTLLoadActionDontCare : MTLLoadActionLoad;
+
+		pipeline.SetColorMask(cms);
+		pipeline.SetBlend(*this, bs, 0, false, false);
 
 		if (pipeline.TargetsDepth())
 		{
@@ -325,7 +523,9 @@ void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture
 		};
 
 		auto encoder = pipeline.CreateCommandEncoder(m_cmdBuffer);
-		encoder.label = [NSString stringWithFormat:@"StretchRect from %d to %d", sTex->GetID(), dTex->GetID()];
+		encoder.label = @"StretchRect";
+
+		[encoder setRenderPipelineState:pipeline.Pipeline(m_dev)];
 
 		[encoder setFragmentTexture:sT->GetTexture() atIndex:0];
 
@@ -350,10 +550,47 @@ void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture
 	}
 }
 
-//GSTexture* CreateSurface(int type, int w, int h, int format) override;
-//
-//void DoMerge(GSTexture* sTex[3], GSVector4* sRect, GSTexture* dTex, GSVector4* dRect, const GSRegPMODE& PMODE, const GSRegEXTBUF& EXTBUF, const GSVector4& c) override;
-//void DoInterlace(GSTexture* sTex, GSTexture* dTex, int shader, bool linear, float yoffset) override;
+void GSDeviceMTL::RenderOsd(GSTexture* dt)
+{
+	BeginScene();
+
+	if (m_osd.m_texture_dirty) {
+		m_osd.upload_texture_atlas(m_font.get());
+	}
+
+	auto& pipeline = m_convert[(int)ShaderConvert::OSD];
+	pipeline.SetBlend(*this, m_MERGE_BLEND, 0, false, false);
+	pipeline.SetColorMask(MTLColorWriteMaskAll);
+	pipeline.SetTargets(static_cast<GSTextureMTL*>(dt)->GetTexture(), nil);
+	pipeline.SetLoadActions(MTLLoadActionLoad, MTLLoadActionDontCare);
+
+	size_t count = m_osd.Size();
+	GSVertexPT1 tmp[count];
+	m_osd.GeneratePrimitives(tmp, count);
+	// TODO: Use buffer
+	ConvertShaderVertex verts[count];
+	for (size_t i = 0; i < count; i++)
+	{
+		const auto& src = tmp[i];
+		verts[i] = { {src.p.x, src.p.y}, {src.t.x, src.t.y}, {src.r, src.g, src.b, src.a} };
+	}
+
+	auto encoder = pipeline.CreateCommandEncoder(m_cmdBuffer);
+	encoder.label = @"RenderOSD";
+	[encoder setRenderPipelineState:pipeline.Pipeline(m_dev)];
+
+	[encoder setVertexBytes:verts
+	                 length:sizeof(verts)
+	                atIndex:GSMTLIndexVertices];
+
+	[encoder drawPrimitives:MTLPrimitiveTypeTriangle
+	            vertexStart:0
+	            vertexCount:count];
+
+	[encoder endEncoding];
+
+	EndScene();
+}
 
 uint16 GSDeviceMTL::ConvertBlendEnum(uint16 generic)
 {
@@ -382,32 +619,6 @@ uint16 GSDeviceMTL::ConvertBlendEnum(uint16 generic)
 	}
 }
 
-//void Flip() override;
-//
-//void SetVSync(int vsync) override;
-//
-//void BeginScene() override;
-//void DrawPrimitive() override;
-//void DrawIndexedPrimitive() override;
-//void DrawIndexedPrimitive(int offset, int count) override;
-//void EndScene() override;
-//
-//bool HasDepthSparse() override;
-//bool HasColorSparse() override;
-//
-//void ClearRenderTarget(GSTexture* t, const GSVector4& c) override;
-//void ClearRenderTarget(GSTexture* t, uint32 c) override;
-//void ClearDepth(GSTexture* t) override;
-//void ClearStencil(GSTexture* t, uint8 c) override;
-//
-//GSTexture* CopyOffscreen(GSTexture* src, const GSVector4& sRect, int w, int h, int format = 0, ShaderConvert ps_shader = ShaderConvert::COPY) override;
-//
-//void CopyRect(GSTexture* sTex, GSTexture* dTex, const GSVector4i& r) override;
-//void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, ShaderConvert shader = ShaderConvert::COPY, bool linear = true) override;
-//void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, bool red, bool green, bool blue, bool alpha) override;
-//
-//void StretchRect(GSTexture* sTex, GSTexture* dTex, const GSVector4& dRect, int shader = 0, bool linear = true);
-//
 //void PSSetShaderResources(GSTexture* sr0, GSTexture* sr1) override;
 //void PSSetShaderResource(int i, GSTexture* sRect) override;
 //void OMSetRenderTargets(GSTexture* rt, GSTexture* ds, const GSVector4i* scissor = NULL) override;

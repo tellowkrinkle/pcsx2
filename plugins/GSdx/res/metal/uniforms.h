@@ -12,7 +12,7 @@ struct ConvertShaderVertex
 {
 	vector_float2 position;
 	vector_float2 texcoord0;
-	vector_char4 color;
+	vector_uchar4 color;
 };
 
 struct InterlaceFragShaderUniform

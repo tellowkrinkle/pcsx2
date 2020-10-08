@@ -70,12 +70,14 @@ public:
 
 	bool TargetsDepth() { return m_targetsDepth; }
 	bool IsOpaque() { return m_isOpaque; }
+	bool IsBlendingEnabled() { return m_currentBlendIndex == 0; }
 
 	void SetLoadActions(MTLLoadAction color, MTLLoadAction depth);
 	void SetClearConstants(MTLClearColor color, double depth);
 	void SetPixelFormats(MTLPixelFormat color, MTLPixelFormat depth);
 	void SetTargets(id<MTLTexture> color, id<MTLTexture> depth);
 	void SetBlend(GSDevice& dev, uint8 index, uint8 factor, bool is_constant, bool accumulation_blend);
+	void SetColorMask(MTLColorWriteMask mask);
 
 	MTLPixelFormat ColorPixelFormat() { return m_pipelineDescriptor.colorAttachments[0].pixelFormat; }
 	MTLPixelFormat DepthPixelFormat() { return m_pipelineDescriptor.depthAttachmentPixelFormat; }
@@ -91,14 +93,19 @@ class GSDeviceMTL final : public GSDevice
 	id<MTLCommandBuffer> m_cmdBuffer = nil;
 	CAMetalLayer* m_layer = nil;
 	id<MTLLibrary> m_shaders = nil;
+	int m_max_texsize;
+	int m_mipmap;
 
+	GSRenderPipelineMTL m_convert[(int)ShaderConvert::Count];
 	GSRenderPipelineMTL m_interlace[4];
+
+	std::unique_ptr<GSTexture> m_font;
 
 private:
 	id<MTLFunction> loadShader(NSString* name);
 
 	GSTexture* CreateSurface(GSTexture::Type type, int w, int h, int format) override;
-//	GSTexture* FetchSurface(GSTexture::Type type, int w, int h, int format) override;
+	GSTexture* FetchSurface(GSTexture::Type type, int w, int h, int format) override;
 
 	void DoMerge(GSTexture* sTex[3], GSVector4* sRect, GSTexture* dTex, GSVector4* dRect, const GSRegPMODE& PMODE, const GSRegEXTBUF& EXTBUF, const GSVector4& c) override;
 	void DoInterlace(GSTexture* sTex, GSTexture* dTex, int shader, bool linear, float yoffset) override;
@@ -114,6 +121,7 @@ public:
 	bool Create(const std::shared_ptr<GSWnd> &wnd) override;
 	bool Reset(int w, int h) override;
 	void Present(const GSVector4i& r, int shader) override;
+	void Flip() override;
 
 	void SetVSync(int vsync) override;
 
@@ -135,10 +143,10 @@ public:
 
 	void CopyRect(GSTexture* sTex, GSTexture* dTex, const GSVector4i& r) override;
 	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, ShaderConvert shader = ShaderConvert::COPY, bool linear = true) override;
-	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GSRenderPipelineMTL& pipeline, bool linear = true, void* fragUniform = nil, size_t fragUniformLen = 0);
+	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, GSRenderPipelineMTL& pipeline, bool linear = true, int bs = m_NO_BLEND, MTLColorWriteMask cms = MTLColorWriteMaskAll, void* fragUniform = nil, size_t fragUniformLen = 0);
 	void StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, bool red, bool green, bool blue, bool alpha) override;
 
-	void StretchRect(GSTexture* sTex, GSTexture* dTex, const GSVector4& dRect, int shader = 0, bool linear = true);
+	void RenderOsd(GSTexture* dt) override;
 
 	void PSSetShaderResources(GSTexture* sr0, GSTexture* sr1) override;
 	void PSSetShaderResource(int i, GSTexture* sRect) override;
