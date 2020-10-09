@@ -242,6 +242,45 @@ bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
 		m_interlace[i] = GSRenderPipelineMTL(name, vs_convert, ps, /*targets_depth=*/false, /*is_opaque=*/i >= 2);
 	}
 
+	for (size_t i = 0; i < countof(m_convert); i++)
+	{
+		auto shader = static_cast<ShaderConvert>(i);
+		NSString* name = [NSString stringWithCString:shaderName(shader) encoding:[NSString defaultCStringEncoding]];
+
+		auto ps = loadShader(name);
+
+		bool depth = false;
+		bool opaque = true;
+
+		switch (shader)
+		{
+			case ShaderConvert::RGBA8_TO_FLOAT32:
+			case ShaderConvert::RGBA8_TO_FLOAT24:
+			case ShaderConvert::RGBA8_TO_FLOAT16:
+			case ShaderConvert::RGB5A1_TO_FLOAT16:
+				depth = true;
+				break;
+			case ShaderConvert::DATM_1:
+			case ShaderConvert::DATM_0:
+				opaque = false;
+				break;
+			default:
+				break;
+		}
+
+		m_convert[i] = GSRenderPipelineMTL(name, vs_convert, ps, /*targets_depth=*/depth, /*is_opaque=*/true);
+	}
+
+	MTLSamplerDescriptor* sampler = [MTLSamplerDescriptor new];
+	sampler.minFilter = MTLSamplerMinMagFilterNearest;
+	sampler.magFilter = MTLSamplerMinMagFilterNearest;
+	sampler.sAddressMode = MTLSamplerAddressModeClampToEdge;
+	sampler.tAddressMode = MTLSamplerAddressModeClampToEdge;
+	m_sampler_pt = [m_dev newSamplerStateWithDescriptor:sampler];
+	sampler.minFilter = MTLSamplerMinMagFilterLinear;
+	sampler.magFilter = MTLSamplerMinMagFilterLinear;
+	m_sampler_ln = [m_dev newSamplerStateWithDescriptor:sampler];
+
 	// Texture Font (OSD)
 	GSVector2i tex_font = m_osd.get_texture_font_size();
 	m_font = std::unique_ptr<GSTexture>(
@@ -540,6 +579,9 @@ void GSDeviceMTL::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture
 			                  atIndex:GSMTLIndexUniforms];
 		}
 
+		[encoder setFragmentSamplerState:linear ? m_sampler_ln : m_sampler_pt
+		                         atIndex:0];
+
 		[encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip
 		            vertexStart:0
 		            vertexCount:4];
@@ -582,6 +624,8 @@ void GSDeviceMTL::RenderOsd(GSTexture* dt)
 	[encoder setVertexBytes:verts
 	                 length:sizeof(verts)
 	                atIndex:GSMTLIndexVertices];
+
+	[encoder setFragmentSamplerState:m_sampler_pt atIndex:0];
 
 	[encoder drawPrimitives:MTLPrimitiveTypeTriangle
 	            vertexStart:0

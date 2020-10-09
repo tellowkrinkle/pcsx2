@@ -15,6 +15,14 @@ struct ConvertShaderVertex
 	vector_uchar4 color;
 };
 
+struct ConvertFragShaderUniform
+{
+	vector_int4 scaling_factor;
+	vector_int4 channel_shuffle;
+	int emoda;
+	int emodc;
+};
+
 struct InterlaceFragShaderUniform
 {
 	vector_float2 ZrH;

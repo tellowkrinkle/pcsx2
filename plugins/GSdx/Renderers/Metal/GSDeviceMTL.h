@@ -96,6 +96,8 @@ class GSDeviceMTL final : public GSDevice
 	int m_max_texsize;
 	int m_mipmap;
 
+	id<MTLSamplerState> m_sampler_pt = nil;
+	id<MTLSamplerState> m_sampler_ln = nil;
 	GSRenderPipelineMTL m_convert[(int)ShaderConvert::Count];
 	GSRenderPipelineMTL m_interlace[4];
 
