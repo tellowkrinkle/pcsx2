@@ -44,6 +44,8 @@ static HRESULT s_hr = E_FAIL;
 
 #include "Window/GSWndEGL.h"
 #include "Window/GSWndCGLShim.h"
+#include "Window/GSWndMTLShim.h"
+#include "Renderers/Metal/GSMetalShims.h"
 
 #ifdef __APPLE__
 #include <gtk/gtk.h>
@@ -236,6 +238,11 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 			std::vector<std::shared_ptr<GSWnd>> wnds;
 			switch (renderer)
 			{
+#ifdef __APPLE__
+				case GSRendererType::MTL_SW:
+					wnds.push_back(makeGSWndMTL());
+					break;
+#endif
 				case GSRendererType::OGL_HW:
 				case GSRendererType::OGL_SW:
 #ifdef ENABLE_OPENCL
@@ -355,6 +362,12 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 			s_renderer_name = " D3D11";
 			renderer_fullname = "Direct3D 11";
 			break;
+#elif defined(__APPLE__)
+		case GSRendererType::MTL_SW:
+			dev = makeGSDeviceMTL();
+			s_renderer_name = " MTL";
+			renderer_fullname = "Metal";
+			break;
 #endif
 		case GSRendererType::Null:
 			dev = new GSDeviceNull();
@@ -396,6 +409,7 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 				break;
 			case GSRendererType::DX1011_SW:
 			case GSRendererType::OGL_SW:
+			case GSRendererType::MTL_SW:
 				s_gs = new GSRendererSW(threads);
 				s_renderer_type = " SW";
 				break;

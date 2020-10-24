@@ -212,6 +212,10 @@ void GSdxApp::Init()
 	m_gs_renderers.push_back(GSSetting(static_cast<uint32>(GSRendererType::OGL_HW), "OpenGL", "Hardware"));
 	m_gs_renderers.push_back(GSSetting(static_cast<uint32>(GSRendererType::DX1011_SW), "Direct3D 11", "Software"));
 	m_gs_renderers.push_back(GSSetting(static_cast<uint32>(GSRendererType::OGL_SW), "OpenGL", "Software"));
+#elif defined(__APPLE__)
+	m_gs_renderers.push_back(GSSetting(static_cast<uint32>(GSRendererType::OGL_HW), "OpenGL", "Hardware"));
+	m_gs_renderers.push_back(GSSetting(static_cast<uint32>(GSRendererType::OGL_SW), "OpenGL", "Software"));
+	m_gs_renderers.push_back(GSSetting(static_cast<uint32>(GSRendererType::MTL_SW), "Metal", "Software"));
 #else // Linux
 	m_gs_renderers.push_back(GSSetting(static_cast<uint32>(GSRendererType::OGL_HW), "OpenGL", "Hardware"));
 	m_gs_renderers.push_back(GSSetting(static_cast<uint32>(GSRendererType::OGL_SW), "OpenGL", "Software"));

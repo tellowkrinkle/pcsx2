@@ -100,6 +100,7 @@ class GSDeviceMTL final : public GSDevice
 	id<MTLSamplerState> m_sampler_ln = nil;
 	GSRenderPipelineMTL m_convert[(int)ShaderConvert::Count];
 	GSRenderPipelineMTL m_interlace[4];
+	GSRenderPipelineMTL m_merge[2];
 
 	std::unique_ptr<GSTexture> m_font;
 
@@ -127,11 +128,11 @@ public:
 
 	void SetVSync(int vsync) override;
 
-//	void BeginScene() override;
+	void BeginScene() override;
 	void DrawPrimitive() override;
 	void DrawIndexedPrimitive() override;
 	void DrawIndexedPrimitive(int offset, int count) override;
-//	void EndScene() override;
+	void EndScene() override;
 
 	bool HasDepthSparse() override;
 	bool HasColorSparse() override;

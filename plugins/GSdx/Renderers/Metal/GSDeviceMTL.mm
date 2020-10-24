@@ -20,6 +20,7 @@
 
 #include "stdafx.h"
 #include "GSDeviceMTL.h"
+#include "GSMetalShims.h"
 #include "GSTextureMTL.h"
 
 #if ! __has_feature(objc_arc)
@@ -39,6 +40,11 @@
 	} while (0)
 
 #define NSERROR_CHECK(err, ...) THROWING_ASSERT(!(err), __VA_ARGS__)
+
+GSDevice* makeGSDeviceMTL()
+{
+	return new GSDeviceMTL();
+}
 
 GSRenderPipelineMTL::GSRenderPipelineMTL(NSString* name, id<MTLFunction> vs, id<MTLFunction> ps, bool targets_depth, bool is_opaque)
 	: m_targetsDepth(targets_depth), m_isOpaque(is_opaque)
@@ -127,6 +133,7 @@ void GSRenderPipelineMTL::SetBlend(GSDevice& dev, uint8 index, uint8 factor, boo
 			b.dst = MTLBlendFactorOne;
 		}
 
+		m_pipelineDescriptor.colorAttachments[0].blendingEnabled = true;
 		m_pipelineDescriptor.colorAttachments[0].rgbBlendOperation = (MTLBlendOperation)b.op;
 		m_pipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = (MTLBlendFactor)b.src;
 		m_pipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = (MTLBlendFactor)b.dst;
@@ -242,6 +249,15 @@ bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
 		m_interlace[i] = GSRenderPipelineMTL(name, vs_convert, ps, /*targets_depth=*/false, /*is_opaque=*/i >= 2);
 	}
 
+	for (size_t i = 0; i < countof(m_merge); i++)
+	{
+		NSString* name = [NSString stringWithFormat:@"ps_merge%zu", i];
+
+		auto ps = loadShader(name);
+
+		m_merge[i] = GSRenderPipelineMTL(name, vs_convert, ps, /*targets_depth=*/false, /*is_opaque=*/true);
+	}
+
 	for (size_t i = 0; i < countof(m_convert); i++)
 	{
 		auto shader = static_cast<ShaderConvert>(i);
@@ -295,15 +311,13 @@ bool GSDeviceMTL::Reset(int w, int h)
 	if(!GSDevice::Reset(w, h))
 		return false;
 
-	// Note: We let m_layer figure out its own size from the view it's a part of for now
-	//[m_layer setDrawableSize:CGSizeMake(w, h)];
-
 	return true;
 }
 
 void GSDeviceMTL::Present(const GSVector4i& r, int shader)
 {
-	// Note: We let m_layer figure out its own size from the view it's a part of for now
+	GSVector4i cr = m_wnd->GetClientRect();
+	[m_layer setDrawableSize:CGSizeMake(cr.width(), cr.height())];
 
 	@autoreleasepool {
 		GSScopedDebugGroupMTL(m_cmdBuffer, @"Present");
@@ -327,7 +341,7 @@ void GSDeviceMTL::Present(const GSVector4i& r, int shader)
 
 void GSDeviceMTL::Flip()
 {
-	fprintf(stderr, "Metal: Flip called, use present instead!\n");
+	fprintf(stderr, "Metal: Flip is unsupported, use present instead!\n");
 }
 
 void GSDeviceMTL::SetVSync(int vsync)
@@ -349,11 +363,28 @@ bool GSDeviceMTL::HasColorSparse()
 	return false;
 }
 
-//void BeginScene() override;
-//void DrawPrimitive() override;
-//void DrawIndexedPrimitive() override;
-//void DrawIndexedPrimitive(int offset, int count) override;
-//void EndScene() override;
+void GSDeviceMTL::BeginScene()
+{
+}
+
+void GSDeviceMTL::DrawPrimitive()
+{
+	fprintf(stderr, "Metal: DrawPrimitive unimplemented\n");
+}
+
+void GSDeviceMTL::DrawIndexedPrimitive()
+{
+	fprintf(stderr, "Metal: DrawIndexedPrimitive unimplemented\n");
+}
+
+void GSDeviceMTL::DrawIndexedPrimitive(int offset, int count)
+{
+	fprintf(stderr, "Metal: DrawIndexedPrimitive unimplemented\n");
+}
+
+void GSDeviceMTL::EndScene()
+{
+}
 
 void GSDeviceMTL::ClearRenderTarget(GSTexture* t, const GSVector4& c)
 {
@@ -388,6 +419,13 @@ GSTexture* GSDeviceMTL::CreateSurface(GSTexture::Type type, int w, int h, int fo
 		                             width:std::max(1, std::min(w, m_max_texsize))
 		                            height:std::max(1, std::min(h, m_max_texsize))
 		                         mipmapped:layers > 1];
+
+	if (format == MTLPixelFormatDepth32Float_Stencil8)
+	{
+		// Depth stencils must be private
+		desc.storageMode = MTLStorageModePrivate;
+	}
+
 	switch (type)
 	{
 		case GSTexture::Type::Texture:
@@ -608,9 +646,11 @@ void GSDeviceMTL::RenderOsd(GSTexture* dt)
 
 	size_t count = m_osd.Size();
 	GSVertexPT1 tmp[count];
+	memset(tmp, 0, sizeof(tmp));
 	m_osd.GeneratePrimitives(tmp, count);
 	// TODO: Use buffer
 	ConvertShaderVertex verts[count];
+	memset(verts, 0, sizeof(verts));
 	for (size_t i = 0; i < count; i++)
 	{
 		const auto& src = tmp[i];
@@ -620,6 +660,7 @@ void GSDeviceMTL::RenderOsd(GSTexture* dt)
 	auto encoder = pipeline.CreateCommandEncoder(m_cmdBuffer);
 	encoder.label = @"RenderOSD";
 	[encoder setRenderPipelineState:pipeline.Pipeline(m_dev)];
+	[encoder setFragmentTexture:static_cast<GSTextureMTL*>(&*m_font)->GetTexture() atIndex:0];
 
 	[encoder setVertexBytes:verts
 	                 length:sizeof(verts)
@@ -634,6 +675,67 @@ void GSDeviceMTL::RenderOsd(GSTexture* dt)
 	[encoder endEncoding];
 
 	EndScene();
+}
+
+void GSDeviceMTL::DoMerge(GSTexture* sTex[3], GSVector4* sRect, GSTexture* dTex, GSVector4* dRect, const GSRegPMODE& PMODE, const GSRegEXTBUF& EXTBUF, const GSVector4& c)
+{
+	GSScopedDebugGroupMTL dbg(m_cmdBuffer, @"DoMerge");
+
+	GSVector4 full_r(0.0f, 0.0f, 1.0f, 1.0f);
+	bool feedback_write_2 = PMODE.EN2 && sTex[2] != nullptr && EXTBUF.FBIN == 1;
+	bool feedback_write_1 = PMODE.EN1 && sTex[2] != nullptr && EXTBUF.FBIN == 0;
+	bool feedback_write_2_but_blend_bg = feedback_write_2 && PMODE.SLBG == 1;
+
+	ClearRenderTarget(dTex, c);
+
+	vector_float4 cb_c = { c.r, c.g, c.b, c.a };
+	ConvertFragShaderUniform cb_yuv = {0};
+	cb_yuv.emoda = EXTBUF.EMODA;
+	cb_yuv.emodc = EXTBUF.EMODC;
+
+	if (sTex[1] && (PMODE.SLBG == 0 || feedback_write_2_but_blend_bg)) {
+		// 2nd output is enabled and selected. Copy it to destination so we can blend it with 1st output
+		// Note: value outside of dRect must contains the background color (c)
+		StretchRect(sTex[1], sRect[1], dTex, dRect[1], ShaderConvert::COPY);
+	}
+
+	// Save 2nd output
+	if (feedback_write_2) // FIXME I'm not sure dRect[1] is always correct
+		StretchRect(dTex, full_r, sTex[2], dRect[1], m_convert[(int)ShaderConvert::YUV], true, 0, MTLColorWriteMaskAll, &cb_yuv, sizeof(cb_yuv));
+
+	if (feedback_write_2_but_blend_bg)
+		ClearRenderTarget(dTex, c);
+
+	if (sTex[0]) {
+		if (PMODE.AMOD == 1) {
+			// TODO: OpenGL says keep the alpha from the 2nd output but then sets something that gets overwritten by every StretchRect call...
+		}
+
+		// 1st output is enabled. It must be blended
+		if (PMODE.MMOD == 1) {
+			// Blend with a constant alpha
+			StretchRect(sTex[0], sRect[0], dTex, dRect[0], m_merge[1], true, m_MERGE_BLEND, MTLColorWriteMaskAll, &cb_c, sizeof(cb_c));
+		} else {
+			// Blend with 2 * input alpha
+			StretchRect(sTex[0], sRect[0], dTex, dRect[0], m_merge[0], true, m_MERGE_BLEND);
+		}
+	}
+}
+
+void GSDeviceMTL::DoInterlace(GSTexture* sTex, GSTexture* dTex, int shader, bool linear, float yoffset)
+{
+	GSScopedDebugGroupMTL dbg(m_cmdBuffer, @"DoInterlace");
+
+	GSVector4 s = GSVector4(dTex->GetSize());
+
+	GSVector4 sRect(0, 0, 1, 1);
+	GSVector4 dRect(0.f, yoffset, s.x, s.y + yoffset);
+
+	InterlaceFragShaderUniform cb = {0};
+	cb.ZrH = {0, 1.f / s.y};
+	cb.hH = s.y / 2;
+
+	StretchRect(sTex, sRect, dTex, dRect, m_interlace[shader], linear, 0, MTLColorWriteMaskAll, &cb, sizeof(cb));
 }
 
 uint16 GSDeviceMTL::ConvertBlendEnum(uint16 generic)
@@ -663,8 +765,17 @@ uint16 GSDeviceMTL::ConvertBlendEnum(uint16 generic)
 	}
 }
 
-//void PSSetShaderResources(GSTexture* sr0, GSTexture* sr1) override;
-//void PSSetShaderResource(int i, GSTexture* sRect) override;
-//void OMSetRenderTargets(GSTexture* rt, GSTexture* ds, const GSVector4i* scissor = NULL) override;
+void GSDeviceMTL::PSSetShaderResources(GSTexture* sr0, GSTexture* sr1)
+{
+	fprintf(stderr, "Metal: PSSetShaderResources unimplemented\n");
+}
+void GSDeviceMTL::PSSetShaderResource(int i, GSTexture* sRect)
+{
+	fprintf(stderr, "Metal: PSSetShaderResource unimplemented\n");
+}
+void GSDeviceMTL::OMSetRenderTargets(GSTexture* rt, GSTexture* ds, const GSVector4i* scissor)
+{
+	fprintf(stderr, "Metal: OMSetRenderTargets unimplemented\n");
+}
 
 #endif

@@ -24,10 +24,9 @@
 
 #ifdef __APPLE__
 
-#include <memory>
 #include "Renderers/Common/GSDevice.h"
 
-std::shared_ptr<GSDevice> makeGSDeviceMTL();
+GSDevice* makeGSDeviceMTL();
 
 #endif
 
