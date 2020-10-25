@@ -31,6 +31,8 @@
 #include <Metal/Metal.h>
 #include <AppKit/AppKit.h>
 #include <QuartzCore/QuartzCore.h>
+#include <mutex>
+#include <vector>
 #include "res/metal/uniforms.h"
 
 class GSScopedDebugGroupMTL
@@ -47,6 +49,18 @@ public:
 		if (@available(macOS 10.13, *))
 			[m_buffer popDebugGroup];
 	}
+};
+
+/// Holds onto a pool of `MTLBuffer`s
+class GSBufferPoolMTL
+{
+	std::mutex mutex;
+	std::vector<id<MTLBuffer>> buffers;
+
+public:
+	GSBufferPoolMTL() = default;
+	GSBufferPoolMTL(GSBufferPoolMTL&&) = delete;
+	id<MTLBuffer> getBuffer(id<MTLCommandBuffer> target, size_t size);
 };
 
 /// Holds the information required to make a MTLRenderPipelineState, and caches the most-recently-used one
@@ -101,6 +115,8 @@ class GSDeviceMTL final : public GSDevice
 	GSRenderPipelineMTL m_convert[(int)ShaderConvert::Count];
 	GSRenderPipelineMTL m_interlace[4];
 	GSRenderPipelineMTL m_merge[2];
+
+	GSBufferPoolMTL m_osd_vertex_buffers;
 
 	std::unique_ptr<GSTexture> m_font;
 

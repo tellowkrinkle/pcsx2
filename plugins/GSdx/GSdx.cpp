@@ -321,9 +321,9 @@ void GSdxApp::Init()
 	m_gs_tv_shaders.push_back(GSSetting(4, "Wave filter", ""));
 
 	// Avoid to clutter the ini file with useless options
+	m_default_configuration["Adapter"]                                    = "default";
 #ifdef _WIN32
 	// Per OS option.
-	m_default_configuration["Adapter"]                                    = "default";
 	m_default_configuration["CaptureFileName"]                            = "";
 	m_default_configuration["CaptureVideoCodecDisplayName"]               = "";
 	m_default_configuration["dx_break_on_severity"]                       = "0";

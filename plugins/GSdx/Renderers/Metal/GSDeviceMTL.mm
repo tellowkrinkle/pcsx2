@@ -46,6 +46,27 @@ GSDevice* makeGSDeviceMTL()
 	return new GSDeviceMTL();
 }
 
+id<MTLBuffer> GSBufferPoolMTL::getBuffer(id<MTLCommandBuffer> target, size_t size)
+{
+	id<MTLBuffer> buffer;
+	{
+		std::lock_guard<std::mutex> guard(mutex);
+		if (!buffers.empty())
+		{
+			buffer = std::move(buffers.back());
+			buffers.pop_back();
+		}
+	}
+	if (!buffer || buffer.allocatedSize < size)
+		buffer = [target.device newBufferWithLength:size options:MTLResourceStorageModeManaged];
+
+	[target addCompletedHandler:[this, buffer](id<MTLCommandBuffer> _) {
+		std::lock_guard<std::mutex> guard(mutex);
+		buffers.push_back(buffer);
+	}];
+	return buffer;
+}
+
 GSRenderPipelineMTL::GSRenderPipelineMTL(NSString* name, id<MTLFunction> vs, id<MTLFunction> ps, bool targets_depth, bool is_opaque)
 	: m_targetsDepth(targets_depth), m_isOpaque(is_opaque)
 {
@@ -320,7 +341,7 @@ void GSDeviceMTL::Present(const GSVector4i& r, int shader)
 	[m_layer setDrawableSize:CGSizeMake(cr.width(), cr.height())];
 
 	@autoreleasepool {
-		GSScopedDebugGroupMTL(m_cmdBuffer, @"Present");
+		GSScopedDebugGroupMTL dbg(m_cmdBuffer, @"Present");
 
 		id<CAMetalDrawable> drawable = [m_layer nextDrawable];
 
@@ -646,25 +667,23 @@ void GSDeviceMTL::RenderOsd(GSTexture* dt)
 
 	size_t count = m_osd.Size();
 	GSVertexPT1 tmp[count];
-	memset(tmp, 0, sizeof(tmp));
 	m_osd.GeneratePrimitives(tmp, count);
-	// TODO: Use buffer
-	ConvertShaderVertex verts[count];
-	memset(verts, 0, sizeof(verts));
+	size_t len = sizeof(ConvertShaderVertex) * count;
+	id<MTLBuffer> verts = m_osd_vertex_buffers.getBuffer(m_cmdBuffer, len);
+	ConvertShaderVertex* vptr = static_cast<ConvertShaderVertex*>(verts.contents);
 	for (size_t i = 0; i < count; i++)
 	{
 		const auto& src = tmp[i];
-		verts[i] = { {src.p.x, src.p.y}, {src.t.x, src.t.y}, {src.r, src.g, src.b, src.a} };
+		vptr[i] = { {src.p.x, src.p.y}, {src.t.x, src.t.y}, {src.r, src.g, src.b, src.a} };
 	}
+	[verts didModifyRange:NSMakeRange(0, len)];
 
 	auto encoder = pipeline.CreateCommandEncoder(m_cmdBuffer);
 	encoder.label = @"RenderOSD";
 	[encoder setRenderPipelineState:pipeline.Pipeline(m_dev)];
 	[encoder setFragmentTexture:static_cast<GSTextureMTL*>(&*m_font)->GetTexture() atIndex:0];
 
-	[encoder setVertexBytes:verts
-	                 length:sizeof(verts)
-	                atIndex:GSMTLIndexVertices];
+	[encoder setVertexBuffer:verts offset:0 atIndex:GSMTLIndexVertices];
 
 	[encoder setFragmentSamplerState:m_sampler_pt atIndex:0];
 
