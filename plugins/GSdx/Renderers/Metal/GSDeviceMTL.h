@@ -31,6 +31,7 @@
 #include <Metal/Metal.h>
 #include <AppKit/AppKit.h>
 #include <QuartzCore/QuartzCore.h>
+#include <Dispatch/Dispatch.h>
 #include <mutex>
 #include <vector>
 #include "res/metal/uniforms.h"
@@ -56,9 +57,11 @@ class GSBufferPoolMTL
 {
 	std::mutex mutex;
 	std::vector<id<MTLBuffer>> buffers;
+	dispatch_group_t inflight;
 
 public:
-	GSBufferPoolMTL() = default;
+	GSBufferPoolMTL();
+	~GSBufferPoolMTL();
 	GSBufferPoolMTL(GSBufferPoolMTL&&) = delete;
 	id<MTLBuffer> getBuffer(id<MTLCommandBuffer> target, size_t size);
 };

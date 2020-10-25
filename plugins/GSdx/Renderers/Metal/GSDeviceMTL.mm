@@ -46,6 +46,16 @@ GSDevice* makeGSDeviceMTL()
 	return new GSDeviceMTL();
 }
 
+GSBufferPoolMTL::GSBufferPoolMTL() : inflight(dispatch_group_create())
+{
+}
+
+GSBufferPoolMTL::~GSBufferPoolMTL()
+{
+	// Wait for all the buffers to return we don't crash when they try to return to a non-existant pool
+	dispatch_group_wait(inflight, DISPATCH_TIME_FOREVER);
+}
+
 id<MTLBuffer> GSBufferPoolMTL::getBuffer(id<MTLCommandBuffer> target, size_t size)
 {
 	id<MTLBuffer> buffer;
@@ -57,12 +67,14 @@ id<MTLBuffer> GSBufferPoolMTL::getBuffer(id<MTLCommandBuffer> target, size_t siz
 			buffers.pop_back();
 		}
 	}
-	if (!buffer || buffer.allocatedSize < size)
+	if (!buffer || buffer.length < size)
 		buffer = [target.device newBufferWithLength:size options:MTLResourceStorageModeManaged];
+	dispatch_group_enter(inflight);
 
 	[target addCompletedHandler:[this, buffer](id<MTLCommandBuffer> _) {
 		std::lock_guard<std::mutex> guard(mutex);
 		buffers.push_back(buffer);
+		dispatch_group_leave(inflight);
 	}];
 	return buffer;
 }
@@ -305,7 +317,7 @@ bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
 				break;
 		}
 
-		m_convert[i] = GSRenderPipelineMTL(name, vs_convert, ps, /*targets_depth=*/depth, /*is_opaque=*/true);
+		m_convert[i] = GSRenderPipelineMTL(name, vs_convert, ps, /*targets_depth=*/depth, /*is_opaque=*/opaque);
 	}
 
 	MTLSamplerDescriptor* sampler = [MTLSamplerDescriptor new];
@@ -368,7 +380,9 @@ void GSDeviceMTL::Flip()
 void GSDeviceMTL::SetVSync(int vsync)
 {
 	if (@available(macOS 10.13, *)) {
-		m_layer.displaySyncEnabled = vsync ? YES : NO;
+		dispatch_sync(dispatch_get_main_queue(), [&]{
+			m_layer.displaySyncEnabled = vsync ? YES : NO;
+		});
 	}
 }
 

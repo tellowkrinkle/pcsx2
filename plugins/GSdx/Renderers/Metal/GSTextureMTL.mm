@@ -90,7 +90,7 @@ bool GSTextureMTL::Update(const GSVector4i& r, const void* data, int pitch, int 
 	if(layer >= m_max_layer)
 		return true;
 
-	MTLRegion box = MTLRegionMake2D(r.left, r.top, r.right - r.left, r.bottom - r.top);
+	MTLRegion box = MTLRegionMake2D(r.left, r.top, r.width(), r.height());
 
 	[m_texture replaceRegion:box
 	             mipmapLevel:layer
