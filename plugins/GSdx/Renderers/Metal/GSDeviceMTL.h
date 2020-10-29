@@ -34,6 +34,7 @@
 #include <Dispatch/Dispatch.h>
 #include <mutex>
 #include <vector>
+#include <unordered_map>
 #include "res/metal/uniforms.h"
 
 class GSScopedDebugGroupMTL
@@ -105,6 +106,96 @@ public:
 
 class GSDeviceMTL final : public GSDevice
 {
+public:
+	struct VSSelector
+	{
+		union
+		{
+			uint32 key;
+			struct
+			{
+				uint32 fst:1;
+				uint32 iip:1;
+			};
+		};
+		constexpr VSSelector(): key(0) {}
+	};
+
+	struct PSSelector
+	{
+		union
+		{
+			uint64 key;
+			struct
+			{
+				// *** Word 1
+				// Format
+				uint32 tex_fmt:4;
+				uint32 dfmt:2;
+				uint32 depth_fmt:2;
+				// Alpha extension/Correction
+				uint32 aem:1;
+				uint32 fba:1;
+				// Fog
+				uint32 fog:1;
+				// Flat/goround shading
+				uint32 iip:1;
+				// Pixel test
+				uint32 date:3;
+				uint32 atst:3;
+				// Color sampling
+				uint32 fst:1; // Investigate to do it on the VS
+				uint32 tfx:3;
+				uint32 tcc:1;
+				uint32 wms:2;
+				uint32 wmt:2;
+				uint32 ltf:1;
+				// Shuffle and fbmask effect
+				uint32 shuffle:1;
+				uint32 read_ba:1;
+				uint32 write_rg:1;
+				uint32 fbmask:1;
+
+				//uint32 _free1:0;
+
+				// *** Word 2
+				// Blend and Colclip
+				uint32 blend_a:2;
+				uint32 blend_b:2;
+				uint32 blend_c:2;
+				uint32 blend_d:2;
+				uint32 clr1:1; // useful?
+				uint32 hdr:1;
+				uint32 colclip:1;
+				// uint32 pabe:1;
+
+				// Others ways to fetch the texture
+				uint32 channel:3;
+
+				// Dithering
+				uint32 dither:2;
+
+				// Depth clamp
+				uint32 zclamp:1;
+
+				// Hack
+				uint32 tcoffsethack:1;
+				uint32 urban_chaos_hle:1;
+				uint32 tales_of_abyss_hle:1;
+				uint32 tex_is_fb:1; // Jak Shadows
+				uint32 automatic_lod:1;
+				uint32 manual_lod:1;
+				uint32 point_sampler:1;
+				uint32 invalid_tex0:1; // Lupin the 3rd
+
+				uint32 _free2:7;
+			};
+		};
+
+		constexpr PSSelector(): key(0) {}
+	};
+
+private:
 	id<MTLDevice> m_dev = nil;
 	id<MTLCommandQueue> m_queue = nil;
 	id<MTLCommandBuffer> m_cmdBuffer = nil;
@@ -119,9 +210,18 @@ class GSDeviceMTL final : public GSDevice
 	GSRenderPipelineMTL m_interlace[4];
 	GSRenderPipelineMTL m_merge[2];
 
+	id<MTLFunction> m_vs[1<<2];
+	std::unordered_map<uint64, id<MTLRenderPipelineState>> m_pipelines;
+
 	GSBufferPoolMTL m_osd_vertex_buffers;
 
 	std::unique_ptr<GSTexture> m_font;
+
+	id<MTLFunction> CompileVS(VSSelector sel);
+	id<MTLFunction> CompilePS(PSSelector sel);
+
+public:
+	id<MTLRenderPipelineState> GetPipeline(VSSelector vs, PSSelector ps);
 
 private:
 	id<MTLFunction> loadShader(NSString* name);

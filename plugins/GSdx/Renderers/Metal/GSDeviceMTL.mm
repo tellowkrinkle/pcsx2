@@ -82,7 +82,7 @@ id<MTLBuffer> GSBufferPoolMTL::getBuffer(id<MTLCommandBuffer> target, size_t siz
 GSRenderPipelineMTL::GSRenderPipelineMTL(NSString* name, id<MTLFunction> vs, id<MTLFunction> ps, bool targets_depth, bool is_opaque)
 	: m_targetsDepth(targets_depth), m_isOpaque(is_opaque)
 {
-	m_pipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+	m_pipelineDescriptor = [MTLRenderPipelineDescriptor new];
 	m_pipelineDescriptor.label = name;
 	m_pipelineDescriptor.vertexFunction = vs;
 	m_pipelineDescriptor.fragmentFunction = ps;
@@ -318,6 +318,13 @@ bool GSDeviceMTL::Create(const std::shared_ptr<GSWnd> &wnd)
 		}
 
 		m_convert[i] = GSRenderPipelineMTL(name, vs_convert, ps, /*targets_depth=*/depth, /*is_opaque=*/opaque);
+	}
+
+	for (size_t i = 0; i < countof(m_vs); i++)
+	{
+		VSSelector sel;
+		sel.key = i;
+		m_vs[i] = CompileVS(sel);
 	}
 
 	MTLSamplerDescriptor* sampler = [MTLSamplerDescriptor new];
@@ -769,6 +776,93 @@ void GSDeviceMTL::DoInterlace(GSTexture* sTex, GSTexture* dTex, int shader, bool
 	cb.hH = s.y / 2;
 
 	StretchRect(sTex, sRect, dTex, dRect, m_interlace[shader], linear, 0, MTLColorWriteMaskAll, &cb, sizeof(cb));
+}
+
+id<MTLFunction> GSDeviceMTL::CompileVS(VSSelector sel)
+{
+	NSError* err = nil;
+
+	auto constants = [MTLFunctionConstantValues new];
+	bool fst = sel.fst;
+	bool iip = sel.iip;
+	[constants setConstantValue:&fst type:MTLDataTypeBool atIndex:GSMTLConstantIndex_FST];
+	[constants setConstantValue:&iip type:MTLDataTypeBool atIndex:GSMTLConstantIndex_IIP];
+
+	id<MTLFunction> shader = [m_shaders newFunctionWithName:@"vs_main" constantValues:constants error:&err];
+	NSERROR_CHECK(err, @"Metal: Failed to create vertex shader with selector %x: %@", sel.key, err.localizedDescription);
+
+	return shader;
+}
+
+id<MTLFunction> GSDeviceMTL::CompilePS(PSSelector sel)
+{
+	auto constants = [MTLFunctionConstantValues new];
+	auto setI = [&](unsigned int value, GSMTLConstantIndex idx)
+	{
+		[constants setConstantValue:&value type:MTLDataTypeUInt atIndex:idx];
+	};
+	auto setB = [&](bool value, GSMTLConstantIndex idx)
+	{
+		[constants setConstantValue:&value type:MTLDataTypeBool atIndex:idx];
+	};
+
+	setI(sel.tex_fmt,   GSMTLConstantIndex_PS_TEX_FMT);
+	setI(sel.dfmt,      GSMTLConstantIndex_PS_DFMT);
+	setI(sel.depth_fmt, GSMTLConstantIndex_PS_DEPTH_FMT);
+	setB(sel.aem,       GSMTLConstantIndex_PS_AEM);
+	setB(sel.fba,       GSMTLConstantIndex_PS_FBA);
+	setB(sel.fog,       GSMTLConstantIndex_PS_FOG);
+	setB(sel.iip,       GSMTLConstantIndex_IIP);
+	setI(sel.date,      GSMTLConstantIndex_PS_DATE);
+	setI(sel.atst,      GSMTLConstantIndex_PS_ATST);
+	setB(sel.fst,       GSMTLConstantIndex_FST);
+	setI(sel.tfx,       GSMTLConstantIndex_PS_TFX);
+	setB(sel.tcc,       GSMTLConstantIndex_PS_TCC);
+	setI(sel.wms,       GSMTLConstantIndex_PS_WMS);
+	setI(sel.wmt,       GSMTLConstantIndex_PS_WMT);
+	setB(sel.ltf,       GSMTLConstantIndex_PS_LTF);
+	setB(sel.shuffle,   GSMTLConstantIndex_PS_SHUFFLE);
+	setB(sel.read_ba,   GSMTLConstantIndex_PS_READ_BA);
+	setB(sel.write_rg,  GSMTLConstantIndex_PS_WRITE_RG);
+	setB(sel.fbmask,    GSMTLConstantIndex_PS_FBMASK);
+	setI(sel.blend_a,   GSMTLConstantIndex_PS_BLEND_A);
+	setI(sel.blend_b,   GSMTLConstantIndex_PS_BLEND_B);
+	setI(sel.blend_c,   GSMTLConstantIndex_PS_BLEND_C);
+	setI(sel.blend_d,   GSMTLConstantIndex_PS_BLEND_D);
+	setB(sel.clr1,      GSMTLConstantIndex_PS_CLR1);
+	setB(sel.hdr,       GSMTLConstantIndex_PS_HDR);
+	setB(sel.colclip,   GSMTLConstantIndex_PS_COLCLIP);
+	setI(sel.channel,   GSMTLConstantIndex_PS_CHANNEL_FETCH);
+	setI(sel.dither,    GSMTLConstantIndex_PS_DITHER);
+	setB(sel.zclamp,    GSMTLConstantIndex_PS_ZCLAMP);
+
+	NSError* err = nil;
+	id<MTLFunction> shader = [m_shaders newFunctionWithName:@"ps_main" constantValues:constants error:&err];
+	NSERROR_CHECK(err, @"Metal: Failed to create fragment shader with selector %llx: %@", sel.key, err.localizedDescription);
+
+	return shader;
+}
+
+id<MTLRenderPipelineState> GSDeviceMTL::GetPipeline(VSSelector vs_sel, PSSelector ps_sel)
+{
+	auto idx = m_pipelines.find(ps_sel.key);
+	if (idx != m_pipelines.end())
+		return idx->second;
+
+	id<MTLFunction> vs = m_vs[vs_sel.key];
+	id<MTLFunction> ps = CompilePS(ps_sel);
+
+	auto desc = [MTLRenderPipelineDescriptor new];
+	desc.label = [NSString stringWithFormat:@"Main PS %llx", ps_sel.key];
+	desc.vertexFunction = vs;
+	desc.fragmentFunction = ps;
+	// TODO: Attachments
+
+	NSError* err = nil;
+	auto pipeline = [m_dev newRenderPipelineStateWithDescriptor:desc error:&err];
+	NSERROR_CHECK(err, @"Metal: Failed to create main shader pipeline with vs selector %x, ps selector %llx: %@", vs_sel.key, ps_sel.key, err.localizedDescription);
+
+	return pipeline;
 }
 
 uint16 GSDeviceMTL::ConvertBlendEnum(uint16 generic)
