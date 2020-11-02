@@ -85,6 +85,34 @@ bool GSTextureMTL::GetResetNeedsStencilClear(int& stencilOut)
 	return false;
 }
 
+void GSTextureMTL::ApplyColorLoadAction(MTLRenderPassDescriptor* desc, MTLLoadAction base)
+{
+	if (m_needs_color_clear)
+	{
+		m_needs_color_clear = false;
+		desc.colorAttachments[0].clearColor = MTLClearColorMake(m_clear_color.r, m_clear_color.g, m_clear_color.b, m_clear_color.a);
+		desc.colorAttachments[0].loadAction = MTLLoadActionClear;
+	}
+	else
+	{
+		desc.colorAttachments[0].loadAction = base;
+	}
+}
+
+void GSTextureMTL::ApplyDepthLoadAction(MTLRenderPassDescriptor* desc, MTLLoadAction base)
+{
+	if (m_needs_depth_clear)
+	{
+		m_needs_depth_clear = false;
+		desc.depthAttachment.clearDepth = m_clear_depth;
+		desc.depthAttachment.loadAction = MTLLoadActionClear;
+	}
+	else
+	{
+		desc.depthAttachment.loadAction = base;
+	}
+}
+
 bool GSTextureMTL::Update(const GSVector4i& r, const void* data, int pitch, int layer)
 {
 	if(layer >= m_max_layer)

@@ -8,11 +8,20 @@ enum GSMetalInputIndex
 	GSMTLIndexUniforms = 1,
 };
 
+enum GSMTLTextureIndex
+{
+	GSMTLTextureIndexTex = 0,
+	GSMTLTextureIndexPalette = 1,
+	GSMTLTextureIndexRenderTarget = 2,
+	GSMTLTextureIndexDepth = 3,
+};
+
 enum GSMTLConstantIndex
 {
 	GSMTLConstantIndex_FST = 1,
 	GSMTLConstantIndex_IIP,
 	//GSMTLConstantIndex_VS_TME,
+	GSMTLConstantIndex_PS_INTERLOCK,
 	GSMTLConstantIndex_PS_WMS,
 	GSMTLConstantIndex_PS_WMT,
 	GSMTLConstantIndex_PS_TEX_FMT,
@@ -90,20 +99,22 @@ struct GSMTLMainVSUniform
 	uint max_depth;
 };
 
-struct GSMTLMainFSUniform
+struct GSMTLMainPSUniform
 {
-	vector_float4 half_texel;
-	vector_float4 wh;
-	vector_float4 min_max;
-	vector_float4 min_f;
-	vector_float4 ta;
-	vector_uint4 msk_fix;
-	vector_int4 channel_shuffle;
-	vector_uint4 fb_mask;
-	vector_float4 tc_offset_hack;
 	vector_float3 fog_color;
+	vector_float4 wh;
+	vector_uint4 msk_fix;
+
+	vector_float4 half_texel;
+	vector_float4 min_max;
+	vector_float4 tc_oh_ts;
+
+	vector_float2 ta;
+
 	float aref;
-	float af;
 	float max_depth;
+	float alpha_fix;
+	uint fb_mask;
+
 	matrix_float4x4 dither_matrix;
 };

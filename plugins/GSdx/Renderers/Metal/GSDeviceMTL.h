@@ -188,11 +188,78 @@ public:
 				uint32 point_sampler:1;
 				uint32 invalid_tex0:1; // Lupin the 3rd
 
-				uint32 _free2:7;
+				uint32 sw_blend:1;
+				uint32 interlock:1;
+
+				uint32 _free2:6;
 			};
 		};
 
 		constexpr PSSelector(): key(0) {}
+	};
+
+	struct DepthSelector
+	{
+		union
+		{
+			uint32 key;
+			struct
+			{
+				uint32 ztst:2;
+				uint32 zwe:1;
+			};
+		};
+		constexpr DepthSelector(): key(0) {}
+	};
+
+	struct ColorMaskSelector
+	{
+		union
+		{
+			struct
+			{
+				uint32 wr:1;
+				uint32 wg:1;
+				uint32 wb:1;
+				uint32 wa:1;
+			};
+			struct
+			{
+				uint32 wrgba:4;
+			};
+		};
+		operator MTLColorWriteMask()
+		{
+			MTLColorWriteMask w = MTLColorWriteMaskNone;
+			if (wr) w |= MTLColorWriteMaskRed;
+			if (wg) w |= MTLColorWriteMaskGreen;
+			if (wb) w |= MTLColorWriteMaskBlue;
+			if (wa) w |= MTLColorWriteMaskAlpha;
+			return w;
+		}
+		constexpr ColorMaskSelector(): wrgba(0xF) {}
+		constexpr ColorMaskSelector(uint32 c): wrgba(c) {}
+	};
+
+	struct PSSamplerSelector
+	{
+		union
+		{
+			uint32 key;
+			struct
+			{
+				uint32 tau:1;
+				uint32 tav:1;
+				uint32 biln:1;
+				uint32 triln:3;
+				uint32 aniso:1;
+
+				uint32 _free:25;
+			};
+		};
+
+		constexpr PSSamplerSelector(): key(0) {}
+		constexpr PSSamplerSelector(uint32 k): key(k) {}
 	};
 
 private:
@@ -222,6 +289,8 @@ private:
 
 public:
 	id<MTLRenderPipelineState> GetPipeline(VSSelector vs, PSSelector ps);
+	id<MTLCommandBuffer> CmdBuffer() { return m_cmdBuffer; }
+	id<MTLDevice> MTLDevice() { return m_dev; }
 
 private:
 	id<MTLFunction> loadShader(NSString* name);

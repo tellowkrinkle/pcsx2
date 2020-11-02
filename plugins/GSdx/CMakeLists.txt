@@ -216,6 +216,7 @@ if(Windows)
 elseif(APPLE)
     LIST(APPEND GSdxSources
         Renderers/Metal/GSDeviceMTL.mm
+        Renderers/Metal/GSRendererMTL.mm
         Renderers/Metal/GSTextureMTL.mm
         Window/GSLinuxDialog.cpp
         Window/GSWndCGL.mm
@@ -225,6 +226,7 @@ elseif(APPLE)
     LIST(APPEND GSdxHeaders
         Renderers/Metal/GSDeviceMTL.h
         Renderers/Metal/GSMetalShims.h
+        Renderers/Metal/GSRendererMTL.h
         Renderers/Metal/GSTextureMTL.h
         Window/GSWndCGL.h
         Window/GSWndCGLShim.h

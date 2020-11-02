@@ -5,6 +5,7 @@ using namespace metal;
 constant bool FST [[function_constant(GSMTLConstantIndex_FST)]];
 constant bool IIP [[function_constant(GSMTLConstantIndex_IIP)]];
 //constant bool VS_TME [[function_constant(GSMTLConstantIndex_VS_TME)]];
+constant bool PS_INTERLOCK [[function_constant(GSMTLConstantIndex_PS_INTERLOCK)]];
 constant uint PS_WMS [[function_constant(GSMTLConstantIndex_PS_WMS)]];
 constant uint PS_WMT [[function_constant(GSMTLConstantIndex_PS_WMT)]];
 constant uint PS_TEX_FMT [[function_constant(GSMTLConstantIndex_PS_TEX_FMT)]];
@@ -40,6 +41,7 @@ constant uint PS_BLEND_D [[function_constant(GSMTLConstantIndex_PS_BLEND_D)]];
 constant uint PS_DITHER [[function_constant(GSMTLConstantIndex_PS_DITHER)]];
 constant bool PS_ZCLAMP [[function_constant(GSMTLConstantIndex_PS_ZCLAMP)]];
 
+constant bool SW_BLEND = (PS_BLEND_A || PS_BLEND_B || PS_BLEND_D);
 constant bool NOT_IIP = !IIP;
 
 constant float exp_min32 = 0x1p-32;
@@ -124,7 +126,7 @@ constexpr sampler palette_sampler(filter::nearest, address::clamp_to_edge);
 
 struct PSAll {
 	thread const GSMTLMainVSOut& data;
-	constant GSMTLMainFSUniform& cb;
+	constant GSMTLMainPSUniform& cb;
 	sampler texture_sampler;
 };
 

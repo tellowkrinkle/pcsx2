@@ -58,6 +58,11 @@ public:
 	/// Reads whether a stencil clear was requested, then clears the request
 	bool GetResetNeedsStencilClear(int& stencilOut);
 
+	/// Applies a clear load action if necessary, otherwise `base`, to desc's first color attachment, then resets the clear request
+	void ApplyColorLoadAction(MTLRenderPassDescriptor* desc, MTLLoadAction base);
+	/// Applies a clear load action if necessary, otherwise `base`, to desc's depth attachment, then resets the clear request
+	void ApplyDepthLoadAction(MTLRenderPassDescriptor* desc, MTLLoadAction base);
+
 	GSTextureMTL(id<MTLTexture> texture, Type type);
 	~GSTextureMTL();
 

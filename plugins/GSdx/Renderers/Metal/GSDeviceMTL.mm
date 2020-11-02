@@ -150,13 +150,15 @@ void GSRenderPipelineMTL::SetBlend(GSDevice& dev, uint8 index, uint8 factor, boo
 	{
 		bool needs_update = m_currentBlendIndex != index;
 		needs_update |= accumulation_blend != m_currentIsAccumulation;
-		needs_update |= (is_constant && m_currentBlendFactor != factor);
+		if (is_constant)
+			m_currentBlendFactor = factor;
+		else
+			m_currentBlendFactor = 0;
 		if (!needs_update)
 			return;
 
 		invalidateCachedPipeline();
 		m_currentIsAccumulation = accumulation_blend;
-		m_currentBlendFactor = factor;
 		m_currentBlendIndex = index;
 
 		HWBlend b = dev.GetBlend(index);
@@ -190,7 +192,13 @@ void GSRenderPipelineMTL::SetColorMask(MTLColorWriteMask mask)
 
 id<MTLRenderCommandEncoder> GSRenderPipelineMTL::CreateCommandEncoder(id<MTLCommandBuffer> buffer)
 {
-	return [buffer renderCommandEncoderWithDescriptor:m_renderDescriptor];
+	auto enc =  [buffer renderCommandEncoderWithDescriptor:m_renderDescriptor];
+	if (m_currentBlendFactor)
+	{
+		float f = m_currentBlendFactor / 128.f;
+		[enc setBlendColorRed:f green:f blue:f alpha:f];
+	}
+	return enc;
 }
 
 id<MTLRenderPipelineState> GSRenderPipelineMTL::Pipeline(id<MTLDevice> dev)
@@ -835,6 +843,7 @@ id<MTLFunction> GSDeviceMTL::CompilePS(PSSelector sel)
 	setI(sel.channel,   GSMTLConstantIndex_PS_CHANNEL_FETCH);
 	setI(sel.dither,    GSMTLConstantIndex_PS_DITHER);
 	setB(sel.zclamp,    GSMTLConstantIndex_PS_ZCLAMP);
+	setB(sel.interlock, GSMTLConstantIndex_PS_INTERLOCK);
 
 	NSError* err = nil;
 	id<MTLFunction> shader = [m_shaders newFunctionWithName:@"ps_main" constantValues:constants error:&err];
@@ -849,8 +858,18 @@ id<MTLRenderPipelineState> GSDeviceMTL::GetPipeline(VSSelector vs_sel, PSSelecto
 	if (idx != m_pipelines.end())
 		return idx->second;
 
+	PSSelector ps_sel_actual;
+
+	if (!ps_sel.sw_blend)
+	{
+		ps_sel_actual.blend_a = 0;
+		ps_sel_actual.blend_b = 0;
+		ps_sel_actual.blend_c = 0;
+		ps_sel_actual.blend_d = 0;
+	}
+
 	id<MTLFunction> vs = m_vs[vs_sel.key];
-	id<MTLFunction> ps = CompilePS(ps_sel);
+	id<MTLFunction> ps = CompilePS(ps_sel_actual);
 
 	auto desc = [MTLRenderPipelineDescriptor new];
 	desc.label = [NSString stringWithFormat:@"Main PS %llx", ps_sel.key];
@@ -861,6 +880,8 @@ id<MTLRenderPipelineState> GSDeviceMTL::GetPipeline(VSSelector vs_sel, PSSelecto
 	NSError* err = nil;
 	auto pipeline = [m_dev newRenderPipelineStateWithDescriptor:desc error:&err];
 	NSERROR_CHECK(err, @"Metal: Failed to create main shader pipeline with vs selector %x, ps selector %llx: %@", vs_sel.key, ps_sel.key, err.localizedDescription);
+
+	m_pipelines[ps_sel.key] = pipeline;
 
 	return pipeline;
 }
