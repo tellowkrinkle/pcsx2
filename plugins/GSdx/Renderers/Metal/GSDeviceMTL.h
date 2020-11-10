@@ -36,6 +36,7 @@
 #include <vector>
 #include <unordered_map>
 #include "res/metal/uniforms.h"
+#include "GSRingBufferMTL.h"
 
 class GSScopedDebugGroupMTL
 {
@@ -280,7 +281,7 @@ private:
 	id<MTLFunction> m_vs[1<<2];
 	std::unordered_map<uint64, id<MTLRenderPipelineState>> m_pipelines;
 
-	GSBufferPoolMTL m_osd_vertex_buffers;
+	GSRingBufferMTL m_main_buffer;
 
 	std::unique_ptr<GSTexture> m_font;
 
@@ -291,6 +292,7 @@ public:
 	id<MTLRenderPipelineState> GetPipeline(VSSelector vs, PSSelector ps);
 	id<MTLCommandBuffer> CmdBuffer() { return m_cmdBuffer; }
 	id<MTLDevice> MTLDevice() { return m_dev; }
+	GSRingBufferMTL& MainBuffer() { return m_main_buffer; }
 
 private:
 	id<MTLFunction> loadShader(NSString* name);

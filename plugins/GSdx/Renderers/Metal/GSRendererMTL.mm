@@ -592,6 +592,7 @@ void GSRendererMTL::SendDraw(GSTextureMTL* rt, GSTextureMTL* ds, GSTextureCache:
 	id<MTLRenderCommandEncoder> enc;
 	if (m_sel.ps.interlock)
 	{
+		// TODO: Color clear
 		if (ds)
 		{
 			m_rdesc_interlock.colorAttachments[0].texture = nil;
@@ -647,9 +648,26 @@ void GSRendererMTL::SendDraw(GSTextureMTL* rt, GSTextureMTL* ds, GSTextureCache:
 		[enc setFragmentTexture:ds->GetTexture() atIndex:GSMTLTextureIndexDepth];
 	if (tex)
 	{
-		[enc setFragmentTexture:static_cast<GSTextureMTL*>(tex->m_texture)->GetTexture() atIndex:GSMTLTextureIndexTex];
-		[enc setFragmentTexture:static_cast<GSTextureMTL*>(tex->m_palette)->GetTexture() atIndex:GSMTLTextureIndexPalette];
+		[enc setFragmentTexture:static_cast<GSTextureMTL*>(tex->m_texture)->GetTexture()
+		                atIndex:GSMTLTextureIndexTex];
+		[enc setFragmentTexture:static_cast<GSTextureMTL*>(tex->m_palette)->GetTexture()
+		                atIndex:GSMTLTextureIndexPalette];
 	}
+
+	size_t vb_size = m_vertex.next * sizeof(*m_vertex.buff);
+	size_t ib_size = m_index.tail * sizeof(*m_index.buff);
+	static_assert(sizeof(GSVertex) == sizeof(GSMTLMainVertex), "These need to have the same layout");
+	void* buf = dev->MainBuffer().Map(cmdbuf, vb_size + ib_size);
+	memcpy(buf, m_vertex.buff, vb_size);
+	memcpy((void*)(ib_size + (uptr)buf), m_index.buff, ib_size);
+	auto data = dev->MainBuffer().Unmap();
+
+	[enc setVertexBuffer:data.first offset:data.second atIndex:GSMTLIndexVertices];
+	[enc drawIndexedPrimitives:m_primclass
+	                indexCount:m_index.tail
+	                 indexType:MTLIndexTypeUInt32
+	               indexBuffer:data.first
+	         indexBufferOffset:data.second + vb_size];
 }
 
 #endif

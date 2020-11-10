@@ -698,21 +698,20 @@ void GSDeviceMTL::RenderOsd(GSTexture* dt)
 	GSVertexPT1 tmp[count];
 	m_osd.GeneratePrimitives(tmp, count);
 	size_t len = sizeof(ConvertShaderVertex) * count;
-	id<MTLBuffer> verts = m_osd_vertex_buffers.getBuffer(m_cmdBuffer, len);
-	ConvertShaderVertex* vptr = static_cast<ConvertShaderVertex*>(verts.contents);
+	ConvertShaderVertex* vptr = static_cast<ConvertShaderVertex*>(m_main_buffer.Map(m_cmdBuffer, len));
 	for (size_t i = 0; i < count; i++)
 	{
 		const auto& src = tmp[i];
 		vptr[i] = { {src.p.x, src.p.y}, {src.t.x, src.t.y}, {src.r, src.g, src.b, src.a} };
 	}
-	[verts didModifyRange:NSMakeRange(0, len)];
+	auto verts = m_main_buffer.Unmap();
 
 	auto encoder = pipeline.CreateCommandEncoder(m_cmdBuffer);
 	encoder.label = @"RenderOSD";
 	[encoder setRenderPipelineState:pipeline.Pipeline(m_dev)];
 	[encoder setFragmentTexture:static_cast<GSTextureMTL*>(&*m_font)->GetTexture() atIndex:0];
 
-	[encoder setVertexBuffer:verts offset:0 atIndex:GSMTLIndexVertices];
+	[encoder setVertexBuffer:verts.first offset:verts.second atIndex:GSMTLIndexVertices];
 
 	[encoder setFragmentSamplerState:m_sampler_pt atIndex:0];
 
@@ -838,7 +837,6 @@ id<MTLFunction> GSDeviceMTL::CompilePS(PSSelector sel)
 	setI(sel.blend_c,   GSMTLConstantIndex_PS_BLEND_C);
 	setI(sel.blend_d,   GSMTLConstantIndex_PS_BLEND_D);
 	setB(sel.clr1,      GSMTLConstantIndex_PS_CLR1);
-	setB(sel.hdr,       GSMTLConstantIndex_PS_HDR);
 	setB(sel.colclip,   GSMTLConstantIndex_PS_COLCLIP);
 	setI(sel.channel,   GSMTLConstantIndex_PS_CHANNEL_FETCH);
 	setI(sel.dither,    GSMTLConstantIndex_PS_DITHER);
