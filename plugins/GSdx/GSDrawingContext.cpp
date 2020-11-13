@@ -23,10 +23,15 @@
 #include "GSDrawingContext.h"
 #include "GSdx.h"
 
+/// Find the maximum possible texcoord
+/// @param tl low coord (top/left)
+/// @param br high coord (bottom/right)
+/// @param limit width/height of texture - 1
+/// @param wm clamp mode (wms/wmt)
+/// @param minuv MINU/MINV register (clamp lower limit / repeat mask)
+/// @param maxuv MAXU/MAXV register (clamp upper limit / repeat fix)
 static int findmax(int tl, int br, int limit, int wm, int minuv, int maxuv)
 {
-	// return max possible texcoord
-
 	int uv = br;
 
 	if(wm == CLAMP_CLAMP)
