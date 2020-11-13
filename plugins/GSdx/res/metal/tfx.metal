@@ -50,12 +50,9 @@ constant uint PS_AEM_FMT = PS_TEX_FMT & 3;
 constant bool PS_AUTOMATIC_LOD = true;
 constant bool PS_MANUAL_LOD = false;
 
-enum FMT
-{
-	FMT_32 = 0,
-	FMT_24 = 1,
-	FMT_16 = 2,
-};
+constant uint FMT_32 = 0;
+constant uint FMT_24 = 1;
+constant uint FMT_16 = 2;
 
 constant float exp_min32 = 0x1p-32;
 
@@ -65,14 +62,14 @@ struct GSMTLMainVSOut
 	float4 t;
 	float4 ti;
 	float4 c [[function_constant(IIP)]];
-	uchar4 fc [[flat, function_constant(NOT_IIP)]];
+	float4 fc [[flat, function_constant(NOT_IIP)]];
 };
 
 struct GSMTLMainPSOut
 {
 	float4 c0 [[color(0), index(0)]];
 	float4 c1 [[color(0), index(1)]];
-	float depth [[depth(any), function_constant(PS_ZCLAMP)]];
+	float depth [[depth(less), function_constant(PS_ZCLAMP)]];
 };
 
 // MARK: - Vertex Shader
@@ -124,11 +121,11 @@ vertex GSMTLMainVSOut vs_main(
 	texture_coord(out, v, cb);
 
 	if (IIP)
-		out.c = float4(v.c) / 255.f;
+		out.c = float4(v.c) + 0.5f;
 	else
-		out.fc = v.c;
+		out.fc = float4(v.c);
 
-	out.t.z = float(v.f) / 255.f; // pack for with texture
+	out.t.z = float(v.f) / 255.f; // pack fog with texture
 
 	return out;
 }
@@ -298,7 +295,7 @@ struct PSMain
 	}
 
 	[[gnu::always_inline]]
-	uchar4 sample_color(float2 st)
+	float4 sample_color(float2 st)
 	{
 		float4 t;
 		float4x4 c;
@@ -342,26 +339,26 @@ struct PSMain
 		else
 			t = c[0];
 
-		return uchar4(t * 255.f + 0.05f);
+		return trunc(t * 255.f + 0.05f);
 	}
 
 	[[gnu::always_inline]]
-	uchar4 tfx(uchar4 T, uchar4 C)
+	float4 tfx(float4 T, float4 C)
 	{
-		ushort4 FxT = ushort4(C) * ushort4(T) >> 7;
-		ushort4 C_out;
+		float4 FxT = trunc(C * T / 128.f);
+		float4 C_out;
 		switch (PS_TFX)
 		{
 			case 0:
 				C_out = FxT;
 			case 1:
-				C_out = ushort4(T);
+				C_out = T;
 			case 2:
-				C_out = ushort4(FxT.rgb, T.a) + C.a;
+				C_out = float4(FxT.rgb, T.a) + C.a;
 			case 3:
-				C_out = ushort4(FxT.rgb + C.a, T.a);
+				C_out = float4(FxT.rgb + C.a, T.a);
 			default:
-				C_out = ushort4(C);
+				C_out = C;
 		}
 
 		if (!PS_TCC)
@@ -370,21 +367,21 @@ struct PSMain
 		if (PS_TFX == 0 || PS_TFX == 2 || PS_TFX == 3)
 		{
 			// Clamp only when it is useful
-			C_out = min(C_out, 255);
+			C_out = min(C_out, 255.f);
 		}
 
-		return uchar4(C_out);
+		return C_out;
 	}
 
 	[[gnu::always_inline]]
-	void fog(thread uchar4& C, uchar f)
+	void fog(thread float4& C, float f)
 	{
 		if (PS_FOG)
-			C.rgb = mulhi(C.rgb, f) + mulhi(uchar3(cb.fog_color), 0xFF - f);
+			C.rgb = trunc(mix(C.rgb, cb.fog_color, f));
 	}
 
 	[[gnu::always_inline]]
-	uchar4 sample_depth(float2 st_int)
+	float4 sample_depth(float2 st_int)
 	{
 		
 	}
@@ -407,11 +404,11 @@ struct PSMain
 		else
 		{
 			// Note xy are normalized coordinate
-			st = in.t.xy;
+			st = in.ti.xy;
 			st_int = in.ti.zw;
 		}
 
-		uchar4 T, C;
+		float4 T, C;
 
 		if (PS_DEPTH_FMT)
 		{
@@ -424,16 +421,16 @@ struct PSMain
 
 		if (IIP)
 		{
-			C = tfx(T, uchar4(in.c * 255.f + 0.5f));
+			C = tfx(T, trunc(in.c));
 		}
 		else
 		{
 			C = tfx(T, in.fc);
 		}
 
-		fog(C, uchar(in.t.z * 255.f));
+		fog(C, in.t.z);
 
-		return C;
+		return uchar4(C);
 	}
 
 	[[gnu::always_inline]]

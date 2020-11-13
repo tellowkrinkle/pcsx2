@@ -102,6 +102,7 @@ struct GSMTLMainVSUniform
 struct GSMTLMainPSUniform
 {
 	vector_float3 fog_color;
+	/// xy => PS2, zw => actual (upscaled)
 	vector_float4 wh;
 	vector_uint4 msk_fix;
 

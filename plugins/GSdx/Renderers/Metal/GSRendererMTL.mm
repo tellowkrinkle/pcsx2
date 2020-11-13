@@ -414,6 +414,7 @@ void GSRendererMTL::EmulateTextureSampler(const GSTextureCache::Source* tex)
 
 	m_ps_cb.wh = simd_make_float4(tw, th, w, h);
 	m_ps_cb.half_texel = simd_make_float2(-0.5f, 0.5f).xxyy / m_ps_cb.wh.zwzw;
+	m_vs_cb.texture_scale = (1/16.f) / m_ps_cb.wh.xy;
 
 	if (complex_wms_wmt)
 	{
