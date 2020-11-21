@@ -192,11 +192,9 @@ void GSVertexTrace::FindMinMax(const void* vertex, const uint32* index, int v_co
 
 	const GSVertex* RESTRICT v = (GSVertex*)vertex;
 
-	for(int i = 0; i < (v_count - 1); i += 2) // 2x loop unroll
+	// Process 2 vertices at a time for increased efficiency
+	auto processVertices = [&](const GSVertex& v0, const GSVertex& v1)
 	{
-		const GSVertex& v0 = v[i + 0];
-		const GSVertex& v1 = v[i + 1];
-
 		if (color)
 		{
 			GSVector4i c0 = GSVector4i::load(v0.RGBAQ.u32[0]);
@@ -229,6 +227,10 @@ void GSVertexTrace::FindMinMax(const void* vertex, const uint32* index, int v_co
 				else
 					q = stq0.wwww(stq1);
 
+				// Note: If in the future this is changed in a way that causes parts of calculations to go unused,
+				//       make sure to remove the z (rgba) field as it's often denormal.
+				//       Then, use GSVector4::noopt() to prevent clang from optimizing out your "useless" shuffle
+				//       e.g. stq = (stq.xyww() / stq.wwww()).noopt().xyww(stq);
 				GSVector4 st = stq0.xyxy(stq1) / q;
 
 				stq0 = st.xyww(primclass == GS_SPRITE_CLASS ? stq1 : stq0);
@@ -275,78 +277,25 @@ void GSVertexTrace::FindMinMax(const void* vertex, const uint32* index, int v_co
 		pmax = pmax.max(p0.max(p1));
 
 		#endif
+	};
+
+	for(int i = 0; i < (v_count - 1); i += 2) // 2x loop unroll
+	{
+		processVertices(v[i + 0], v[i + 1]);
 	}
 
 	if ((v_count & 1) && (primclass != GS_SPRITE_CLASS)) // Last item from unrolled loop
 	{
 		const GSVertex& last = v[v_count - 1];
-		GSVector4i c(last.m[0]);
-
-		if (color)
-		{
-			// !iip needs indices on non-point, so do it separately
-			if (iip || primclass == GS_POINT_CLASS)
-			{
-				cmin = cmin.min_u8(c);
-				cmax = cmax.max_u8(c);
-			}
-		}
-
-		if (tme)
-		{
-			if (!fst)
-			{
-				GSVector4 stq = GSVector4::cast(c);
-
-				stq = (stq.xyww() / stq.wwww()).noopt().xyww(stq);
-
-				tmin = tmin.min(stq);
-				tmax = tmax.max(stq);
-			}
-			else
-			{
-				GSVector4i uv(last.m[1]);
-
-				GSVector4 st = GSVector4(uv.uph16()).xyxy();
-
-				tmin = tmin.min(st);
-				tmax = tmax.max(st);
-			}
-		}
-
-		GSVector4i xyzf(last.m[1]);
-
-		GSVector4i xy = xyzf.upl16();
-		GSVector4i z = xyzf.yyyy();
-
-		#if _M_SSE >= 0x401
-
-		GSVector4i p = xy.blend16<0xf0>(z.uph32(xyzf));
-
-		pmin = pmin.min_u32(p);
-		pmax = pmax.max_u32(p);
-
-		#else
-
-		GSVector4 p = GSVector4(xy.upl64(z.srl32(1).upl32(xyzf.wwww())));
-
-		pmin = pmin.min(p);
-		pmax = pmax.max(p);
-
-		#endif
+		// Compiler optimizations go!
+		// (And if they don't, it's only one vertex out of many)
+		processVertices(last, last);
 	}
 
 	if (color && !iip && primclass != GS_POINT_CLASS && primclass != GS_SPRITE_CLASS)
 	{
-		int i = n - 1; // Only min/max final vertices
-		for (; i < (i_count - n); i += n * 2) // 2x loop unroll
-		{
-			GSVector4i c0 = GSVector4i::load(v[index[i + 0]].RGBAQ.u32[0]);
-			GSVector4i c1 = GSVector4i::load(v[index[i + n]].RGBAQ.u32[0]);
-			cmin = cmin.min_u8(c0.min_u8(c1));
-			cmax = cmax.max_u8(c0.max_u8(c1));
-		}
-		if (i < i_count) // Last item from unrolled loop
+		// Only min/max final vertices
+		for (int i = n - 1; i < i_count; i += n)
 		{
 			GSVector4i c = GSVector4i::load(v[index[i]].RGBAQ.u32[0]);
 			cmin = cmin.min_u8(c);
