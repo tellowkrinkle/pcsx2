@@ -4,8 +4,6 @@ name: MacOS Build
 # events but only for the master branch
 on:
   push:
-    branches:
-      - master
     paths-ignore:
       - .gitignore
       - "**/*.md"
@@ -14,8 +12,6 @@ on:
       - bin/PCSX2_keys.ini.default
       - "pcsx2/PAD/Windows/**"
   pull_request:
-    branches:
-      - master
     paths-ignore:
       - .gitignore
       - "**/*.md"
