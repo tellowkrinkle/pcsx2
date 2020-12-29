@@ -36,6 +36,7 @@ class GSWndMTL final : public GSWnd
 	NSWindow* m_NativeWindow;
 	NSView* m_view;
 	CAMetalLayer* m_layer;
+	id<CALayerDelegate> m_layer_delegate;
 
 	void InitLayer();
 

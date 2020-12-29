@@ -35,6 +35,7 @@ class GSWndCGL final : public GSWndGL
 	NSWindow* m_NativeWindow;
 	NSOpenGLView* m_view;
 	CGLContextObj m_context;
+	CALayer* m_layer;
 
 	virtual void PopulateWndGlFunction() override;
 	virtual void CreateContext(int major, int minor) override;

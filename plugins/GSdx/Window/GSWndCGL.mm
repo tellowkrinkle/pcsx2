@@ -113,6 +113,7 @@ void GSWndCGL::Detach()
 	dispatch_sync(dispatch_get_main_queue(), [&]{
 		[m_view removeFromSuperview];
 	});
+	m_layer = nil;
 	m_view = nil;
 	m_NativeWindow = nil;
 }
@@ -168,11 +169,15 @@ void* GSWndCGL::GetDisplay()
 
 GSVector4i GSWndCGL::GetClientRect()
 {
-	NSRect rect;
-	dispatch_sync(dispatch_get_main_queue(), [&]{
-		rect = [m_view convertRectToBacking:[m_view frame]];
-	});
-	return GSVector4i(rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
+	if (!m_layer)
+		dispatch_sync(dispatch_get_main_queue(), [&]{ m_layer = [m_view layer]; });
+	NSRect rect = [m_layer bounds];
+	CGFloat scale = [m_layer contentsScale];
+	return GSVector4i(
+		scale * rect.origin.x,
+		scale * rect.origin.y,
+		scale * rect.size.width,
+		scale * rect.size.height);
 }
 
 bool GSWndCGL::SetWindowText(const char* title)

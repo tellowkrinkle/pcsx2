@@ -39,6 +39,17 @@ GSWndMTL::~GSWndMTL()
 {
 }
 
+@interface GSMTLLayerDelegate : NSObject<CALayerDelegate>
+- (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window;
+@end
+
+@implementation GSMTLLayerDelegate
+- (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window
+{
+	return YES;
+}
+@end
+
 void GSWndMTL::InitLayer()
 {
 	if (!m_NativeWindow)
@@ -47,7 +58,9 @@ void GSWndMTL::InitLayer()
 	dispatch_sync(dispatch_get_main_queue(), [&]{
 		NSView* contentView = [m_NativeWindow contentView];
 		m_view = [[NSView alloc] initWithFrame:[contentView frame]];
+		m_layer_delegate = [[GSMTLLayerDelegate alloc] init];
 		m_layer = [CAMetalLayer layer];
+		[m_layer setDelegate:m_layer_delegate];
 
 		[m_view setWantsLayer:YES];
 		[m_view setLayer:m_layer];
@@ -117,11 +130,14 @@ void* GSWndMTL::GetDisplay()
 
 GSVector4i GSWndMTL::GetClientRect()
 {
-	NSRect rect;
-	dispatch_sync(dispatch_get_main_queue(), [&]{
-		rect = [m_view convertRectToBacking:[m_view frame]];
-	});
-	return GSVector4i(rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
+
+	NSRect rect = [m_layer bounds];
+	CGFloat scale = [m_layer contentsScale];
+	return GSVector4i(
+		scale * rect.origin.x,
+		scale * rect.origin.y,
+		scale * rect.size.width,
+		scale * rect.size.height);
 }
 
 bool GSWndMTL::SetWindowText(const char* title)
