@@ -30,10 +30,22 @@
 
 #include <AppKit/AppKit.h>
 
+@interface GSWndCGLView : NSOpenGLView
+{
+	std::mutex _mutex;
+	NSRect _rect;
+}
+
+- (instancetype)initWithFrame:(NSRect)frameRect pixelFormat:(NSOpenGLPixelFormat *)format;
+- (void)update;
+- (NSRect)rect;
+
+@end
+
 class GSWndCGL final : public GSWndGL
 {
 	NSWindow* m_NativeWindow;
-	NSOpenGLView* m_view;
+	GSWndCGLView* m_view;
 	CGLContextObj m_context;
 
 	virtual void PopulateWndGlFunction() override;

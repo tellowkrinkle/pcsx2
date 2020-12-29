@@ -31,6 +31,33 @@
 #include <dlfcn.h>
 #include <dispatch/dispatch.h>
 
+@implementation GSWndCGLView
+
+- (instancetype)initWithFrame:(NSRect)frameRect pixelFormat:(NSOpenGLPixelFormat *)format
+{
+	self = [super initWithFrame:frameRect pixelFormat:format];
+	if (self != nil)
+	{
+		_rect = [self convertRectToBacking:[self frame]];
+	}
+	return self;
+}
+
+- (void)update
+{
+	[super update];
+	std::lock_guard<std::mutex> l(_mutex);
+	_rect = [self convertRectToBacking:[self frame]];
+}
+
+- (NSRect)rect
+{
+	std::lock_guard<std::mutex> l(_mutex);
+	return _rect;
+}
+
+@end
+
 std::shared_ptr<GSWndGL> makeGSWndCGL()
 {
 	return std::make_shared<GSWndCGL>();
@@ -62,7 +89,7 @@ void GSWndCGL::CreateContext(int major, int minor)
 	dispatch_sync(dispatch_get_main_queue(), [&]{
 		NSOpenGLPixelFormat *pxformat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
 
-		m_view = [[NSOpenGLView alloc] initWithFrame:[[m_NativeWindow contentView] frame] pixelFormat:pxformat];
+		m_view = [[GSWndCGLView alloc] initWithFrame:[[m_NativeWindow contentView] frame] pixelFormat:pxformat];
 		[m_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
 		// Note: Don't replace the window's contentView because this window might be from wx, in which case replacing its contentView would break wx things
 		[[m_NativeWindow contentView] addSubview:m_view];
@@ -168,10 +195,7 @@ void* GSWndCGL::GetDisplay()
 
 GSVector4i GSWndCGL::GetClientRect()
 {
-	NSRect rect;
-	dispatch_sync(dispatch_get_main_queue(), [&]{
-		rect = [m_view convertRectToBacking:[m_view frame]];
-	});
+	NSRect rect = [m_view rect];
 	return GSVector4i(rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
 }
 
