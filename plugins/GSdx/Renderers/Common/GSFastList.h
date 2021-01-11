@@ -22,6 +22,9 @@
 
 #pragma once
 
+#include <cstdint>
+#include <type_traits>
+
 template <class T>
 struct Element {
 	T  data;
@@ -273,5 +276,107 @@ public:
 
 	__forceinline uint16 Index() const {
 		return m_index;
+	}
+};
+
+/// A vector that stores up to `SmallLen` elements inline
+template <class T, size_t SmallLen>
+class SmallVector
+{
+	uint32_t size, capacity;
+	union
+	{
+		T* large;
+		std::aligned_storage<SmallLen * sizeof(T), alignof(T)> small;
+	};
+
+public:
+	// Implement copy/move constructor later if needed
+	SmallVector(SmallVector&&) = delete;
+
+	constexpr SmallVector(): size(0), capacity(SmallLen) {}
+
+	~SmallVector() {
+		for (T& value : *this)
+			value.~T();
+		if (capacity != SmallLen)
+			_aligned_free(large);
+	}
+
+	/// Is the SmallVector using inline storage?
+	bool isSmall() const { return capacity == SmallLen; }
+
+	/// Get data pointer
+	T* data()
+	{
+		if (isSmall())
+			return reinterpret_cast<T*>(&small);
+		else
+			return large;
+	}
+
+	/// Get data pointer
+	const T* data() const
+	{
+		if (isSmall())
+			return reinterpret_cast<const T*>(&small);
+		else
+			return large;
+	}
+
+	void push_back(T t)
+	{
+		emplace_back(std::move(t));
+	}
+
+	template <typename... Args>
+	void emplace_back(Args&&... args)
+	{
+		if (size == capacity)
+			growStorage(capacity * 2);
+		new (end()) T(std::forward<Args>(args)...);
+		size++;
+	}
+
+	void clear(bool retainingCapacity = true)
+	{
+		for (T& element : *this)
+			element.~T();
+		size = 0;
+		if (!retainingCapacity && !isSmall())
+		{
+			_aligned_free(large);
+			capacity = SmallLen;
+		}
+	}
+
+	T&       operator[](std::size_t i)       { return data()[i]; }
+	const T& operator[](std::size_t i) const { return data()[i]; }
+	T*       begin()       { return data(); }
+	const T* begin() const { return data(); }
+	T*       end()         { return data() + size; }
+	const T* end()   const { return data() + size; }
+
+private:
+	void growStorage(size_t newCap)
+	{
+		T* newStorage = static_cast<T*>(_aligned_malloc(newCap, alignof(T)));
+		if (std::is_pod<T>::value)
+		{
+			memcpy(newStorage, data(), sizeof(T) * size);
+		}
+		else
+		{
+			for (uint32_t i = 0; i < size; i++)
+			{
+				// Not dealing with exception safety
+				new (newStorage + i) T(std::move(data()[i]));
+				data()[i].~T();
+			}
+		}
+		if (!isSmall())
+			_aligned_free(large);
+		large = newStorage;
+		capacity = newCap;
 	}
 };
