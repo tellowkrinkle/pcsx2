@@ -27,6 +27,158 @@
 bool GSTextureCache::m_disable_partial_invalidation = false;
 bool GSTextureCache::m_wrap_gs_mem = false;
 
+GSTextureCacheNew::Surface::~Surface()
+{
+	m_renderer->m_dev->Recycle(m_texture);
+}
+
+GSTextureCacheNew::GSTextureCacheNew(GSRenderer* r)
+	: m_renderer(r), m_device(r->m_dev)
+{
+	for (EntryList& entry : m_lm)
+	{
+		entry.entries.clear();
+		entry.is_cleared = true;
+		entry.clear_psm = PSM_PSMCT32;
+		entry.clear_color = 0;
+	}
+}
+
+GSTextureCacheNew::~GSTextureCacheNew()
+{
+}
+
+GSTexture& GSTextureCacheNew::GetSource(int tw, int th, int tbp0, GS_PSM psm)
+{
+	return ForceOffsetTo00(GetSourceWithOffset(tw, th, tbp0, psm), tw, th, tbp0);
+}
+
+GSTexture& GSTextureCacheNew::GetTarget(int tw, int th, int tbp0, GS_PSM psm)
+{
+	return ForceOffsetTo00(GetTargetWithOffset(tw, th, tbp0, psm), tw, th, tbp0);
+}
+
+GSTextureCacheNew::TextureWithOffset GSTextureCacheNew::GetSourceWithOffset(int tw, int th, int tbp0, GS_PSM psm)
+{
+	const GSLocalMemory::psm_t& psm_s = GSLocalMemory::m_psm[psm];
+	Entry* e = SearchSurface(tw, th, tbp0, psm);
+	if (!e)
+	{
+		uint32_t color = m_lm[tbp0].clear_color;
+		GSTexture* newTex = nullptr;
+		m_device->ResizeTexture(&newTex, psm, <#int w#>, <#int h#>);
+		if (Scan(tw, th, tbp0, [&](EntryList& e){ e.is_cleared && e.clear_color == color; }))
+		{
+
+		}
+	}
+	abort(); // TODO: Implement
+}
+
+GSTextureCacheNew::TextureWithOffset GSTextureCacheNew::GetTargetWithOffset(int tw, int th, int tbp0, GS_PSM psm)
+{
+	abort(); // TODO: Implement
+}
+
+GSTextureCacheNew::EntryList& GSTextureCacheNew::ClearEntryAt(uint16_t offset)
+{
+	ClearEntryList(m_lm[offset]);
+	return m_lm[offset];
+}
+
+void GSTextureCacheNew::ClearEntryList(EntryList& list)
+{
+	list.is_cleared = false;
+	list.is_lm_valid = false;
+	list.entries.clear();
+}
+
+void GSTextureCacheNew::RegisterSurface(std::shared_ptr<Surface> surface, int tw, int th, int tbp0, GS_PSM psm)
+{
+	for (int y = 0; y < th; y++)
+	{
+		for (int x = 0; x < tw; x++)
+		{
+			m_lm[y*tw + x].entries.emplace_back(surface, x, y, psm);
+		}
+	}
+}
+
+GSTexture& GSTextureCacheNew::ForceOffsetTo00(TextureWithOffset tex, int tw, int th, int tbp0)
+{
+	if (tex.horizontal_page_offset == 0 && tex.vertical_page_offset == 0)
+		return tex.texture;
+	// TODO: Render to top left of new texture and add new entries to entry list
+	abort();
+}
+
+template <typename Fn>
+bool GSTextureCacheNew::Scan(int tw, int th, int tbp0, Fn fn)
+{
+	for (int i = 0; i < (tw * th); i++)
+	{
+		EntryList& e = m_lm[(tbp0 + i) % m_lm.size()];
+		if (!fn(e))
+			return false;
+	}
+	return true;
+}
+
+GSTextureCacheNew::Entry* GSTextureCacheNew::SearchSurface(int tw, int th, int tbp0, GS_PSM psm)
+{
+	EntryList& first = m_lm[tbp0];
+	Entry* out = nullptr;
+	/// Find a surface matching predicate that's in pages covered by the texture, and return it
+	auto check = [&](auto predicate) -> Entry*
+	{
+		auto beg = first.entries.begin();
+		while (true)
+		{
+			beg = std::find_if(beg, first.entries.end(), predicate);
+			if (beg == first.entries.end())
+				break;
+
+			Surface* s = &*beg->surface();
+			bool shared = Scan(tw, th, tbp0, [&](EntryList& e) -> bool
+			{
+				return std::any_of(e.entries.begin(), e.entries.end(), [&](const Entry& e){ &*e.surface() == s; });
+			});
+			if (shared)
+				return beg;
+		}
+		return nullptr;
+	};
+	// Best match: Matching tw, th, psm, no offset
+	out = check([&](const Entry& e)
+	{
+		return e.hoff() == 0 && e.voff() == 0 && e.psm() == psm && e.surface()->tw() == tw && e.surface()->th() == th;
+	});
+	if (out)
+		return out;
+	// Prefer clearing or rereading a fresh texture next
+	if (Scan(tw, th, tbp0, [](EntryList& e) { return e.is_cleared || e.is_lm_valid; }))
+		return nullptr;
+	// Third best: Same format, needs reshape
+	out = check([&](const Entry& e)
+	{
+		int off = e.hoff() + e.voff() * e.surface()->tw();
+		int usable_size = e.surface()->th() * e.surface()->tw() - off;
+		return e.psm() == psm && usable_size >= tw * th;
+	});
+	if (out)
+		return out;
+	// Fourth best: Needs format change
+	out = check([&](const Entry& e)
+	{
+		int off = e.hoff() + e.voff() * e.surface()->tw();
+		int usable_size = e.surface()->th() * e.surface()->tw() - off;
+		return e.psm() != psm && usable_size >= tw * th;
+	});
+	if (out)
+		return out;
+	return nullptr;
+}
+
 GSTextureCache::GSTextureCache(GSRenderer* r)
 	: m_renderer(r)
 	, m_palette_map(r)
@@ -103,7 +255,6 @@ GSTextureCache::Source* GSTextureCache::LookupDepthSource(const GIFRegTEX0& TEX0
 		GL_CACHE("LookupDepthSource not supported (0x%x, F:0x%x)", TEX0.TBP0, TEX0.PSM);
 		if (m_renderer->m_game.title == CRC::JackieChanAdv || m_renderer->m_game.title == CRC::SVCChaos) {
 			// JackieChan and SVCChaos cause regressions when skipping the draw calls when depth is disabled/not supported.
-			// This way we make sure there are no regressions on D3D as well.
 			return LookupSource(TEX0, TEXA, r);
 		} else {
 			throw GSDXRecoverableError();

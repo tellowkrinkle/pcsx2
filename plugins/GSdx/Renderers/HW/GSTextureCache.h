@@ -24,6 +24,100 @@
 #include "Renderers/Common/GSRenderer.h"
 #include "Renderers/Common/GSFastList.h"
 #include "Renderers/Common/GSDirtyRect.h"
+#include <memory>
+
+class GSTextureCacheNew
+{
+public:
+	class Surface
+	{
+	public:
+		enum class Type : uint8_t { Source, Target };
+	private:
+		uint8_t m_tw;   ///< Texture width (GS pages)
+		uint8_t m_th;   ///< Texture height (GS pages)
+		uint16_t m_tbp; ///< Texture base pointer
+		Type m_type;
+		GSTexture* m_texture; ///< (Owned) texture pointer
+		GSRenderer* m_renderer; ///< (Unowned) renderer pointer, used for recycling texture
+	public:
+		Surface(GSTexture* texture, Type type, uint8_t tw, uint8_t th, uint16_t tbp)
+			: m_tw(tw), m_th(th), m_tbp(tbp), m_type(type), m_texture(texture) {}
+		~Surface();
+
+		uint8_t tw() const { return m_tw; }
+		uint8_t th() const { return m_th; }
+		uint16_t tbp() const { return m_tbp; }
+		Type type() const { return m_type; }
+		GSTexture* texture() const { return m_texture; }
+	};
+
+	/// Represents the backing of a GS page
+	class Entry
+	{
+		uint8_t m_hoff; ///< Horizontal offset in texture (GS pages)
+		uint8_t m_voff; ///< Vertical offset in texture (GS pages)
+		uint8_t m_psm;  ///< Type
+		std::shared_ptr<Surface> m_surface;
+	public:
+		Entry(std::shared_ptr<Surface> surface, uint8_t hoff, uint8_t voff, GS_PSM psm)
+			: m_hoff(hoff), m_voff(voff), m_psm(psm), m_surface(std::move(surface))
+		{
+		}
+
+		uint8_t hoff() const { return m_hoff; }
+		uint8_t voff() const { return m_voff; }
+		GS_PSM psm() const { return static_cast<GS_PSM>(m_psm); }
+		const std::shared_ptr<Surface>& surface() const { return m_surface; }
+	};
+
+	struct EntryList
+	{
+		bool is_lm_valid;     ///< Is the data in (CPU) local memory up to date?
+		bool is_cleared;      ///< Was the most recent write to this memory a clear (write of the same value to all pixels)?
+		uint8_t clear_psm;    ///< If `is_cleared`, the format the clear was done in
+		uint32_t clear_color; ///< If `is_cleared`, the color of the clear
+		SmallVector<Entry, 1> entries; ///< List of textures that match the current memory value (Can be multiple if memory was read in multiple formats)
+	};
+
+	struct TextureWithOffset
+	{
+		GSTexture& texture;
+		uint8_t horizontal_page_offset;
+		uint8_t vertical_page_offset;
+	};
+
+private: // MARK: GSTextureCacheNew ivars
+	GSRenderer* m_renderer;
+	GSDevice* m_device;
+	/// Mapping of GS local memory page offsets to a list of valid backings
+	std::array<EntryList, MAX_PAGES> m_lm;
+public: // MARK: GSTextureCacheNew methods
+	explicit GSTextureCacheNew(GSRenderer* r);
+	~GSTextureCacheNew();
+
+	GSTexture& GetSource(int tw, int th, int tbp0, GS_PSM psm);
+	GSTexture& GetTarget(int tw, int th, int tbp0, GS_PSM psm);
+	TextureWithOffset GetSourceWithOffset(int tw, int th, int tbp0, GS_PSM psm);
+	TextureWithOffset GetTargetWithOffset(int tw, int th, int tbp0, GS_PSM psm);
+private:
+	/// Clear the entry list at the given GS memory offset
+	/// (Returns the value for easy chaining into an emplace_back)
+	EntryList& ClearEntryAt(uint16_t offset);
+	/// Clear the given entry list
+	void ClearEntryList(EntryList& list);
+	/// Register a surface as a possible source for the given location, adding it to m_lm at all offsets it covers
+	void RegisterSurface(std::shared_ptr<Surface> surface, int tw, int th, int tbp0, GS_PSM psm);
+	/// Force the texture with offset to start at (0, 0), copying it to a new texture if necessary
+	GSTexture& ForceOffsetTo00(TextureWithOffset tex, int tw, int th, int tbp0);
+	/// Helper to search textures
+	/// @param fn bool(EntryList&) function which will be called on each page of memory covered by the texture
+	/// @returns true if all invocations of `fn` return true, otherwise short circuits and returns false
+	template <typename Fn>
+	bool Scan(int tw, int th, int tbp0, Fn fn);
+	/// Searches for a surface that covers the entire texture, doing its best to match the given format and shape
+	Entry* SearchSurface(int tw, int th, int tbp0, GS_PSM psm);
+};
 
 class GSTextureCache
 {
