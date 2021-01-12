@@ -64,6 +64,7 @@ set(GSdxSources
     GSVector.cpp
     GSdx.cpp
     GSdxResources.cpp
+    MultiISA.cpp
     stdafx.cpp
     Renderers/Common/GSDevice.cpp
     Renderers/Common/GSDirtyRect.cpp
@@ -136,6 +137,7 @@ set(GSdxHeaders
     GSVector4i.h
     GSVector8.h
     GSVector8i.h
+    MultiISA.h
     stdafx.h
     Renderers/Common/GSDevice.h
     Renderers/Common/GSDirtyRect.h
@@ -147,6 +149,7 @@ set(GSdxHeaders
     Renderers/Common/GSVertex.h
     Renderers/Common/GSVertexList.h
     Renderers/Common/GSVertexTrace.h
+    Renderers/Common/IGSRenderer.h
     Renderers/Null/GSDeviceNull.h
     Renderers/Null/GSRendererNull.h
     Renderers/Null/GSTextureNull.h

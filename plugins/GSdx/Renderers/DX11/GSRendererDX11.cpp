@@ -21,6 +21,14 @@
 
 #include "stdafx.h"
 #include "GSRendererDX11.h"
+#include "MultiISA.h"
+
+MULTI_ISA_UNSHARED_IMPL;
+
+IGSRenderer* CURRENT_ISA::makeRendererDX11()
+{
+	return new GSRendererDX11();
+}
 
 GSRendererDX11::GSRendererDX11()
 	: GSRendererHW(new GSTextureCache11(this))

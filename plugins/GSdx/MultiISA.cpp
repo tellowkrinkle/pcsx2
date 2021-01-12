@@ -1,6 +1,5 @@
 /*
- *	Copyright (C) 2007-2009 Gabest
- *	http://www.gabest.org
+ *	Copyright (C) 2020 PCSX2 Dev Team
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,32 +18,22 @@
  *
  */
 
-#pragma once
+#include "stdafx.h"
+#include "MultiISA.h"
+#include "GSUtil.h"
 
-#include "GSLocalMemory.h"
-
-MULTI_ISA_UNSHARED_START
-
-class GSDirtyRect
+static VectorISA getCurrentISA()
 {
-	int left;
-	int top;
-	int right;
-	int bottom;
+	if (g_cpu.has(Xbyak::util::Cpu::tAVX2) && g_cpu.has(Xbyak::util::Cpu::tBMI1) && g_cpu.has(Xbyak::util::Cpu::tBMI2))
+		return VectorISA::AVX2;
+	else if (g_cpu.has(Xbyak::util::Cpu::tAVX))
+		return VectorISA::AVX;
+	else
+		return VectorISA::SSE4;
+}
 
-	uint32 psm;
+VectorISA currentISA = getCurrentISA();
 
-public:
-	GSDirtyRect();
-	GSDirtyRect(const GSVector4i& r, uint32 psm);
-	const GSVector4i GetDirtyRect(const GIFRegTEX0& TEX0) const;
-};
-
-class GSDirtyRectList : public std::vector<GSDirtyRect>
-{
-public:
-	GSDirtyRectList() {}
-	const GSVector4i GetDirtyRectAndClear(const GIFRegTEX0& TEX0, const GSVector2i& size);
-};
-
-MULTI_ISA_UNSHARED_END
+bool s_nativeres;
+CRC::Region g_crc_region = CRC::NoRegion;
+int GSStateISAShared::s_n = 0;
