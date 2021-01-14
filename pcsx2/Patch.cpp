@@ -135,7 +135,7 @@ int LoadPatchesFromGamesDB(const wxString& crc, const GameDatabaseSchema::GameEn
 		{
 			for (auto line : patch.patchLines)
 			{
-				inifile_command(line);
+				inifile_command(fromUTF8(line));
 			}
 		}
 	}
