@@ -1621,7 +1621,9 @@ public:
     // messages for the code which relies on implicit conversion to char* in
     // STL build
 #if !wxUSE_STD_STRING_CONV_IN_WXSTRING
+#ifndef _WIN32 // PCSX2: std::string conversion removal
     operator const char*() const { return c_str(); }
+#endif
     operator const wchar_t*() const { return c_str(); }
 
     // implicit conversion to untyped pointer for compatibility with previous

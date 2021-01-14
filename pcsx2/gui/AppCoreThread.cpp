@@ -439,7 +439,7 @@ static void _ApplySettings(const Pcsx2Config& src, Pcsx2Config& fixup)
 	{
 		if (IGameDatabase* GameDB = AppHost_GetGameDatabase())
 		{
-			GameDatabaseSchema::GameEntry game = GameDB->findGame(std::string(curGameKey));
+			GameDatabaseSchema::GameEntry game = GameDB->findGame(std::string(curGameKey.ToUTF8()));
 			if (game.isValid)
 			{
 				gameName = fromUTF8(game.name);
