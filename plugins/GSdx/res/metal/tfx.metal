@@ -20,6 +20,7 @@ constant bool PS_FBA [[function_constant(GSMTLConstantIndex_PS_FBA)]];
 constant bool PS_FBMASK [[function_constant(GSMTLConstantIndex_PS_FBMASK)]];
 constant bool PS_LTF [[function_constant(GSMTLConstantIndex_PS_LTF)]];
 constant uint PS_DATE [[function_constant(GSMTLConstantIndex_PS_DATE)]];
+constant uint PS_ZTST [[function_constant(GSMTLConstantIndex_PS_ZTST)]];
 //constant bool PS_TCOFFSETHACK [[function_constant(GSMTLConstantIndex_PS_TCOFFSETHACK)]];
 //constant bool PS_POINT_SAMPLER [[function_constant(GSMTLConstantIndex_PS_POINT_SAMPLER)]];
 constant bool PS_SHUFFLE [[function_constant(GSMTLConstantIndex_PS_SHUFFLE)]];
@@ -42,8 +43,11 @@ constant uint PS_BLEND_D [[function_constant(GSMTLConstantIndex_PS_BLEND_D)]];
 constant uint PS_DITHER [[function_constant(GSMTLConstantIndex_PS_DITHER)]];
 constant bool PS_ZCLAMP [[function_constant(GSMTLConstantIndex_PS_ZCLAMP)]];
 
-constant bool SW_BLEND = (PS_BLEND_A || PS_BLEND_B || PS_BLEND_D);
+constant bool SW_BLEND = (PS_BLEND_A != PS_BLEND_B || PS_BLEND_D);
+constant bool NEEDS_DST_FOR_BLEND = SW_BLEND && (PS_BLEND_A == 1 || PS_BLEND_B == 1 || ((PS_BLEND_A != PS_BLEND_B) && PS_BLEND_C == 1) || PS_BLEND_D == 1);
+constant bool NEEDS_DEPTH = PS_ZTST > 1;
 constant bool NOT_IIP = !IIP;
+constant bool NOT_INTERLOCK = !PS_INTERLOCK;
 constant uint PS_PAL_FMT = PS_TEX_FMT >> 2;
 constant uint PS_AEM_FMT = PS_TEX_FMT & 3;
 // TODO: Use
@@ -70,6 +74,12 @@ struct GSMTLMainPSOut
 	float4 c0 [[color(0), index(0)]];
 	float4 c1 [[color(0), index(1)]];
 	float depth [[depth(less), function_constant(PS_ZCLAMP)]];
+};
+
+struct GSMTLMainPSOutNoZ
+{
+	float4 c0 [[color(0), index(0)]];
+	float4 c1 [[color(0), index(1)]];
 };
 
 // MARK: - Vertex Shader
@@ -224,7 +234,28 @@ struct PSMain
 	{
 		// TODO: TEX_IS_FB
 
-		if (PS_AUTOMATIC_LOD)
+		if (PS_DEPTH_FMT == 1)
+		{
+			// 32-bit [0 - 1) depth, representing RGBA8
+			constexpr float4 bitSh = float4(0x1p24, 0x1p16, 0x1p8, 0x1p0);
+			constexpr float4 bitMsk = float4(0, 1.f/256.f, 1.f/256.f, 1.f/256.f);
+			float4 res = fract(tex.sample(s, uv).r * bitSh);
+			return res - res.xxyz * bitMsk;
+		}
+		else if (PS_DEPTH_FMT == 2)
+		{
+			// 16-bit [0 - 2^-16) depth, representing RGB5A1
+			constexpr float4 bitSh = float4(0x1p27, 0x1p22, 0x1p17, 0x1p16);
+			constexpr float4 bitMsk = float4(0, 1.f/32.f, 1.f/32.f, 1.f/2.f);
+			float4 res = fract(tex.sample(s, uv).r * bitSh);
+			return res - res.xxyz * bitMsk;
+		}
+		else if (PS_DEPTH_FMT == 3)
+		{
+			// Depth in a color texture
+			return tex.sample(s, uv);
+		}
+		else if (PS_AUTOMATIC_LOD)
 		{
 			return tex.sample(s, uv);
 		}
@@ -252,6 +283,7 @@ struct PSMain
 		return palette.sample(palette_sampler, float2(idx, 0));
 	}
 
+	[[gnu::always_inline]]
 	float4x4 sample_4c(float4 uv)
 	{
 		return {
@@ -262,6 +294,7 @@ struct PSMain
 		};
 	}
 
+	[[gnu::always_inline]]
 	float4 sample_4_index(float4 uv)
 	{
 		float4 c = {
@@ -284,6 +317,7 @@ struct PSMain
 		}
 	}
 
+	[[gnu::always_inline]]
 	float4x4 sample_4p(float4 u)
 	{
 		return {
@@ -295,7 +329,7 @@ struct PSMain
 	}
 
 	[[gnu::always_inline]]
-	float4 sample_color(float2 st)
+	float4 sample(float2 st)
 	{
 		float4 t;
 		float4x4 c;
@@ -381,12 +415,6 @@ struct PSMain
 	}
 
 	[[gnu::always_inline]]
-	float4 sample_depth(float2 st_int)
-	{
-		
-	}
-
-	[[gnu::always_inline]]
 	uchar4 color()
 	{
 		float2 st, st_int;
@@ -408,25 +436,8 @@ struct PSMain
 			st_int = in.ti.zw;
 		}
 
-		float4 T, C;
-
-		if (PS_DEPTH_FMT)
-		{
-			T = sample_depth(st_int);
-		}
-		else
-		{
-			T = sample_color(st);
-		}
-
-		if (IIP)
-		{
-			C = tfx(T, trunc(in.c));
-		}
-		else
-		{
-			C = tfx(T, in.fc);
-		}
+		float4 T = sample(st);
+		float4 C = IIP ? tfx(T, trunc(in.c)) : tfx(T, in.fc);
 
 		fog(C, in.t.z);
 
@@ -497,52 +508,148 @@ struct PSMain
 		return reading;
 	}
 
+	template <typename Texture>
+	[[gnu::always_inline]]
+	void load_dest_color(thread const Texture& tex)
+	{
+		uint4 color = tex.read(uint2(in.p.xy));
+		current_color = uchar4((color >> uint4(0, 8, 16, 24)) & 0xFF);
+	}
+
+	[[gnu::always_inline]]
+	uchar4 choose_blend_coefficient(int blend, uchar4 px)
+	{
+		switch (blend)
+		{
+			case 0:
+				return px;
+			case 1:
+				return current_color;
+			default:
+				return 0;
+		}
+	}
+
+	[[gnu::always_inline]]
+	ushort3 dither(ushort3 px)
+	{
+		uint2 fpos;
+		if (PS_DITHER == 2)
+			fpos = uint2(in.p.xy);
+		else
+			fpos = uint2(in.p.xy / cb.scale);
+
+		return px + cb.dither_matrix[fpos.y & 3][fpos.x & 3];
+	}
+
 	[[gnu::always_inline]]
 	uchar4 blend(uchar4 px)
 	{
+		uchar3 a = choose_blend_coefficient(PS_BLEND_A, px).rgb;
+		uchar3 b = choose_blend_coefficient(PS_BLEND_B, px).rgb;
+		uchar  c = choose_blend_coefficient(PS_BLEND_C, px).a;
+		uchar3 d = choose_blend_coefficient(PS_BLEND_D, px).rgb;
+		if (PS_BLEND_C == 2)
+			c = cb.alpha_fix;
 
+		ushort3 color = ((ushort3(a - b) * c) >> 7) + ushort3(d);
+
+		// Dithering
+		if (PS_DITHER)
+			color = dither(color);
+
+		// Clip / Clamp
+		uchar3 clipped;
+		if (PS_COLCLIP)
+			clipped = uchar3(color & 0xFF);
+		else
+			clipped = uchar3(clamp(color, 0, 0xFF));
+
+		// In 16 bits format, only 5 bits of color are used. It impacts shadows computation of Castlevania
+		if (PS_DFMT == FMT_16)
+			clipped &= 0xF8;
+
+		return uchar4(clipped, alpha_correction(px.a));
+	}
+
+	uchar alpha_correction(uchar alpha)
+	{
+		if (PS_DFMT == FMT_16)
+			alpha &= 0x80;
+		if (PS_FBA)
+			alpha |= 0x80;
+		return alpha;
+	}
+
+	uint combine(uchar4 px)
+	{
+		return uint(px.r) | (uint(px.g) << 8) | (uint(px.b) << 16) | (uint(px.a) << 24);
+	}
+
+	uint fbmask(uint px, uint dst)
+	{
+		return (px & ~mask) | (dst & mask);
 	}
 };
 
-// MARK: Fetch a Single Channel
-/*
-float4 ps_color(PSAll in)
-{
-	float2 st;
-	float2 st_int;
-	if (!FST && PS_INVALID_TEX0)
-	{
-		// Re-normalize coordinate from invalid GS to corrected texture size
-		st = (in.data.t.xy * in.cb.wh.xy) / (in.data.t.w * in.cb.wh.zw);
-		// no st_int yet
-	}
-	else if (!FST)
-	{
-		st = in.data.t.xy / in.data.t.w;
-		st_int = in.data.ti.zw / in.data.t.w;
-	}
-	else
-	{
-		st = in.data.ti.xy;
-		st_int = in.data.ti.zw;
-	}
-
-	float4 T;
-	switch (PS_CHANNEL_FETCH)
-	{
-//		case 1: T =
-	}
-}
-
 fragment GSMTLMainPSOut ps_main(
 	GSMTLMainVSOut data [[stage_in]],
-	constant GSMTLMainFSUniform& cb [[buffer(GSMTLIndexUniforms)]],
-	sampler texture_sampler [[sampler(0)]])
+	constant GSMTLMainPSUniform& cb [[buffer(GSMTLIndexUniforms)]],
+	sampler s [[sampler(0)]],
+	texture2d<float> tex [[texture(GSMTLTextureIndexTex)]],
+	texture2d<float> palette [[texture(GSMTLTextureIndexPalette)]])
 {
-
+	PSMain main(tex, palette, s, cb, data);
+	main.current_color = uchar4(0); // TODO: Should we read the texture and use its outdated data?
+	uchar4 new_color = main.run();
+	uchar alpha_blend = new_color.a;
+	uchar4 blended = main.blend(new_color);
+	GSMTLMainPSOut out;
+	out.c0 = float4(blended)/255.f;
+	out.c1 = float4(alpha_blend/255.f);
+	if (PS_ZCLAMP)
+		out.depth = min(data.p.z, cb.max_depth);
+	return out;
 }
-*/
 
+[[early_fragment_tests]]
+fragment GSMTLMainPSOutNoZ ps_main_early_fragment(
+	GSMTLMainVSOut data [[stage_in]],
+	constant GSMTLMainPSUniform& cb [[buffer(GSMTLIndexUniforms)]],
+	sampler s [[sampler(0)]],
+	texture2d<float> tex [[texture(GSMTLTextureIndexTex)]],
+	texture2d<float> palette [[texture(GSMTLTextureIndexPalette)]])
+{
+	PSMain main(tex, palette, s, cb, data);
+	main.current_color = uchar4(0); // TODO: Should we read the texture and use its outdated data?
+	uchar4 new_color = main.run();
+	uchar alpha_blend = new_color.a;
+	uchar4 blended = main.blend(new_color);
+	GSMTLMainPSOutNoZ out;
+	out.c0 = float4(blended)/255.f;
+	out.c1 = float4(alpha_blend/255.f);
+	return out;
+}
+
+fragment uint4 ps_main_fb_fetch(
+	GSMTLMainVSOut data [[stage_in]],
+	constant GSMTLMainPSUniform& cb [[buffer(GSMTLIndexUniforms)]],
+	sampler s [[sampler(0)]],
+	texture2d<float> tex [[texture(GSMTLTextureIndexTex)]],
+	texture2d<float> palette [[texture(GSMTLTextureIndexPalette)]],
+	uint4 rt [[color(0), function_constant(NOT_INTERLOCK)]],
+	uint4 rt_interlock [[color(0), function_constant(PS_INTERLOCK), raster_order_group(0)]])
+{
+	PSMain main(tex, palette, s, cb, data);
+	main.current_color = uchar4(PS_INTERLOCK ? rt_interlock : rt);
+
+	uint tmp = main.combine(main.blend(main.run()));
+	uint masked = main.fbmask(tmp, main.combine(main.current_color));
+	return uint4(masked & 0xFF, (masked >> 8) & 0xFF, (masked >> 16) & 0xFF, masked >> 24);
+}
+
+constant bool INTERLOCK_AND_NEEDS_DEPTH = NEEDS_DEPTH && PS_INTERLOCK;
+constant bool NOT_INTERLOCK_AND_NEEDS_DEPTH = NEEDS_DEPTH && NOT_INTERLOCK;
 
 [[early_fragment_tests]]
 fragment void ps_main_interlock(
@@ -551,10 +658,53 @@ fragment void ps_main_interlock(
 	sampler s [[sampler(0)]],
 	texture2d<float> tex [[texture(GSMTLTextureIndexTex)]],
 	texture2d<float> palette [[texture(GSMTLTextureIndexPalette)]],
-	texture2d<uint, access::read_write> rt [[texture(GSMTLTextureIndexRenderTarget)]],
-	texture2d<float> ds [[texture(GSMTLTextureIndexDepth)]])
+	texture2d<uint, access::read_write> rt [[texture(GSMTLTextureIndexRenderTarget), function_constant(NOT_INTERLOCK)]],
+	texture2d<uint, access::read_write> rt_interlock [[texture(GSMTLTextureIndexRenderTarget), function_constant(PS_INTERLOCK), raster_order_group(0)]],
+	texture2d<float, access::read_write> ds [[texture(GSMTLTextureIndexDepth), function_constant(NOT_INTERLOCK_AND_NEEDS_DEPTH)]],
+	texture2d<float, access::read_write> ds_interlock [[texture(GSMTLTextureIndexDepth), function_constant(INTERLOCK_AND_NEEDS_DEPTH), raster_order_group(0)]])
 {
+	thread auto& rt_ = PS_INTERLOCK ? rt_interlock : rt;
+	if (PS_ZTST > 1)
+	{
+		float depth = data.p.z;
+		if (PS_ZCLAMP)
+			depth = min(depth, cb.max_depth);
+		float value = (PS_INTERLOCK ? ds_interlock : ds).read(uint2(data.p.xy)).r;
+		bool passed;
+		switch (PS_ZTST)
+		{
+			case 2: passed = depth >= value; break;
+			case 3: passed = depth >  value; break;
+		}
+		if (!passed)
+			discard_fragment();
+		ds.write(float4(depth), uint2(data.p.xy));
+	}
+
 	PSMain main(tex, palette, s, cb, data);
 
+	if (PS_DATE)
+		main.load_dest_color(rt_);
 
+	uchar4 new_color = main.run();
+
+	if (main.mask == 0xFFFFFFFF)
+		return;
+
+	if (!PS_DATE && NEEDS_DST_FOR_BLEND)
+		main.load_dest_color(rt_);
+
+	uint final = main.combine(main.blend(new_color));
+	uint dst = 0;
+	if (PS_DATE || NEEDS_DST_FOR_BLEND)
+		dst = main.combine(main.current_color);
+	else if (main.mask)
+		dst = rt_.read(uint2(data.p.xy)).r;
+
+	final = main.fbmask(final, dst);
+
+	rt_.write(uint4(final), uint2(data.p.xy));
+
+	if (main.discard_depth)
+		discard_fragment();
 }

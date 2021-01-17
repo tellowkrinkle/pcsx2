@@ -36,6 +36,7 @@ enum GSMTLConstantIndex
 	GSMTLConstantIndex_PS_FBMASK,
 	GSMTLConstantIndex_PS_LTF,
 	GSMTLConstantIndex_PS_DATE,
+	GSMTLConstantIndex_PS_ZTST,
 //	GSMTLConstantIndex_PS_TCOFFSETHACK,
 //	GSMTLConstantIndex_PS_POINT_SAMPLER,
 	GSMTLConstantIndex_PS_SHUFFLE,
@@ -111,11 +112,12 @@ struct GSMTLMainPSUniform
 	vector_float4 tc_oh_ts;
 
 	vector_float2 ta;
+	vector_float2 scale;
 
 	float aref;
 	float max_depth;
-	float alpha_fix;
+	unsigned char alpha_fix;
 	uint fb_mask;
 
-	matrix_float4x4 dither_matrix;
+	vector_uchar4 dither_matrix[4];
 };

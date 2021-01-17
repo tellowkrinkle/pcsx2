@@ -545,13 +545,10 @@ void GSRendererMTL::DrawPrims(GSTexture* rt, GSTexture* ds, GSTextureCache::Sour
 	if (m_sel.ps.dither)
 	{
 		m_sel.ps.dither = m_dithering;
-		m_ps_cb.dither_matrix =
-		{
-			simd_make_float4(m_env.DIMX.DM00, m_env.DIMX.DM01, m_env.DIMX.DM02, m_env.DIMX.DM03),
-			simd_make_float4(m_env.DIMX.DM10, m_env.DIMX.DM11, m_env.DIMX.DM12, m_env.DIMX.DM13),
-			simd_make_float4(m_env.DIMX.DM20, m_env.DIMX.DM21, m_env.DIMX.DM22, m_env.DIMX.DM23),
-			simd_make_float4(m_env.DIMX.DM30, m_env.DIMX.DM31, m_env.DIMX.DM32, m_env.DIMX.DM33),
-		};
+		m_ps_cb.dither_matrix[0] = simd_make_uchar4(m_env.DIMX.DM00, m_env.DIMX.DM01, m_env.DIMX.DM02, m_env.DIMX.DM03);
+		m_ps_cb.dither_matrix[1] = simd_make_uchar4(m_env.DIMX.DM10, m_env.DIMX.DM11, m_env.DIMX.DM12, m_env.DIMX.DM13);
+		m_ps_cb.dither_matrix[2] = simd_make_uchar4(m_env.DIMX.DM20, m_env.DIMX.DM21, m_env.DIMX.DM22, m_env.DIMX.DM23);
+		m_ps_cb.dither_matrix[3] = simd_make_uchar4(m_env.DIMX.DM30, m_env.DIMX.DM31, m_env.DIMX.DM32, m_env.DIMX.DM33);
 	}
 
 	if (PRIM->FGE)

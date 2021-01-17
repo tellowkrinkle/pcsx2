@@ -821,6 +821,7 @@ id<MTLFunction> GSDeviceMTL::CompilePS(PSSelector sel)
 	setB(sel.fog,       GSMTLConstantIndex_PS_FOG);
 	setB(sel.iip,       GSMTLConstantIndex_IIP);
 	setI(sel.date,      GSMTLConstantIndex_PS_DATE);
+	setI(sel.ztst,      GSMTLConstantIndex_PS_ZTST);
 	setI(sel.atst,      GSMTLConstantIndex_PS_ATST);
 	setB(sel.fst,       GSMTLConstantIndex_FST);
 	setI(sel.tfx,       GSMTLConstantIndex_PS_TFX);

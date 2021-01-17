@@ -191,8 +191,9 @@ public:
 
 				uint32 sw_blend:1;
 				uint32 interlock:1;
+				uint32 ztst:2;
 
-				uint32 _free2:6;
+				uint32 _free2:4;
 			};
 		};
 
