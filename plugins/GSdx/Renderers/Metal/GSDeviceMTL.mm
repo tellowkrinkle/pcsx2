@@ -845,7 +845,7 @@ id<MTLFunction> GSDeviceMTL::CompilePS(PSSelector sel)
 	setB(sel.interlock, GSMTLConstantIndex_PS_INTERLOCK);
 
 	NSError* err = nil;
-	id<MTLFunction> shader = [m_shaders newFunctionWithName:@"ps_main" constantValues:constants error:&err];
+	id<MTLFunction> shader = [m_shaders newFunctionWithName:@"ps_main_interlock" constantValues:constants error:&err];
 	NSERROR_CHECK(err, @"Metal: Failed to create fragment shader with selector %llx: %@", sel.key, err.localizedDescription);
 
 	return shader;
@@ -874,6 +874,7 @@ id<MTLRenderPipelineState> GSDeviceMTL::GetPipeline(VSSelector vs_sel, PSSelecto
 	desc.label = [NSString stringWithFormat:@"Main PS %llx", ps_sel.key];
 	desc.vertexFunction = vs;
 	desc.fragmentFunction = ps;
+
 	// TODO: Attachments
 
 	NSError* err = nil;

@@ -586,9 +586,11 @@ void GSRendererMTL::SendDraw(GSTextureMTL* rt, GSTextureMTL* ds, GSTextureCache:
 	GSDeviceMTL* dev = static_cast<GSDeviceMTL*>(m_dev);
 	id<MTLDevice> mtldev = dev->MTLDevice();
 	id<MTLCommandBuffer> cmdbuf = dev->CmdBuffer();
+	// If MTLGPUFamilyApple1, use framebuffer fetch instead of rw textures
+	bool no_rwtx = [mtldev readWriteTextureSupport] == MTLReadWriteTextureTierNone || [mtldev supportsFamily:MTLGPUFamilyApple1];
 
 	id<MTLRenderCommandEncoder> enc;
-	if (m_sel.ps.interlock)
+	if (m_sel.ps.interlock && !no_rwtx)
 	{
 		// TODO: Color clear
 		if (ds)
