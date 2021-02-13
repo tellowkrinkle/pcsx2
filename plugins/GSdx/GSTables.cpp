@@ -24,7 +24,18 @@
 #include "stdafx.h"
 #include "GSTables.h"
 
-const uint8 blockTable32[4][8] =
+template <int Width, int Height>
+static constexpr GSBlockSwizzleTable makeSwizzleTable(const uint8 (&arr)[Height][Width]) {
+	GSBlockSwizzleTable table = {};
+	for (int y = 0; y < 8; y++) {
+		for (int x = 0; x < 8; x++) {
+			table.value[y][x] = arr[y % Height][x % Width];
+		}
+	}
+	return table;
+}
+
+static constexpr uint8 _blockTable32[4][8] =
 {
 	{  0,  1,  4,  5, 16, 17, 20, 21},
 	{  2,  3,  6,  7, 18, 19, 22, 23},
@@ -32,7 +43,7 @@ const uint8 blockTable32[4][8] =
 	{ 10, 11, 14, 15, 26, 27, 30, 31}
 };
 
-const uint8 blockTable32Z[4][8] =
+static constexpr uint8 _blockTable32Z[4][8] =
 {
 	{ 24, 25, 28, 29,  8,  9, 12, 13},
 	{ 26, 27, 30, 31, 10, 11, 14, 15},
@@ -40,7 +51,7 @@ const uint8 blockTable32Z[4][8] =
 	{ 18, 19, 22, 23,  2,  3,  6,  7}
 };
 
-const uint8 blockTable16[8][4] =
+static constexpr uint8 _blockTable16[8][4] =
 {
 	{  0,  2,  8, 10 },
 	{  1,  3,  9, 11 },
@@ -52,7 +63,7 @@ const uint8 blockTable16[8][4] =
 	{ 21, 23, 29, 31 }
 };
 
-const uint8 blockTable16S[8][4] =
+static constexpr uint8 _blockTable16S[8][4] =
 {
 	{  0,  2, 16, 18 },
 	{  1,  3, 17, 19 },
@@ -64,7 +75,7 @@ const uint8 blockTable16S[8][4] =
 	{ 13, 15, 29, 31 }
 };
 
-const uint8 blockTable16Z[8][4] =
+static constexpr uint8 _blockTable16Z[8][4] =
 {
 	{ 24, 26, 16, 18 },
 	{ 25, 27, 17, 19 },
@@ -76,7 +87,7 @@ const uint8 blockTable16Z[8][4] =
 	{ 13, 15,  5,  7 }
 };
 
-const uint8 blockTable16SZ[8][4] =
+static constexpr uint8 _blockTable16SZ[8][4] =
 {
 	{ 24, 26,  8, 10 },
 	{ 25, 27,  9, 11 },
@@ -88,7 +99,7 @@ const uint8 blockTable16SZ[8][4] =
 	{ 21, 23,  5,  7 }
 };
 
-const uint8 blockTable8[4][8] =
+static constexpr uint8 _blockTable8[4][8] =
 {
 	{  0,  1,  4,  5, 16, 17, 20, 21},
 	{  2,  3,  6,  7, 18, 19, 22, 23},
@@ -96,7 +107,7 @@ const uint8 blockTable8[4][8] =
 	{ 10, 11, 14, 15, 26, 27, 30, 31}
 };
 
-const uint8 blockTable4[8][4] =
+static constexpr uint8 _blockTable4[8][4] =
 {
 	{  0,  2,  8, 10 },
 	{  1,  3,  9, 11 },
@@ -108,7 +119,16 @@ const uint8 blockTable4[8][4] =
 	{ 21, 23, 29, 31 }
 };
 
-const uint8 columnTable32[8][8] =
+constexpr GSBlockSwizzleTable blockTable32   = makeSwizzleTable(_blockTable32);
+constexpr GSBlockSwizzleTable blockTable32Z  = makeSwizzleTable(_blockTable32Z);
+constexpr GSBlockSwizzleTable blockTable16   = makeSwizzleTable(_blockTable16);
+constexpr GSBlockSwizzleTable blockTable16S  = makeSwizzleTable(_blockTable16S);
+constexpr GSBlockSwizzleTable blockTable16Z  = makeSwizzleTable(_blockTable16Z);
+constexpr GSBlockSwizzleTable blockTable16SZ = makeSwizzleTable(_blockTable16SZ);
+constexpr GSBlockSwizzleTable blockTable8    = makeSwizzleTable(_blockTable8);
+constexpr GSBlockSwizzleTable blockTable4    = makeSwizzleTable(_blockTable4);
+
+constexpr uint8 columnTable32[8][8] =
 {
 	{  0,  1,  4,  5,  8,  9, 12, 13 },
 	{  2,  3,  6,  7, 10, 11, 14, 15 },
@@ -120,7 +140,7 @@ const uint8 columnTable32[8][8] =
 	{ 50, 51, 54, 55, 58, 59, 62, 63 },
 };
 
-const uint8 columnTable16[8][16] =
+constexpr uint8 columnTable16[8][16] =
 {
 	{   0,   2,   8,  10,  16,  18,  24,  26,
 	    1,   3,   9,  11,  17,  19,  25,  27 },
@@ -140,7 +160,7 @@ const uint8 columnTable16[8][16] =
 	  101, 103, 109, 111, 117, 119, 125, 127 },
 };
 
-const uint8 columnTable8[16][16] =
+constexpr uint8 columnTable8[16][16] =
 {
 	{   0,   4,  16,  20,  32,  36,  48,  52,	// column 0
 	    2,   6,  18,  22,  34,  38,  50,  54 },
@@ -176,7 +196,7 @@ const uint8 columnTable8[16][16] =
 	  203, 207, 219, 223, 235, 239, 251, 255 },
 };
 
-const uint16 columnTable4[16][32] =
+constexpr uint16 columnTable4[16][32] =
 {
 	{   0,   8,  32,  40,  64,  72,  96, 104,	// column 0
 	    2,  10,  34,  42,  66,  74,  98, 106,
@@ -244,7 +264,7 @@ const uint16 columnTable4[16][32] =
 	  407, 415, 439, 447, 471, 479, 503, 511 },
 };
 
-const uint8 clutTableT32I8[128] =
+constexpr uint8 clutTableT32I8[128] =
 {
 	0, 1, 4, 5, 8, 9, 12, 13, 2, 3, 6, 7, 10, 11, 14, 15,
 	64, 65, 68, 69, 72, 73, 76, 77, 66, 67, 70, 71, 74, 75, 78, 79,
@@ -256,13 +276,13 @@ const uint8 clutTableT32I8[128] =
 	112, 113, 116, 117, 120, 121, 124, 125, 114, 115, 118, 119, 122, 123, 126, 127
 };
 
-const uint8 clutTableT32I4[16] =
+constexpr uint8 clutTableT32I4[16] =
 {
 	0, 1, 4, 5, 8, 9, 12, 13,
 	2, 3, 6, 7, 10, 11, 14, 15
 };
 
-const uint8 clutTableT16I8[32] =
+constexpr uint8 clutTableT16I8[32] =
 {
 	0, 2, 8, 10, 16, 18, 24, 26,
 	4, 6, 12, 14, 20, 22, 28, 30,
@@ -270,7 +290,7 @@ const uint8 clutTableT16I8[32] =
 	5, 7, 13, 15, 21, 23, 29, 31
 };
 
-const uint8 clutTableT16I4[16] =
+constexpr uint8 clutTableT16I4[16] =
 {
 	0, 2, 8, 10, 16, 18, 24, 26,
 	4, 6, 12, 14, 20, 22, 28, 30
