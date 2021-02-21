@@ -245,12 +245,8 @@ public:
 		return sat_i32(a);
 	}
 
-	template<int mode> __forceinline GSVector4i ralign(const GSVector2i& a) const
+	template<Align_Mode mode> GSVector4i _ralign_helper(const GSVector4i& mask) const
 	{
-		// a must be 1 << n
-
-		GSVector4i mask = GSVector4i(a) - GSVector4i(1, 1);
-
 		GSVector4i v;
 
 		switch(mode)
@@ -258,11 +254,24 @@ public:
 		case Align_Inside: v = *this + mask; break;
 		case Align_Outside: v = *this + mask.zwxy(); break;
 		case Align_NegInf: v = *this; break;
-		case Align_PosInf: v = *this + mask.zwzw(); break;
+		case Align_PosInf: v = *this + mask.xyxy(); break;
 		default: ASSERT(0); break;
 		}
 
 		return v.andnot(mask.xyxy());
+	}
+
+	/// Align the rect using mask values that already have one subtracted (1 << n - 1 aligns to 1 << n)
+	template<Align_Mode mode> GSVector4i ralign_presub(const GSVector2i& a) const
+	{
+		return _ralign_helper<mode>(GSVector4i(a));
+	}
+
+	template<Align_Mode mode> GSVector4i ralign(const GSVector2i& a) const
+	{
+		// a must be 1 << n
+
+		return _ralign_helper<mode>(GSVector4i(a) - GSVector4i(1, 1));
 	}
 
 	GSVector4i fit(int arx, int ary) const;
@@ -492,23 +501,35 @@ public:
 		#endif
 	}
 
-	#if _M_SSE >= 0x401
-
 	template<int mask> __forceinline GSVector4i blend16(const GSVector4i& a) const
 	{
+#if _M_SSE >= 0x401
 		return GSVector4i(_mm_blend_epi16(m, a, mask));
+#else
+		int b7 = (mask & 128) ? -1 : 0;
+		int b6 = (mask & 64)  ? -1 : 0;
+		int b5 = (mask & 32)  ? -1 : 0;
+		int b4 = (mask & 16)  ? -1 : 0;
+		int b3 = (mask & 8)   ? -1 : 0;
+		int b2 = (mask & 4)   ? -1 : 0;
+		int b1 = (mask & 2)   ? -1 : 0;
+		int b0 = (mask & 1)   ? -1 : 0;
+		return blend8(a, GSVector4i(b0, b0, b1, b1, b2, b2, b3, b3, b4, b4, b5, b5, b6, b6, b7, b7));
+#endif
 	}
-
-	#endif
-
-	#if _M_SSE >= 0x501
 
 	template<int mask> __forceinline GSVector4i blend32(const GSVector4i& v) const
 	{
+#if _M_SSE >= 0x501
 		return GSVector4i(_mm_blend_epi32(m, v.m, mask));
+#else
+		constexpr int bit3 = ((mask & 8) * 3) << 3;
+		constexpr int bit2 = ((mask & 4) * 3) << 2;
+		constexpr int bit1 = ((mask & 2) * 3) << 1;
+		constexpr int bit0 = (mask & 1) * 3;
+		return blend16<bit3 | bit2 | bit1 | bit0>(v);
+#endif
 	}
-
-	#endif
 
 	__forceinline GSVector4i blend(const GSVector4i& a, const GSVector4i& mask) const
 	{
@@ -844,6 +865,13 @@ public:
 		return GSVector4i(_mm_sra_epi32(m, i));
 	}
 
+#if _M_SSE >= 0x501
+	__forceinline GSVector4i srav32(const GSVector4i& v) const
+	{
+		return GSVector4i(_mm_srav_epi32(m, v.m));
+	}
+#endif
+
 	__forceinline GSVector4i sll16(int i) const
 	{
 		return GSVector4i(_mm_slli_epi16(m, i));
@@ -865,9 +893,9 @@ public:
 	}
 
 #if _M_SSE >= 0x501
-	__forceinline GSVector4i sllv32(__m128i i) const
+	__forceinline GSVector4i sllv32(const GSVector4i& v) const
 	{
-		return GSVector4i(_mm_sllv_epi32(m, i));
+		return GSVector4i(_mm_sllv_epi32(m, v.m));
 	}
 #endif
 
@@ -902,9 +930,9 @@ public:
 	}
 
 #if _M_SSE >= 0x501
-	__forceinline GSVector4i srlv32(__m128i i) const
+	__forceinline GSVector4i srlv32(const GSVector4i& v) const
 	{
-		return GSVector4i(_mm_srlv_epi32(m, i));
+		return GSVector4i(_mm_srlv_epi32(m, v.m));
 	}
 #endif
 
