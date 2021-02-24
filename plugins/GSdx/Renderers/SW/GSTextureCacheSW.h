@@ -31,7 +31,8 @@ public:
 	{
 	public:
 		GSState* m_state;
-		GSOffset* m_offset;
+		GSOffset m_offset;
+		GSOffset::PageLooper m_pages;
 		GIFRegTEX0 m_TEX0;
 		GIFRegTEXA m_TEXA;
 		void* m_buff;
@@ -42,7 +43,6 @@ public:
 		std::vector<GSVector2i>* m_p2t;
 		uint32 m_valid[MAX_PAGES];
 		std::array<uint16, MAX_PAGES> m_erase_it;
-		struct { uint32 bm[16]; const uint32* n; } m_pages;
 		const uint32* RESTRICT m_sharedbits;
 
 		// m_valid
@@ -67,7 +67,7 @@ public:
 
 	Texture* Lookup(const GIFRegTEX0& TEX0, const GIFRegTEXA& TEXA, uint32 tw0 = 0);
 
-	void InvalidatePages(const uint32* pages, uint32 psm);
+	void InvalidatePages(const GSOffset::PageLooper& pages, uint32 psm);
 
 	void RemoveAll();
 	void IncAge();

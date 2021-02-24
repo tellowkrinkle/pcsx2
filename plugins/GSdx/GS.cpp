@@ -1252,7 +1252,7 @@ EXPORT_C GSBenchmark(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow
 
 				printf("%6d %6d | ", (int)((float)trlen * n / (end - start) / 1000), (int)((float)(w * h) * n / (end - start) / 1000));
 
-				const GSOffset* off = mem->GetOffset(TEX0.TBP0, TEX0.TBW, TEX0.PSM);
+				const GSOffset off = mem->GetOffset(TEX0.TBP0, TEX0.TBW, TEX0.PSM);
 
 				start = clock();
 
