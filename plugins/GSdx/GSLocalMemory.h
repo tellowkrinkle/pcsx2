@@ -150,7 +150,7 @@ public:
 
 	struct alignas(128) psm_t
 	{
-		pixelAddress pa, bn;
+		GSSwizzleInfo info;
 		readPixel rp;
 		readPixelAddr rpa;
 		writePixel wp;
