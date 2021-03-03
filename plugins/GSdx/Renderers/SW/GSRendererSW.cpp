@@ -733,15 +733,15 @@ void GSRendererSW::UsePages(const GSOffset::PageLooper& pages, const int type)
 		switch (type) {
 			case 0:
 				ASSERT((m_fzb_pages[page] & 0xFFFF) < USHRT_MAX);
-				m_fzb_pages[page] += 1;
+				m_fzb_pages[page].fetch_add(1, std::memory_order_relaxed);
 				break;
 			case 1:
 				ASSERT((m_fzb_pages[page] >> 16) < USHRT_MAX);
-				m_fzb_pages[page] += 0x10000;
+				m_fzb_pages[page].fetch_add(0x10000, std::memory_order_relaxed);
 				break;
 			case 2:
 				ASSERT(m_tex_pages[page] < USHRT_MAX);
-				m_tex_pages[page] += 1;
+				m_tex_pages[page].fetch_add(1, std::memory_order_relaxed);
 				break;
 			default:break;
 		}
@@ -755,15 +755,15 @@ void GSRendererSW::ReleasePages(const GSOffset::PageLooper& pages, const int typ
 		switch (type) {
 			case 0:
 				ASSERT((m_fzb_pages[page] & 0xFFFF) > 0);
-				m_fzb_pages[page] -= 1;
+				m_fzb_pages[page].fetch_sub(1, std::memory_order_relaxed);
 				break;
 			case 1:
 				ASSERT((m_fzb_pages[page] >> 16) > 0);
-				m_fzb_pages[page] -= 0x10000;
+				m_fzb_pages[page].fetch_sub(0x10000, std::memory_order_relaxed);
 				break;
 			case 2:
 				ASSERT(m_tex_pages[page] > 0);
-				m_tex_pages[page] -= 1;
+				m_tex_pages[page].fetch_sub(1, std::memory_order_relaxed);
 				break;
 			default:break;
 		}

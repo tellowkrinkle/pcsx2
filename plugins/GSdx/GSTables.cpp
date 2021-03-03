@@ -23,8 +23,8 @@
 #include "GSTables.h"
 
 template <int Width, int Height>
-static constexpr GSBlockSwizzleTable makeSwizzleTable(const uint8 (&arr)[Height][Width]) {
-	GSBlockSwizzleTable table = {};
+static constexpr GSSizedBlockSwizzleTable<Height, Width> makeSwizzleTable(const uint8 (&arr)[Height][Width]) {
+	GSSizedBlockSwizzleTable<Height, Width> table = {};
 	for (int y = 0; y < 8; y++) {
 		for (int x = 0; x < 8; x++) {
 			table.value[y][x] = arr[y % Height][x % Width];
@@ -117,14 +117,14 @@ static constexpr uint8 _blockTable4[8][4] =
 	{ 21, 23, 29, 31 }
 };
 
-constexpr GSBlockSwizzleTable blockTable32   = makeSwizzleTable(_blockTable32);
-constexpr GSBlockSwizzleTable blockTable32Z  = makeSwizzleTable(_blockTable32Z);
-constexpr GSBlockSwizzleTable blockTable16   = makeSwizzleTable(_blockTable16);
-constexpr GSBlockSwizzleTable blockTable16S  = makeSwizzleTable(_blockTable16S);
-constexpr GSBlockSwizzleTable blockTable16Z  = makeSwizzleTable(_blockTable16Z);
-constexpr GSBlockSwizzleTable blockTable16SZ = makeSwizzleTable(_blockTable16SZ);
-constexpr GSBlockSwizzleTable blockTable8    = makeSwizzleTable(_blockTable8);
-constexpr GSBlockSwizzleTable blockTable4    = makeSwizzleTable(_blockTable4);
+constexpr GSSizedBlockSwizzleTable<4, 8> blockTable32   = makeSwizzleTable(_blockTable32);
+constexpr GSSizedBlockSwizzleTable<4, 8> blockTable32Z  = makeSwizzleTable(_blockTable32Z);
+constexpr GSSizedBlockSwizzleTable<8, 4> blockTable16   = makeSwizzleTable(_blockTable16);
+constexpr GSSizedBlockSwizzleTable<8, 4> blockTable16S  = makeSwizzleTable(_blockTable16S);
+constexpr GSSizedBlockSwizzleTable<8, 4> blockTable16Z  = makeSwizzleTable(_blockTable16Z);
+constexpr GSSizedBlockSwizzleTable<8, 4> blockTable16SZ = makeSwizzleTable(_blockTable16SZ);
+constexpr GSSizedBlockSwizzleTable<4, 8> blockTable8    = makeSwizzleTable(_blockTable8);
+constexpr GSSizedBlockSwizzleTable<8, 4> blockTable4    = makeSwizzleTable(_blockTable4);
 
 constexpr uint8 columnTable32[8][8] =
 {
@@ -292,4 +292,66 @@ constexpr uint8 clutTableT16I4[16] =
 {
 	0, 2, 8, 10, 16, 18, 24, 26,
 	4, 6, 12, 14, 20, 22, 28, 30
+};
+
+template <int BlocksHigh, int BlocksWide, int ColHeight, int ColWidth, typename Col>
+constexpr int pxOffset(const uint8 (&blockTable)[BlocksHigh][BlocksWide], Col (&colTable)[ColHeight][ColWidth], int x, int y)
+{
+	int blockSize = ColHeight * ColWidth;
+	int pageSize = blockSize * BlocksHigh * BlocksWide;
+	int pageWidth = BlocksWide * ColWidth;
+	int pageX = x / pageWidth;
+	int subpageX = x % pageWidth;
+	int blockID = blockTable[y / ColHeight][subpageX / ColWidth];
+	int sublockOffset = colTable[y % ColHeight][subpageX % ColWidth];
+	return pageX * pageSize + blockID * blockSize + sublockOffset;
+}
+
+template <int BlocksHigh, int BlocksWide, int ColHeight, int ColWidth, typename Col>
+constexpr GSPixelColOffsetTable<BlocksHigh * ColHeight> makeColOffsetTable(const uint8 (&blockTable)[BlocksHigh][BlocksWide], Col (&colTable)[ColHeight][ColWidth])
+{
+	constexpr int size = BlocksHigh * ColHeight;
+	GSPixelColOffsetTable<size> table = {};
+	for (int y = 0; y < size; y++)
+	{
+		table.value[y] = pxOffset(blockTable, colTable, 0, y);
+	}
+	return table;
+}
+
+template <int BlocksHigh, int BlocksWide, int ColHeight, int ColWidth, typename Col>
+constexpr GSSizedPixelRowOffsetTable<BlocksWide * ColWidth> makeRowOffsetTable(const uint8 (&blockTable)[BlocksHigh][BlocksWide], Col (&colTable)[ColHeight][ColWidth], int y)
+{
+	int base = pxOffset(blockTable, colTable, 0, y);
+	GSSizedPixelRowOffsetTable<BlocksWide * ColWidth> table = {};
+	for (int x = 0; x < 2048; x++) 
+	{
+		table.value[x] = pxOffset(blockTable, colTable, x, y) - base;
+	}
+	return table;
+}
+
+constexpr GSPixelColOffsetTable< 32> pixelColOffset32   = makeColOffsetTable(_blockTable32,   columnTable32);
+constexpr GSPixelColOffsetTable< 32> pixelColOffset32Z  = makeColOffsetTable(_blockTable32Z,  columnTable32);
+constexpr GSPixelColOffsetTable< 64> pixelColOffset16   = makeColOffsetTable(_blockTable16,   columnTable16);
+constexpr GSPixelColOffsetTable< 64> pixelColOffset16S  = makeColOffsetTable(_blockTable16S,  columnTable16);
+constexpr GSPixelColOffsetTable< 64> pixelColOffset16Z  = makeColOffsetTable(_blockTable16Z,  columnTable16);
+constexpr GSPixelColOffsetTable< 64> pixelColOffset16SZ = makeColOffsetTable(_blockTable16SZ, columnTable16);
+constexpr GSPixelColOffsetTable< 64> pixelColOffset8    = makeColOffsetTable(_blockTable8,    columnTable8);
+constexpr GSPixelColOffsetTable<128> pixelColOffset4    = makeColOffsetTable(_blockTable4,    columnTable4);
+constexpr GSSizedPixelRowOffsetTable< 64> _pixelRowOffset32   = makeRowOffsetTable(_blockTable32,   columnTable32, 0);
+constexpr GSSizedPixelRowOffsetTable< 64> _pixelRowOffset32Z  = makeRowOffsetTable(_blockTable32Z,  columnTable32, 0);
+constexpr GSSizedPixelRowOffsetTable< 64> _pixelRowOffset16   = makeRowOffsetTable(_blockTable16,   columnTable16, 0);
+constexpr GSSizedPixelRowOffsetTable< 64> _pixelRowOffset16S  = makeRowOffsetTable(_blockTable16S,  columnTable16, 0);
+constexpr GSSizedPixelRowOffsetTable< 64> _pixelRowOffset16Z  = makeRowOffsetTable(_blockTable16Z,  columnTable16, 0);
+constexpr GSSizedPixelRowOffsetTable< 64> _pixelRowOffset16SZ = makeRowOffsetTable(_blockTable16SZ, columnTable16, 0);
+constexpr GSSizedPixelRowOffsetTable<128> _pixelRowOffset8[2] =
+{
+	makeRowOffsetTable(_blockTable8, columnTable8, 0),
+	makeRowOffsetTable(_blockTable8, columnTable8, 2),
+};
+constexpr GSSizedPixelRowOffsetTable<128> _pixelRowOffset4[2] =
+{
+	makeRowOffsetTable(_blockTable4, columnTable4, 0),
+	makeRowOffsetTable(_blockTable4, columnTable4, 2),
 };
