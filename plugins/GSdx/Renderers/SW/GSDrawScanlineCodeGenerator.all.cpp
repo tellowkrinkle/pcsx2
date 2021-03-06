@@ -2109,7 +2109,7 @@ void GSDrawScanlineCodeGenerator2::SampleTextureLOD()
 
 			pcmpeqd(xym1, xym1);
 			psrlw(xym1, 15);
-			vpaddw(xym3, xym2, xym1);
+			THREEARG(paddw, xym3, xym2, xym1);
 
 			// uv0 = Wrap(uv0);
 			// uv1 = Wrap(uv1);
