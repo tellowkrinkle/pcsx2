@@ -58,7 +58,7 @@ int ATA::Open(ghc::filesystem::path hddPath)
 	head = tail;
 
 	{
-		std::lock_guard ioSignallock(ioMutex);
+		std::lock_guard<std::mutex> ioSignallock(ioMutex);
 		ioRead = false;
 		ioWrite = false;
 	}
@@ -76,7 +76,7 @@ void ATA::Close()
 	{
 		ioClose.store(true);
 		{
-			std::lock_guard ioSignallock(ioMutex);
+			std::lock_guard<std::mutex> ioSignallock(ioMutex);
 			ioWrite = true;
 		}
 		ioReady.notify_all();
@@ -300,7 +300,7 @@ void ATA::Async(uint cycles)
 		awaitFlush || (waitingCmd != nullptr))
 	{
 		{
-			std::lock_guard ioSignallock(ioMutex);
+			std::lock_guard<std::mutex> ioSignallock(ioMutex);
 			if (ioRead || ioWrite)
 				//IO Running
 				return;
@@ -318,7 +318,7 @@ void ATA::Async(uint cycles)
 		{
 			//Log_Info("Starting async write");
 			{
-				std::lock_guard ioSignallock(ioMutex);
+				std::lock_guard<std::mutex> ioSignallock(ioMutex);
 				ioWrite = true;
 			}
 			ioReady.notify_all();
