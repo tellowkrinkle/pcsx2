@@ -288,7 +288,7 @@ public:
 		}
 		return;
 	}
-	bool IsRequired() const { return true; }
+	bool IsRequired() const { return false; }
 };
 
 class SavestateEntry_PAD : public BaseSavestateEntry
