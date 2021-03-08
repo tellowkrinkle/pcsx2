@@ -27,7 +27,15 @@ void USBasync(u32 cycles) {}
 void USBshutdown() {}
 void USBclose() {}
 s32 USBopen(void* pDsp) { return 0; }
-s32 USBfreeze(int mode, freezeData* data) { return 0; }
+s32 USBfreeze(int mode, freezeData* data) {
+	if (mode == FREEZE_SIZE) {
+		data->size = 1;
+	}
+	if (mode == FREEZE_SAVE) {
+		*data->data = 0;
+	}
+	return 0;
+}
 
 u8 USBread8(u32 addr) { return 0; }
 u16 USBread16(u32 addr) { return 0; }
