@@ -113,7 +113,7 @@ struct xImplSimd_Blend
     xImplSimd_DestRegImmSSE PD;
 
     // [SSE-4.1] Conditionally copies dword values from src to dest, depending on the
-    // mask (bits [3:0]) in XMM0 (yes, the fixed register).  Each mask bit corresponds
+    // msb of each dword in XMM0 (yes, the fixed register).  Each mask bit corresponds
     // to a dword element in the 128-bit operand.
     //
     // If a mask bit is 1, then the corresponding dword in the source operand is copied
@@ -122,13 +122,39 @@ struct xImplSimd_Blend
     xImplSimd_DestRegSSE VPS;
 
     // [SSE-4.1] Conditionally copies quadword values from src to dest, depending on the
-    // mask (bits [1:0]) in XMM0 (yes, the fixed register).  Each mask bit corresponds
+    // msb of each quadword in XMM0 (yes, the fixed register).  Each mask bit corresponds
     // to a quadword element in the 128-bit operand.
     //
     // If a mask bit is 1, then the corresponding dword in the source operand is copied
     // to dest, else the dword element in dest is left unchanged.
     //
     xImplSimd_DestRegSSE VPD;
+};
+
+// --------------------------------------------------------------------------------------
+//  xImplSimd_PBlend
+// --------------------------------------------------------------------------------------
+// PBlend - Conditional copying of values in src into dest.
+//
+struct xImplSimd_PBlend
+{
+    // [SSE-4.1] Conditionally copies word values from src to dest, depending on the
+    // mask bits in the immediate operand.  Each mask bit corresponds to a
+    // word element in a 128-bit operand.
+    //
+    // If a mask bit is 1, then the corresponding word in the source operand is copied
+    // to dest, else the word element in dest is left unchanged.
+    //
+    xImplSimd_DestRegImmSSE W;
+
+    // [SSE-4.1] Conditionally copies byte values from src to dest, depending on the
+    // msb of each byte in XMM0 (yes, the fixed register).  Each mask bit corresponds
+    // to a byte element in the 128-bit operand.
+    //
+    // If a mask bit is 1, then the corresponding byte in the source operand is copied
+    // to dest, else the byte element in dest is left unchanged.
+    //
+    xImplSimd_DestRegSSE VB;
 };
 
 // --------------------------------------------------------------------------------------

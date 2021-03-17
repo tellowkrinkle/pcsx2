@@ -490,6 +490,7 @@ extern const xImplSimd_MovHL_RtoR xMOVLH;
 extern const xImplSimd_MovHL_RtoR xMOVHL;
 
 extern const xImplSimd_Blend xBLEND;
+extern const xImplSimd_PBlend xPBLEND;
 extern const xImplSimd_PMove xPMOVSX;
 extern const xImplSimd_PMove xPMOVZX;
 

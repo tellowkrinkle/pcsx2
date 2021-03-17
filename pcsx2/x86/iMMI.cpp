@@ -747,6 +747,8 @@ void recPADDSH()
 	_clearNeededXMMregs();
 }
 
+alignas(16) static const u32 INT32_MIN_VEC[4] = { 0x80000000, 0x80000000, 0x80000000, 0x80000000 };
+
 ////////////////////////////////////////////////////
 //NOTE: check kh2 movies if changing this
 void recPADDSW()
@@ -755,10 +757,9 @@ void recPADDSW()
 
 	EE::Profiler.EmitOp(eeOpcode::PADDSW);
 
+	int t0reg = _allocTempXMMreg(XMMT_INT, x86caps.hasStreamingSIMD4Extensions ? 0 : -1); // Must be xmm0 for pblendvb
 	int info = eeRecompileCodeXMM( XMMINFO_READS|XMMINFO_READT|XMMINFO_WRITED );
-	int t0reg = _allocTempXMMreg(XMMT_INT, -1);
 	int t1reg = _allocTempXMMreg(XMMT_INT, -1);
-	int t2reg = _allocTempXMMreg(XMMT_INT, -1);
 
 	// The idea is:
 	//  s = x + y; (wrap-arounded)
@@ -782,28 +783,31 @@ void recPADDSW()
 	xPANDN(xRegisterSSE(t0reg), xRegisterSSE(t1reg)); // (Sign(Rs) == Sign(Rt)) & (Sign(Rs) != Sign(Rd))
 	xPSRA.D(xRegisterSSE(t0reg), 31);
 
-	xPCMP.EQD(xRegisterSSE(t1reg), xRegisterSSE(t1reg));
-	xPXOR(xRegisterSSE(t0reg), xRegisterSSE(t1reg)); // could've been avoided if Intel wasn't too prudish for a PORN instruction
-	xPSLL.D(xRegisterSSE(t1reg), 31); // 0x80000000
+	xMOVDQA(xRegisterSSE(t1reg), xRegisterSSE(EEREC_D));
+	xPSRA.D(xRegisterSSE(t1reg), 31);
+	xPXOR(xRegisterSSE(t1reg), ptr[INT32_MIN_VEC]); // t1reg = (Rd < 0) ? 0x7fffffff : 0x80000000
 
-	xMOVDQA(xRegisterSSE(t2reg), xRegisterSSE(EEREC_D));
-	xPSRA.D(xRegisterSSE(t2reg), 31);
-	xPXOR(xRegisterSSE(t1reg), xRegisterSSE(t2reg)); // t2reg = (Rd < 0) ? 0x7fffffff : 0x80000000
-
-	xPAND(xRegisterSSE(EEREC_D), xRegisterSSE(t0reg));
-	xPANDN(xRegisterSSE(t0reg), xRegisterSSE(t1reg));
-	xPOR(xRegisterSSE(EEREC_D), xRegisterSSE(t0reg));
+	if (x86caps.hasStreamingSIMD4Extensions)
+	{
+		xPBLEND.VB(xRegisterSSE(EEREC_D), xRegisterSSE(t1reg) /*, xmm0==t0reg */);
+	}
+	else
+	{
+		xPAND(xRegisterSSE(t1reg), xRegisterSSE(t0reg));
+		xPANDN(xRegisterSSE(t0reg), xRegisterSSE(EEREC_D));
+		xPOR(xRegisterSSE(t1reg), xRegisterSSE(t0reg));
+		xMOVDQA(xRegisterSSE(EEREC_D), xRegisterSSE(t1reg));
+	}
 
 	_freeXMMreg(t0reg);
 	_freeXMMreg(t1reg);
-	_freeXMMreg(t2reg);
 	_clearNeededXMMregs();
 }
 
 ////////////////////////////////////////////////////
 void recPSUBSB()
 {
-   if ( ! _Rd_ ) return;
+	if ( ! _Rd_ ) return;
 
 	EE::Profiler.EmitOp(eeOpcode::PSUBSB);
 
@@ -854,10 +858,9 @@ void recPSUBSW()
 
 	EE::Profiler.EmitOp(eeOpcode::PSUBSW);
 
+	int t0reg = _allocTempXMMreg(XMMT_INT, x86caps.hasStreamingSIMD4Extensions ? 0 : -1); // Must be xmm0 for pblendvb
 	int info = eeRecompileCodeXMM( XMMINFO_READS|XMMINFO_READT|XMMINFO_WRITED );
-	int t0reg = _allocTempXMMreg(XMMT_INT, -1);
 	int t1reg = _allocTempXMMreg(XMMT_INT, -1);
-	int t2reg = _allocTempXMMreg(XMMT_INT, -1);
 
 	// The idea is:
 	//  s = x - y; (wrap-arounded)
@@ -867,40 +870,40 @@ void recPSUBSW()
 	// get sign bit
 	xMOVDQA(xRegisterSSE(t0reg), xRegisterSSE(EEREC_S));
 	xMOVDQA(xRegisterSSE(t1reg), xRegisterSSE(EEREC_T));
-	xPSRL.D(xRegisterSSE(t0reg), 31);
-	xPSRL.D(xRegisterSSE(t1reg), 31);
 
 	// normal subtraction
 	if( EEREC_D == EEREC_S ) xPSUB.D(xRegisterSSE(EEREC_D), xRegisterSSE(EEREC_T));
-	else if( EEREC_D == EEREC_T ) {
-		xMOVDQA(xRegisterSSE(t2reg), xRegisterSSE(EEREC_T));
-		xMOVDQA(xRegisterSSE(EEREC_D), xRegisterSSE(EEREC_S));
-		xPSUB.D(xRegisterSSE(EEREC_D), xRegisterSSE(t2reg));
-	}
 	else {
 		xMOVDQA(xRegisterSSE(EEREC_D), xRegisterSSE(EEREC_S));
-		xPSUB.D(xRegisterSSE(EEREC_D), xRegisterSSE(EEREC_T));
+		xPSUB.D(xRegisterSSE(EEREC_D), xRegisterSSE(t1reg));
 	}
 
 	// overflow check
 	// t2reg = 0xffffffff if NOT overflow, else 0
-	xMOVDQA(xRegisterSSE(t2reg), xRegisterSSE(EEREC_D));
-	xPSRL.D(xRegisterSSE(t2reg), 31);
-	xPCMP.EQD(xRegisterSSE(t1reg), xRegisterSSE(t0reg)); // Sign(Rs) == Sign(Rt)
-	xPCMP.EQD(xRegisterSSE(t2reg), xRegisterSSE(t0reg)); // Sign(Rs) == Sign(Rd)
-	xPOR(xRegisterSSE(t2reg), xRegisterSSE(t1reg)); // (Sign(Rs) == Sign(Rt)) | (Sign(Rs) == Sign(Rd))
-	xPCMP.EQD(xRegisterSSE(t1reg), xRegisterSSE(t1reg));
-	xPSRL.D(xRegisterSSE(t1reg), 1); // 0x7fffffff
-	xPADD.D(xRegisterSSE(t1reg), xRegisterSSE(t0reg)); // t1reg = (Rs < 0) ? 0x80000000 : 0x7fffffff
+	xPXOR(xRegisterSSE(t1reg), xRegisterSSE(t0reg)); // Sign(Rs) != Sign(Rt)
+	xPXOR(xRegisterSSE(t0reg), xRegisterSSE(EEREC_D)); // Sign(Rs) != Sign(Rd)
+	xPAND(xRegisterSSE(t0reg), xRegisterSSE(t1reg)); // (Sign(Rs) != Sign(Rt)) & (Sign(Rs) != Sign(Rd))
+	xPSRA.D(xRegisterSSE(t0reg), 31);
+
+	xMOVDQA(xRegisterSSE(t1reg), xRegisterSSE(EEREC_D));
+	xPSRA.D(xRegisterSSE(t1reg), 31);
+	xPXOR(xRegisterSSE(t1reg), ptr[INT32_MIN_VEC]); // t1reg = (Rd < 0) ? 0x7fffffff : 0x80000000
 
 	// saturation
-	xPAND(xRegisterSSE(EEREC_D), xRegisterSSE(t2reg));
-	xPANDN(xRegisterSSE(t2reg), xRegisterSSE(t1reg));
-	xPOR(xRegisterSSE(EEREC_D), xRegisterSSE(t2reg));
+	if (x86caps.hasStreamingSIMD4Extensions)
+	{
+		xPBLEND.VB(xRegisterSSE(EEREC_D), xRegisterSSE(t1reg) /*, xmm0==t0reg */);
+	}
+	else
+	{
+		xPAND(xRegisterSSE(t1reg), xRegisterSSE(t0reg));
+		xPANDN(xRegisterSSE(t0reg), xRegisterSSE(EEREC_D));
+		xPOR(xRegisterSSE(t1reg), xRegisterSSE(t0reg));
+		xMOVDQA(xRegisterSSE(EEREC_D), xRegisterSSE(t1reg));
+	}
 
 	_freeXMMreg(t0reg);
 	_freeXMMreg(t1reg);
-	_freeXMMreg(t2reg);
 	_clearNeededXMMregs();
 }
 
