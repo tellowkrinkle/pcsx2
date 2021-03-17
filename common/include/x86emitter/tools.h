@@ -95,6 +95,7 @@ public:
             u32 hasBMI1 : 1;
             u32 hasBMI2 : 1;
             u32 hasFMA : 1;
+            u32 hasFastPext : 1; // BMI2 + not zen1/zen2
 
             // AMD-specific CPU Features
             u32 hasAMD64BitArchitecture : 1;

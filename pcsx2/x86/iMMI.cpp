@@ -551,6 +551,8 @@ void recPPACB()
 	_clearNeededXMMregs();
 }
 
+static const u64 PEXT5_U64MASK = 0x80F8F8F880F8F8F8;
+
 ////////////////////////////////////////////////////
 void recPEXT5()
 {
@@ -559,6 +561,26 @@ void recPEXT5()
 	EE::Profiler.EmitOp(eeOpcode::PEXT5);
 
 	int info = eeRecompileCodeXMM( XMMINFO_READT|XMMINFO_WRITED );
+
+#ifdef __M_X86_64
+	if (x86caps.hasFastPext && x86caps.hasStreamingSIMD4Extensions)
+	{
+		alignas(16) static const u8 shuffle[16] = { 0, 1, 4, 5, 8, 9, 12, 13 };
+		if (EEREC_D != EEREC_T)
+			xMOVDQA(xRegisterSSE(EEREC_D), xRegisterSSE(EEREC_T));
+		xPSHUF.B(xRegisterSSE(EEREC_D), ptr[shuffle]);
+		xMOVQ(rax, xRegisterSSE(EEREC_D));
+		xMOV64(rcx, PEXT5_U64MASK);
+		xPDEP(rdx, rax, rcx);
+		xMOVQZX(xRegisterSSE(EEREC_D), rdx);
+		xSHR(rax, 32);
+		xPDEP(rax, rax, rcx);
+		xPINSR.Q(xRegisterSSE(EEREC_D), rax, 1);
+		_clearNeededXMMregs();
+		return;
+	}
+#endif
+
 	int t0reg = _allocTempXMMreg(XMMT_INT, -1);
 	int t1reg = _allocTempXMMreg(XMMT_INT, -1);
 
@@ -597,6 +619,23 @@ void recPPAC5()
 	EE::Profiler.EmitOp(eeOpcode::PPAC5);
 
 	int info = eeRecompileCodeXMM( XMMINFO_READT|XMMINFO_WRITED );
+
+#ifdef __M_X86_64
+	if (x86caps.hasFastPext && x86caps.hasStreamingSIMD4Extensions)
+	{
+		xMOVQ(rax, xRegisterSSE(EEREC_T));
+		xPEXTR.Q(rdx, xRegisterSSE(EEREC_T), 1);
+		xMOV64(rcx, PEXT5_U64MASK);
+		xPEXT(rax, rax, rcx);
+		xPEXT(rdx, rdx, rcx);
+		xMOVDZX(xRegisterSSE(EEREC_D), eax);
+		xPINSR.D(xRegisterSSE(EEREC_D), edx, 1);
+		xPMOVZX.WD(xRegisterSSE(EEREC_D), xRegisterSSE(EEREC_D));
+		_clearNeededXMMregs();
+		return;
+	}
+#endif
+
 	int t0reg = _allocTempXMMreg(XMMT_INT, -1);
 	int t1reg = _allocTempXMMreg(XMMT_INT, -1);
 
