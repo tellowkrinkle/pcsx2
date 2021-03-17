@@ -443,6 +443,10 @@ extern void xMOVDZX(const xRegisterSSE &to, const xIndirectVoid &src);
 extern void xMOVD(const xRegister32or64 &to, const xRegisterSSE &from);
 extern void xMOVD(const xIndirectVoid &dest, const xRegisterSSE &from);
 
+#ifdef __M_X86_64
+extern void xMOVQ(const xRegister64 &dest, const xRegisterSSE &from);
+extern void xMOVQZX(const xRegisterSSE &to, const xRegister64 &from);
+#endif
 extern void xMOVQ(const xIndirectVoid &dest, const xRegisterSSE &from);
 
 extern void xMOVQZX(const xRegisterSSE &to, const xIndirectVoid &src);

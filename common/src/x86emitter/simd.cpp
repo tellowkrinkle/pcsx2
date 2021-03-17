@@ -458,14 +458,24 @@ void xImplSimd_Shuffle::PD(const xRegisterSSE &to, const xIndirectVoid &from, u8
     xOpWrite0F(0x66, 0xc6, to, from, selector & 0x3);
 }
 
-void xImplSimd_InsertExtractHelper::operator()(const xRegisterSSE &to, const xRegister32 &from, u8 imm8) const
+void xImplSimd_InsertHelper::operator()(const xRegisterSSE &to, const xRegister32or64 &from, u8 imm8) const
 {
     xOpWrite0F(0x66, Opcode, to, from, imm8);
 }
 
-void xImplSimd_InsertExtractHelper::operator()(const xRegisterSSE &to, const xIndirectVoid &from, u8 imm8) const
+void xImplSimd_InsertHelper::operator()(const xRegisterSSE &to, const xIndirectVoid &from, u8 imm8) const
 {
     xOpWrite0F(0x66, Opcode, to, from, imm8);
+}
+
+void xImplSimd_ExtractHelper::operator()(const xRegister32or64 &to, const xRegisterSSE &from, u8 imm8) const
+{
+    xOpWrite0F(0x66, Opcode, from, to, imm8);
+}
+
+void xImplSimd_ExtractHelper::operator()(const xIndirectVoid &to, const xRegisterSSE &from, u8 imm8) const
+{
+    xOpWrite0F(0x66, Opcode, from, to, imm8);
 }
 
 void xImplSimd_PInsert::W(const xRegisterSSE &to, const xRegister32 &from, u8 imm8) const { xOpWrite0F(0x66, 0xc4, to, from, imm8); }
@@ -515,15 +525,21 @@ const xImplSimd_Unpack xUNPCK =
 };
 
 const xImplSimd_PInsert xPINSR =
-    {
-        {0x203a}, // B
-        {0x223a}, // D
+{
+    {0x203a}, // B
+    {0x223a}, // D
+#ifdef __M_X86_64
+    {0x223a}, // Q
+#endif
 };
 
 const SimdImpl_PExtract xPEXTR =
-    {
-        {0x143a}, // B
-        {0x163a}, // D
+{
+    {0x143a}, // B
+    {0x163a}, // D
+#ifdef __M_X86_64
+    {0x163a}, // Q
+#endif
 };
 
 // =====================================================================================================
@@ -685,6 +701,11 @@ __fi void xMOVQZX(const xRegisterSSE &to, const void *src) { xOpWrite0F(0xf3, 0x
 
 // Moves lower quad of XMM to ptr64 (no bits are cleared)
 __fi void xMOVQ(const xIndirectVoid &dest, const xRegisterSSE &from) { xOpWrite0F(0x66, 0xd6, from, dest); }
+
+#ifdef __M_X86_64
+__fi void xMOVQZX(const xRegisterSSE &to, const xRegister64 &from) { xOpWrite0F(0x66, 0x6e, to, from); }
+__fi void xMOVQ(const xRegister64 &to, const xRegisterSSE &from) { xOpWrite0F(0x66, 0x7e, from, to); }
+#endif
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //

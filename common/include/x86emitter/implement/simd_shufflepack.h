@@ -184,15 +184,26 @@ struct xImplSimd_Unpack
 };
 
 
-struct xImplSimd_InsertExtractHelper
+struct xImplSimd_InsertHelper
 {
     u16 Opcode;
 
     // [SSE-4.1] Allowed with SSE registers only (MMX regs are invalid)
-    void operator()(const xRegisterSSE &to, const xRegister32 &from, u8 imm8) const;
+    void operator()(const xRegisterSSE &to, const xRegister32or64 &from, u8 imm8) const;
 
     // [SSE-4.1] Allowed with SSE registers only (MMX regs are invalid)
     void operator()(const xRegisterSSE &to, const xIndirectVoid &from, u8 imm8) const;
+};
+
+struct xImplSimd_ExtractHelper
+{
+    u16 Opcode;
+
+    // [SSE-4.1] Allowed with SSE registers only (MMX regs are invalid)
+    void operator()(const xRegister32or64 &to, const xRegisterSSE &from, u8 imm8) const;
+
+    // [SSE-4.1] Allowed with SSE registers only (MMX regs are invalid)
+    void operator()(const xIndirectVoid &to, const xRegisterSSE &from, u8 imm8) const;
 };
 
 // --------------------------------------------------------------------------------------
@@ -206,10 +217,15 @@ struct xImplSimd_PInsert
     void W(const xRegisterSSE &to, const xIndirectVoid &from, u8 imm8) const;
 
     // [SSE-4.1] Allowed with SSE registers only (MMX regs are invalid)
-    xImplSimd_InsertExtractHelper B;
+    xImplSimd_InsertHelper B;
 
     // [SSE-4.1] Allowed with SSE registers only (MMX regs are invalid)
-    xImplSimd_InsertExtractHelper D;
+    xImplSimd_InsertHelper D;
+
+#ifdef __M_X86_64
+    // [SSE-4.1] Allowed with SSE registers only (MMX regs are invalid)
+    xImplSimd_InsertHelper Q;
+#endif
 };
 
 
@@ -232,10 +248,16 @@ struct SimdImpl_PExtract
     // [SSE-4.1] Copies the byte element specified by imm8 from src to dest.  The upper bits
     // of dest are zero-extended (cleared).  This can be used to extract any single packed
     // byte value from src into an x86 32 bit register.
-    const xImplSimd_InsertExtractHelper B;
+    const xImplSimd_ExtractHelper B;
 
     // [SSE-4.1] Copies the dword element specified by imm8 from src to dest.  This can be
     // used to extract any single packed dword value from src into an x86 32 bit register.
-    const xImplSimd_InsertExtractHelper D;
+    const xImplSimd_ExtractHelper D;
+
+#ifdef __M_X86_64
+    // [SSE-4.1] Copies the qword element specified by imm8 from src to dest.  This can be
+    // used to extract any single packed qword value from src into an x86 32 bit register.
+    const xImplSimd_ExtractHelper Q;
+#endif
 };
 }

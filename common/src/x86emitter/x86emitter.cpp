@@ -463,7 +463,7 @@ void EmitRex(uint reg1, const xRegisterBase &reg2)
 
 void EmitRex(const xRegisterBase &reg1, const xRegisterBase &reg2)
 {
-    bool w = reg1.IsWide();
+    bool w = reg1.IsWide() || reg2.IsWide();
     bool r = reg1.IsExtended();
     bool x = false;
     bool b = reg2.IsExtended();
@@ -482,7 +482,7 @@ void EmitRex(const xRegisterBase &reg1, const void *src)
 
 void EmitRex(const xRegisterBase &reg1, const xIndirectVoid &sib)
 {
-    bool w = reg1.IsWide();
+    bool w = reg1.IsWide() || sib.IsWide();
     bool r = reg1.IsExtended();
     bool x = sib.Index.IsExtended();
     bool b = sib.Base.IsExtended();

@@ -30,7 +30,7 @@ TEST(CodegenTests, MOVTest)
 	CODEGEN_TEST_64(xMOV(r8, rax), "49 89 c0");
 	CODEGEN_TEST_64(xMOV(r8, r9), "4d 89 c8");
 	CODEGEN_TEST_64(xMOV(rax, ptrNative[rcx]), "48 8b 01");
-	CODEGEN_TEST_BOTH(xMOV(eax, ptrNative[rcx]), "8b 01");
+	CODEGEN_TEST_BOTH(xMOV(eax, ptr32[rcx]), "8b 01");
 	CODEGEN_TEST_64(xMOV(ptrNative[rax], rcx), "48 89 08");
 	CODEGEN_TEST_BOTH(xMOV(ptr32[rax], ecx), "89 08");
 	CODEGEN_TEST_64(xMOV(rax, ptrNative[r8]), "49 8b 00");
@@ -162,4 +162,10 @@ TEST(CodegenTests, SSETest)
 	CODEGEN_TEST_BOTH(xBLEND.PS(xmm0, xmm1, 0x55), "66 0f 3a 0c c1 55");
 	CODEGEN_TEST_64(xBLEND.PD(xmm8, xmm9, 0xaa), "66 45 0f 3a 0d c1 aa");
 	CODEGEN_TEST_64(xEXTRACTPS(ptr32[base], xmm1, 2), "66 0f 3a 17 0d f6 ff ff ff 02");
+	CODEGEN_TEST_64(xPEXTR.Q(ptr64[base], xmm1, 1), "66 48 0f 3a 16 0d f5 ff ff ff 01");
+	CODEGEN_TEST_64(xPEXTR.Q(r13, xmm1, 1), "66 49 0f 3a 16 cd 01");
+	CODEGEN_TEST_64(xPINSR.Q(xmm1, r8, 1), "66 49 0f 3a 22 c8 01");
+	CODEGEN_TEST_64(xPEXT(rax, rdx, rbx), "c4 e2 ea f5 c3");
+	CODEGEN_TEST_64(xPDEP(r8, r9, r10), "c4 42 b3 f5 c2");
+	CODEGEN_TEST_64(xMOVQ(rax, xmm10), "66 4c 0f 7e d0");
 }
