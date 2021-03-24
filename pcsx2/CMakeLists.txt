@@ -211,6 +211,7 @@ set(pcsx2CDVDSources
 	CDVD/ChdFileReader.cpp
 	CDVD/CsoFileReader.cpp
 	CDVD/GzippedFileReader.cpp
+	CDVD/ThreadedFileReader.cpp
 	CDVD/IsoFS/IsoFile.cpp
 	CDVD/IsoFS/IsoFSCDVD.cpp
 	CDVD/IsoFS/IsoFS.cpp
@@ -230,6 +231,7 @@ set(pcsx2CDVDHeaders
 	CDVD/ChdFileReader.h
 	CDVD/CsoFileReader.h
 	CDVD/GzippedFileReader.h
+	CDVD/ThreadedFileReader.h
 	CDVD/IsoFileFormats.h
 	CDVD/IsoFS/IsoDirectory.h
 	CDVD/IsoFS/IsoFileDescriptor.h
