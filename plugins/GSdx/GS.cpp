@@ -352,11 +352,11 @@ static int _GSopen(void** dsp, const char* title, GSRendererType renderer, int t
 					s_gs = MULTI_ISA_SELECT(makeRendererNull)();
 					break;
 			}
-			if (s_gs == NULL)
-				return -1;
 		}
-
-		s_gs->Wnd() = window;
+		if (s_gs == NULL)
+			return -1;
+		else
+			s_gs->Wnd() = window;
 	}
 	catch (std::exception& ex)
 	{
