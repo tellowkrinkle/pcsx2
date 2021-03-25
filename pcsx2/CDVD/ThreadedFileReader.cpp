@@ -16,6 +16,11 @@
 #include "PrecompiledHeader.h"
 #include "ThreadedFileReader.h"
 
+#include <os/signpost.h>
+
+static const os_log_t LOG = os_log_create("Decompress", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
+static os_signpost_id_t TARGET = OS_SIGNPOST_ID_NULL;
+
 // Make sure buffer size is bigger than the cutoff where PCSX2 emulates a seek
 // If buffers are smaller than that, we can't keep up with linear reads
 static constexpr u32 MINIMUM_SIZE = 128 * 1024;
@@ -60,6 +65,8 @@ void ThreadedFileReader::Loop()
 {
 	Threading::SetNameOfCurrentThread("ISO Decompress");
 
+	os_signpost_id_t ID = os_signpost_id_generate(LOG);
+
 	std::unique_lock<std::mutex> lock(m_mtx);
 
 	while (true)
@@ -82,6 +89,7 @@ void ThreadedFileReader::Loop()
 		if (ptr)
 		{
 			ok = Decompress(ptr, requestOffset, requestSize);
+			os_signpost_event_emit(LOG, ID, "Decompress", "Finished decompressing %x bytes from %llx", requestSize, ChunkForOffset(requestOffset + requestSize).chunkID);
 		}
 
 		m_requestPtr.store(nullptr, std::memory_order_release);
@@ -283,6 +291,7 @@ int ThreadedFileReader::ReadSync(void* pBuffer, uint sector, uint count)
 	m_condition.notify_one();
 	if (size == 0)
 		return m_amtRead;
+	os_signpost_event_emit(LOG, os_signpost_id_make_with_pointer(LOG, pBuffer), "ReadSync", "Read %x bytes at block %llx", size, ChunkForOffset(offset).chunkID);
 	return FinishRead();
 }
 
@@ -312,6 +321,8 @@ void ThreadedFileReader::BeginRead(void* pBuffer, uint sector, uint count)
 		}
 		else
 		{
+			TARGET = os_signpost_id_make_with_pointer(LOG, pBuffer);
+			os_signpost_interval_begin(LOG, TARGET, "ReadAsync");
 			m_requestOffset = offset;
 			m_requestSize = size;
 			m_requestPtr.store(pBuffer, std::memory_order_relaxed);
@@ -323,6 +334,11 @@ void ThreadedFileReader::BeginRead(void* pBuffer, uint sector, uint count)
 
 int ThreadedFileReader::FinishRead(void)
 {
+	if (TARGET != OS_SIGNPOST_ID_NULL)
+	{
+		os_signpost_interval_end(LOG, TARGET, "ReadAsync");
+		TARGET = OS_SIGNPOST_ID_NULL;
+	}
 	if (m_requestPtr.load(std::memory_order_acquire) == nullptr)
 		return m_amtRead;
 	std::unique_lock<std::mutex> lock(m_mtx);
