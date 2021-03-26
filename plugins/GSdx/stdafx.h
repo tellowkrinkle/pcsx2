@@ -437,8 +437,15 @@ extern const std::string root_hw;
 #endif
 
 #ifndef MULTI_ISA_SHARED_COMPILATION
+/// Mark the start of a header defining code that will be compiled multiple times in multi-isa mode
+/// Anything between this and a `MULTI_ISA_UNSHARED_END` will be placed in a different namespace for each of the multilple compilations
 # define MULTI_ISA_UNSHARED_START namespace CURRENT_ISA {
+/// Mark the end of a header defining code that will be compiled multiple times in multi-isa mode
 # define MULTI_ISA_UNSHARED_END }
+/// Mark the beginning of a file implementing things that will be compiled multiple times in multi-isa mode
+/// Takes advantage of the fact that a `using namespace` declaration will also affect any implementations of things as long as they're not valid without it
+/// Fully global variables are valid as-is, however, and will need to have `CURRENT_ISA::` manually prepended to them.
+/// If you forget to do this, it will show up as a linker error (either multiple definitions of the function/variable, or a "failed to find isa_native::function")
 # define MULTI_ISA_UNSHARED_IMPL using namespace CURRENT_ISA
 #else
 # define MULTI_ISA_UNSHARED_START static_assert(0, "This file should not be included by multi-isa shared compilation!");
