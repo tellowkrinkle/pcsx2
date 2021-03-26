@@ -51,6 +51,8 @@ MULTI_ISA_DEF(IGSRenderer* makeRendererDX11();)
 
 #undef MULTI_ISA_DEF
 
+// MARK: Global variables that would otherwise be in unshared regions but need to be shared for some reason
+
 #include "GSCrc.h"
 
 // TKR: These were in GSHwHack.cpp (unshared), I assume they were done this way so they would show up in a debugger so I moved them here instead of making them static
@@ -59,7 +61,7 @@ extern CRC::Region g_crc_region;
 
 namespace GSStateISAShared
 {
-	// TKR: No clue what this is, it was in GSState.h but it's used by `GSDevice`s, outside of the unshared area
-	// So now it's here
+	/// Incremental draw call number
+	/// (Used for debug purposes, mostly used by GSState but also touched by `GSDevice`s in shared area)
 	extern int s_n;
 } // namespace GSStateISAShared
