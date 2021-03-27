@@ -194,9 +194,9 @@ void GSDrawScanlineCodeGenerator2::pbroadcastwLocal(const XYm& reg, const Addres
 
 void GSDrawScanlineCodeGenerator2::broadcastGPRToVec(const XYm& vec, const Xbyak::Reg32& gpr)
 {
-	movd(Xmm(vec), gpr);
+	movd(Xmm(vec.getIdx()), gpr);
 #if USING_YMM
-	vpbroadcastd(vec, Xmm(vec));
+	vpbroadcastd(vec, Xmm(vec.getIdx()));
 #else
 	pshufd(vec, vec, _MM_SHUFFLE(0, 0, 0, 0));
 #endif
