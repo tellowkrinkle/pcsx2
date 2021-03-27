@@ -22,6 +22,65 @@
 #include "stdafx.h"
 #include "GSDrawScanlineCodeGenerator.h"
 #include "GSDrawScanlineCodeGenerator.all.h"
+#include <map>
+#include <mutex>
+
+static std::map<uint64, bool> s_use_new_renderer;
+static std::mutex s_use_new_renderer_mutex;
+static constexpr const char* s_newrenderer_fname = "/tmp/PCSX2UseNewRenderer.txt";
+
+[[clang::optnone]]
+static bool shouldUseNewRenderer(uint64 key)
+{
+	std::lock_guard<std::mutex> l(s_use_new_renderer_mutex);
+
+	if (s_use_new_renderer.empty())
+	{
+		FILE* file = fopen(s_newrenderer_fname, "r");
+		if (file)
+		{
+			char* str = nullptr;
+			size_t linecap = 0;
+			while (getline(&str, &linecap, file) >= 0)
+			{
+				uint64 key;
+				char yn;
+				if (sscanf(str, "%llx %c", &key, &yn) == 2)
+				{
+					if (yn != 'Y' && yn != 'N' && yn != 'y' && yn != 'n')
+						fprintf(stderr, "Failed to parse %s: Not y/n\n", str);
+					s_use_new_renderer[key] = (yn == 'Y' || yn == 'y') ? true : false;
+				}
+				else
+				{
+					fprintf(stderr, "Failed to process line %s\n", str);
+				}
+			}
+			if (str)
+				free(str);
+			fclose(file);
+		}
+	}
+
+	auto idx = s_use_new_renderer.find(key);
+	if (idx == s_use_new_renderer.end())
+	{
+		s_use_new_renderer[key] = false;
+		// Rewrite file
+		FILE* file = fopen(s_newrenderer_fname, "w");
+		if (file)
+		{
+			for (const auto& pair : s_use_new_renderer)
+			{
+				fprintf(file, "%016llX %c %s\n", pair.first, pair.second ? 'Y' : 'N', GSScanlineSelector(pair.first).to_string().c_str());
+			}
+			fclose(file);
+		}
+		return false;
+	}
+
+	return idx->second;
+}
 
 #if _M_SSE >= 0x501
 #else
@@ -49,11 +108,10 @@ GSDrawScanlineCodeGenerator::GSDrawScanlineCodeGenerator(void* param, uint64 key
 	if(m_sel.breakpoint)
 		db(0xCC);
 
-	try {
+	if (shouldUseNewRenderer(key))
 		GenerateNew();
-	} catch (std::exception& e) {
-		fprintf(stderr, "ERR:GSDrawScanlineCodeGenerator %s\n", e.what());
-	}
+	else
+		Generate();
 }
 
 void GSDrawScanlineCodeGenerator::modulate16(const Xmm& a, const Operand& f, uint8 shift)
