@@ -416,7 +416,7 @@ string(STRIP "${CMAKE_CXX_FLAGS} ${DEFAULT_CPP_FLAG}" CMAKE_CXX_FLAGS)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9)
 
-if (APPLE AND ${CMAKE_OSX_DEPLOYMENT_TARGET} VERSION_LESS 10.14)
+if (APPLE AND ${CMAKE_OSX_DEPLOYMENT_TARGET} VERSION_LESS 10.14 AND NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 10)
     # Older versions of the macOS stdlib don't have operator new(size_t, align_val_t)
     # Disable use of them with this flag
     # Not great, but also no worse that what we were getting before we turned on C++17
