@@ -1626,11 +1626,11 @@ void GSDrawScanlineCodeGenerator2::Wrap(const XYm& uv)
 		}
 		else
 		{
-			BROADCAST_AND_OP(vbroadcasti128, pmaxsw, uv, min, _rip_global(t.min));
+			BROADCAST_AND_OP(vbroadcasti128, pand, uv, min, _rip_global(t.min));
 
 			if(region)
 			{
-				BROADCAST_AND_OP(vbroadcasti128, pminsw, uv, max, _rip_global(t.max));
+				BROADCAST_AND_OP(vbroadcasti128, por, uv, max, _rip_global(t.max));
 			}
 		}
 	}
