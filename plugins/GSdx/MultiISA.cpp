@@ -22,14 +22,18 @@
 #include "MultiISA.h"
 #include "GSUtil.h"
 
+static Xbyak::util::Cpu s_cpu;
+
 static VectorISA getCurrentISA()
 {
-	if (g_cpu.has(Xbyak::util::Cpu::tAVX2) && g_cpu.has(Xbyak::util::Cpu::tBMI1) && g_cpu.has(Xbyak::util::Cpu::tBMI2))
+	if (s_cpu.has(Xbyak::util::Cpu::tAVX2) && s_cpu.has(Xbyak::util::Cpu::tBMI1) && s_cpu.has(Xbyak::util::Cpu::tBMI2))
 		return VectorISA::AVX2;
-	else if (g_cpu.has(Xbyak::util::Cpu::tAVX))
+	else if (s_cpu.has(Xbyak::util::Cpu::tAVX))
 		return VectorISA::AVX;
-	else
+	else if (s_cpu.has(Xbyak::util::Cpu::tSSE41))
 		return VectorISA::SSE4;
+	else
+		return VectorISA::None;
 }
 
 VectorISA currentISA = getCurrentISA();

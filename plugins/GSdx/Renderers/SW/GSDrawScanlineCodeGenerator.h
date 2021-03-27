@@ -25,6 +25,8 @@
 #include "Renderers/Common/GSFunctionMap.h"
 #include "GSUtil.h"
 
+MULTI_ISA_UNSHARED_START
+
 using namespace Xbyak;
 
 #if defined(_M_AMD64) || defined(_WIN64)
@@ -32,8 +34,6 @@ using namespace Xbyak;
 #else
 #define RegLong Reg32
 #endif
-
-MULTI_ISA_UNSHARED_START
 
 class GSDrawScanlineCodeGenerator : public GSCodeGenerator
 {

@@ -20,7 +20,7 @@
 
 #pragma once
 
-enum class VectorISA { SSE4, AVX, AVX2 };
+enum class VectorISA { None, SSE4, AVX, AVX2 };
 extern VectorISA currentISA;
 
 #if defined(MULTI_ISA_UNSHARED_COMPILATION) || defined(MULTI_ISA_SHARED_COMPILATION)

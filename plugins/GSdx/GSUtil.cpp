@@ -21,6 +21,7 @@
 
 #include "stdafx.h"
 #include "GSUtil.h"
+#include "MultiISA.h"
 #include <locale>
 #include <codecvt>
 
@@ -32,8 +33,6 @@
 #define SVN_REV 0
 #define SVN_MODS 0
 #endif
-
-Xbyak::util::Cpu g_cpu;
 
 const char* GSUtil::GetLibName()
 {
@@ -195,7 +194,7 @@ bool GSUtil::HasCompatibleBits(uint32 spsm, uint32 dpsm)
 
 bool GSUtil::CheckSSE()
 {
-	if (!g_cpu.has(Xbyak::util::Cpu::tSSE41))
+	if (currentISA == VectorISA::None)
 	{
 		fprintf(stderr, "This CPU does not support at least SSE4.1\n");
 		return false;

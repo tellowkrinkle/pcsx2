@@ -452,3 +452,13 @@ extern const std::string root_hw;
 # define MULTI_ISA_UNSHARED_IMPL static_assert(0, "This file should be compiled unshared in multi-isa mode!");
 # define MULTI_ISA_UNSHARED_END
 #endif
+
+#ifdef MULTI_ISA_UNSHARED_COMPILATION
+/// `MULTI_ISA_UNSHARED_START` but for header only libraries that are used from both unshared and shared code
+/// (Header-only libraries are okay to use from both sides, but need this or forceinline to prevent ODR violations)
+# define MULTI_ISA_UNSHARED_HEADER_ONLY_START namespace CURRENT_ISA {
+# define MULTI_ISA_UNSHARED_HEADER_ONLY_END }
+#else
+# define MULTI_ISA_UNSHARED_HEADER_ONLY_START
+# define MULTI_ISA_UNSHARED_HEADER_ONLY_END
+#endif
