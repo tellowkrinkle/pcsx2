@@ -81,10 +81,22 @@ set(GSdxSources
     Renderers/SW/GSDrawScanline.cpp
     Renderers/SW/GSDrawScanlineCodeGenerator.cpp
     Renderers/SW/GSDrawScanlineCodeGenerator.all.cpp
+    Renderers/SW/GSDrawScanlineCodeGenerator.x64.cpp
+    Renderers/SW/GSDrawScanlineCodeGenerator.x64.avx.cpp
+    Renderers/SW/GSDrawScanlineCodeGenerator.x64.avx2.cpp
+    Renderers/SW/GSDrawScanlineCodeGenerator.x86.cpp
+    Renderers/SW/GSDrawScanlineCodeGenerator.x86.avx.cpp
+    Renderers/SW/GSDrawScanlineCodeGenerator.x86.avx2.cpp
     Renderers/SW/GSRasterizer.cpp
     Renderers/SW/GSRendererSW.cpp
     Renderers/SW/GSSetupPrimCodeGenerator.cpp
     Renderers/SW/GSSetupPrimCodeGenerator.all.cpp
+    Renderers/SW/GSSetupPrimCodeGenerator.x64.cpp
+    Renderers/SW/GSSetupPrimCodeGenerator.x64.avx.cpp
+    Renderers/SW/GSSetupPrimCodeGenerator.x64.avx2.cpp
+    Renderers/SW/GSSetupPrimCodeGenerator.x86.cpp
+    Renderers/SW/GSSetupPrimCodeGenerator.x86.avx.cpp
+    Renderers/SW/GSSetupPrimCodeGenerator.x86.avx2.cpp
     Renderers/SW/GSTextureCacheSW.cpp
     Renderers/SW/GSTextureSW.cpp
     Renderers/OpenGL/GLLoader.cpp

@@ -22,6 +22,13 @@
 
 #pragma once
 
+#undef a0
+#undef a1
+#undef a2
+#undef a3
+#undef t0
+#undef t1
+
 #include "GSScanlineEnvironment.h"
 #include "xbyak/xbyak_smart.h"
 
