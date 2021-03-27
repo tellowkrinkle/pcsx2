@@ -111,16 +111,23 @@ union GSScanlineSelector
 			&& fge == 0;
 	}
 
-	void Print() const
+	std::string to_string() const
 	{
-		fprintf(stderr, "fpsm:%d zpsm:%d ztst:%d ztest:%d atst:%d afail:%d iip:%d rfb:%d fb:%d zb:%d zw:%d "
+		char str[1024];
+		sprintf(str, "fpsm:%d zpsm:%d ztst:%d ztest:%d atst:%d afail:%d iip:%d rfb:%d fb:%d zb:%d zw:%d "
 				"tfx:%d tcc:%d fst:%d ltf:%d tlu:%d wms:%d wmt:%d mmin:%d lcm:%d tw:%d "
 				"fba:%d cclamp:%d date:%d datm:%d "
-				"prim:%d abe:%d %d%d%d%d fge:%d dthe:%d notest:%d\n",
+				"prim:%d abe:%d %d%d%d%d fge:%d dthe:%d notest:%d",
 				fpsm, zpsm, ztst, ztest, atst, afail, iip, rfb, fb, zb, zwrite,
 				tfx, tcc, fst, ltf, tlu, wms, wmt, mmin, lcm, tw,
 				fba, colclamp, date, datm,
 				prim, abe, aba, abb, abc, abd , fge, dthe, notest);
+		return str;
+	}
+
+	void Print() const
+	{
+		fprintf(stderr, "%s\n", to_string().c_str());
 	}
 };
 
