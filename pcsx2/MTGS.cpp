@@ -290,7 +290,7 @@ void SysMtgsThread::ExecuteTaskInThread()
 		// is very optimized (only 1 instruction test in most cases), so no point in trying
 		// to avoid it.
 
-		m_sem_event.WaitWithoutYield();
+		m_sem_event.WaitWithoutYieldWithSpin();
 		StateCheckInThread();
 		busy.Acquire();
 
@@ -415,7 +415,7 @@ void SysMtgsThread::ExecuteTaskInThread()
 					vu1Thread.KickStart(true);
 					busy.PartialRelease();
 					// Wait for MTVU to complete vu1 program
-					vu1Thread.semaXGkick.WaitWithoutYield();
+					vu1Thread.semaXGkick.WaitWithoutYieldWithSpin();
 					busy.PartialAcquire();
 					Gif_Path& path = gifUnit.gifPath[GIF_PATH_1];
 					GS_Packet gsPack = path.GetGSPacketMTVU(); // Get vu1 program's xgkick packet(s)
@@ -620,9 +620,9 @@ void SysMtgsThread::WaitGS(bool syncRegs, bool weakWait, bool isMTVU)
 		for (;;)
 		{
 			if (weakWait)
-				m_mtx_RingBufferBusy2.Wait();
+				m_mtx_RingBufferBusy2.WaitWithSpin();
 			else
-				m_mtx_RingBufferBusy.Wait();
+				m_mtx_RingBufferBusy.WaitWithSpin();
 			RethrowException();
 			if (!isMTVU && m_ReadPos.load(std::memory_order_relaxed) == m_WritePos.load(std::memory_order_relaxed))
 				break;

@@ -129,7 +129,7 @@ void VU_Thread::ExecuteRingBuffer()
 {
 	for (;;)
 	{
-		semaEvent.WaitWithoutYield();
+		semaEvent.WaitWithoutYieldWithSpin();
 		ScopedLockBool lock(mtxBusy, isBusy);
 		while (m_ato_read_pos.load(std::memory_order_relaxed) != GetWritePos())
 		{
