@@ -113,10 +113,7 @@ public:
 	{
 	}
 
-	__forceinline GSVector4i(const GSVector4i& v)
-	{
-		m = v.m;
-	}
+	__forceinline GSVector4i(const GSVector4i& v) = default;
 
 	__forceinline explicit GSVector4i(const GSVector2i& v)
 	{

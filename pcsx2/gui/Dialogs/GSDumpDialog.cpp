@@ -43,6 +43,20 @@
 #include <wx/wfstream.h>
 #include <functional>
 
+constexpr const char* Dialogs::GSDumpDialog::GSTransferPathNames[];
+constexpr const char* Dialogs::GSDumpDialog::GifFlagNames[];
+constexpr const char* Dialogs::GSDumpDialog::TEXTFXNames[];
+constexpr const char* Dialogs::GSDumpDialog::TEXTCCNames[];
+constexpr const char* Dialogs::GSDumpDialog::TEXPSMNames[];
+constexpr const char* Dialogs::GSDumpDialog::TEXCSMNames[];
+constexpr const char* Dialogs::GSDumpDialog::GsFSTNames[];
+constexpr const char* Dialogs::GSDumpDialog::GsCTXTNames[];
+constexpr const char* Dialogs::GSDumpDialog::TEXCPSMNames[];
+constexpr const char* Dialogs::GSDumpDialog::GSTypeNames[];
+constexpr const char* Dialogs::GSDumpDialog::GsPrimNames[];
+constexpr const char* Dialogs::GSDumpDialog::GsIIPNames[];
+constexpr const char* Dialogs::GSDumpDialog::GsFIXNames[];
+
 namespace GSDump
 {
 	bool isRunning = false;

@@ -175,6 +175,7 @@ void OnOk()
 
 void DEV9configure()
 {
+#ifndef __APPLE__
 	ScopedCoreThreadPause paused_core;
 	Config oldConfig = config;
 
@@ -213,4 +214,5 @@ void DEV9configure()
 	ApplyConfigIfRunning(oldConfig);
 
 	paused_core.AllowResume();
+#endif
 }
