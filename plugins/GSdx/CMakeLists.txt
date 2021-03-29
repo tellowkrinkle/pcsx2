@@ -238,6 +238,7 @@ set(GSdxFinalLibs
     ${PNG_LIBRARIES}
     ${FREETYPE_LIBRARIES}
     ${LIBLZMA_LIBRARIES}
+    Utilities_NO_TLS
 )
 
 if(USE_VTUNE)
