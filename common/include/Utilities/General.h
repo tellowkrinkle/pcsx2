@@ -15,6 +15,9 @@
 
 #pragma once
 
+#include "Pcsx2Defs.h"
+#include "Pcsx2Types.h"
+
 // This macro is actually useful for about any and every possible application of C++
 // equality operators.
 #define OpEqu(field) (field == right.field)

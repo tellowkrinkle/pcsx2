@@ -65,11 +65,7 @@ typedef unsigned int uint32;
 typedef signed int int32;
 typedef unsigned long long uint64;
 typedef signed long long int64;
-#ifdef _M_AMD64
-typedef uint64 uptr;
-#else
-typedef uint32 uptr;
-#endif
+typedef uintptr_t uptr;
 
 
 // xbyak compatibilities
