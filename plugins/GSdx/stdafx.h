@@ -418,6 +418,14 @@ extern const std::string root_hw;
 #  define __has_attribute(x) 0
 #endif
 
+// Starting with AVX, processors have fast unaligned loads
+// Reduce code duplication by not compiling multiple versions
+#if _M_SSE >= 0x500
+#  define FAST_UNALIGNED 1
+#else
+#  define FAST_UNALIGNED 0
+#endif
+
 #ifdef __cpp_constinit
 #  define CONSTINIT constinit
 #elif __has_attribute(require_constant_initialization)
