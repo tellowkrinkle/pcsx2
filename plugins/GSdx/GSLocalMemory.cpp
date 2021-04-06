@@ -1822,7 +1822,7 @@ void GSLocalMemory::ReadTexture8(const GSOffset* RESTRICT off, const GSVector4i&
 
 void GSLocalMemory::ReadTexture4(const GSOffset* RESTRICT off, const GSVector4i& r, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA)
 {
-	const uint64* pal = m_clut;
+	const uint32* pal = m_clut;
 
 	FOREACH_BLOCK_START(r, 32, 16, 32)
 	{
