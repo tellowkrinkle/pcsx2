@@ -1660,21 +1660,21 @@ public:
 		_MM_TRANSPOSE4_SI128(a.m, b.m, c.m, d.m);
 	}
 
+	__forceinline static void mix4(GSVector4i& a, GSVector4i& b)
+	{
+		GSVector4i mask(_mm_set1_epi32(0x0f0f0f0f));
+
+		GSVector4i c = (b << 4).blend(a, mask);
+		GSVector4i d = b.blend(a >> 4, mask);
+		a = c;
+		b = d;
+	}
+
 	__forceinline static void sw4(GSVector4i& a, GSVector4i& b, GSVector4i& c, GSVector4i& d)
 	{
-		const __m128i epi32_0f0f0f0f = _mm_set1_epi32(0x0f0f0f0f);
-
-		GSVector4i mask(epi32_0f0f0f0f);
-
-		GSVector4i e = (b << 4).blend(a, mask);
-		GSVector4i f = b.blend(a >> 4, mask);
-		GSVector4i g = (d << 4).blend(c, mask);
-		GSVector4i h = d.blend(c >> 4, mask);
-
-		a = e.upl8(f);
-		c = e.uph8(f);
-		b = g.upl8(h);
-		d = g.uph8(h);
+		mix4(a, b);
+		mix4(c, d);
+		sw8(a, b, c, d);
 	}
 
 	__forceinline static void sw8(GSVector4i& a, GSVector4i& b, GSVector4i& c, GSVector4i& d)
@@ -1731,6 +1731,8 @@ public:
 		b = f.upl32(d);
 		d = f.uph32(d);
 	}
+
+	__forceinline static void sw32_inv(GSVector4i& a, GSVector4i& b, GSVector4i& c, GSVector4i& d);
 
 	__forceinline static void sw64(GSVector4i& a, GSVector4i& b, GSVector4i& c, GSVector4i& d)
 	{
