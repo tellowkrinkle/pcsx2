@@ -2061,6 +2061,42 @@ public:
 	{
 		//printf("ReadAndExpandBlock4HL_32\n");
 
+#if _M_SSE >= 0x501
+
+		const GSVector8i* s = (const GSVector8i*)src;
+
+		GSVector8i p0, p1, p2, p3;
+		LoadPalVecs(pal, p0, p1, p2, p3);
+		GSVector8i mask(0x0f0f0f0f);
+
+		GSVector8i v0, v1, v2, v3;
+
+		for (int i = 0; i < 2; i++)
+		{
+			GSVector8i* d0 = reinterpret_cast<GSVector8i*>(dst);
+			GSVector8i* d1 = reinterpret_cast<GSVector8i*>(dst + dstpitch);
+			GSVector8i* d2 = reinterpret_cast<GSVector8i*>(dst + dstpitch * 2);
+			GSVector8i* d3 = reinterpret_cast<GSVector8i*>(dst + dstpitch * 3);
+
+			v0 = s[i * 4 + 0] >> 24;
+			v1 = s[i * 4 + 1] >> 24;
+			v2 = s[i * 4 + 2] >> 24;
+			v3 = s[i * 4 + 3] >> 24;
+
+			GSVector8i::sw128(v0, v1);
+			GSVector8i::sw64(v0, v1);
+			GSVector8i::sw128(v2, v3);
+			GSVector8i::sw64(v2, v3);
+
+			GSVector8i all = v0.ps32(v1).pu16(v2.ps32(v3)) & mask;
+
+			ReadClut4(p0, p1, p2, p3, all, *d0, *d1, *d2, *d3);
+
+			dst += dstpitch * 4;
+		}
+
+#else
+
 		const GSVector4i* s = (const GSVector4i*)src;
 
 		GSVector4i p0, p1, p2, p3;
@@ -2087,6 +2123,8 @@ public:
 
 			dst += dstpitch * 2;
 		}
+
+#endif
 	}
 
 	// TODO: ReadAndExpandBlock4HL_16
@@ -2094,6 +2132,41 @@ public:
 	__forceinline static void ReadAndExpandBlock4HH_32(const uint8* RESTRICT src, uint8* RESTRICT dst, int dstpitch, const uint32* RESTRICT pal)
 	{
 		//printf("ReadAndExpandBlock4HH_32\n");
+
+#if _M_SSE >= 0x501
+
+		const GSVector8i* s = (const GSVector8i*)src;
+
+		GSVector8i p0, p1, p2, p3;
+		LoadPalVecs(pal, p0, p1, p2, p3);
+
+		GSVector8i v0, v1, v2, v3;
+
+		for (int i = 0; i < 2; i++)
+		{
+			GSVector8i* d0 = reinterpret_cast<GSVector8i*>(dst);
+			GSVector8i* d1 = reinterpret_cast<GSVector8i*>(dst + dstpitch);
+			GSVector8i* d2 = reinterpret_cast<GSVector8i*>(dst + dstpitch * 2);
+			GSVector8i* d3 = reinterpret_cast<GSVector8i*>(dst + dstpitch * 3);
+
+			v0 = s[i * 4 + 0] >> 28;
+			v1 = s[i * 4 + 1] >> 28;
+			v2 = s[i * 4 + 2] >> 28;
+			v3 = s[i * 4 + 3] >> 28;
+
+			GSVector8i::sw128(v0, v1);
+			GSVector8i::sw64(v0, v1);
+			GSVector8i::sw128(v2, v3);
+			GSVector8i::sw64(v2, v3);
+
+			GSVector8i all = v0.ps32(v1).pu16(v2.ps32(v3));
+
+			ReadClut4(p0, p1, p2, p3, all, *d0, *d1, *d2, *d3);
+
+			dst += dstpitch * 4;
+		}
+
+#else
 
 		const GSVector4i* s = (const GSVector4i*)src;
 
@@ -2120,6 +2193,8 @@ public:
 
 			dst += dstpitch * 2;
 		}
+
+#endif
 	}
 
 	// TODO: ReadAndExpandBlock4HH_16
