@@ -28,6 +28,7 @@
 #include "Renderers/OpenGL/GSDeviceOGL.h"
 #include "Renderers/OpenGL/GSRendererOGL.h"
 #include "GSLzma.h"
+#include <numeric>
 
 #ifdef _WIN32
 
@@ -1109,15 +1110,21 @@ EXPORT_C GSReplay(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow)
 	GSshutdown();
 }
 
-EXPORT_C GSBenchmark(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow)
+#endif
+
+static float GSBenchmarkSummary(clock_t (&times)[256])
 {
-	::SetPriorityClass(::GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+	std::sort(std::begin(times), std::end(times));
+	// Only take the middle 50% of readings
+	clock_t total = std::accumulate(&times[64], &times[192], 0);
+	return total / (CLOCKS_PER_SEC / 1000000.0 * 128);
+}
 
-	Console console("GSdx", true);
-
+static void GSBenchmarkRun()
+{
 	if(1)
 	{
-		GSLocalMemory* mem = new GSLocalMemory();		
+		GSLocalMemory* mem = new GSLocalMemory();
 
 		static struct {int psm; const char* name;} s_format[] =
 		{
@@ -1140,16 +1147,28 @@ EXPORT_C GSBenchmark(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow
 
 		for(int i = 0; i < 1024 * 1024 * 4; i++) ptr[i] = (uint8)i;
 
+		clock_t times[256];
+
+		#define BENCH_BEGIN \
+			for (size_t run = 0; run < countof(times); run++) { \
+				clock_t start = clock();
+
+		#define BENCH_END \
+				times[run] = clock() - start; \
+			}
+
 		//
 
 		for(int tbw = 5; tbw <= 10; tbw++)
 		{
-			int n = 256 << ((10 - tbw) * 2);
+			int n = 1 << ((10 - tbw) * 2);
 
 			int w = 1 << tbw;
 			int h = 1 << tbw;
 
 			printf("%d x %d\n\n", w, h);
+			printf("         WriteImage  |   ReadImage   |  ReadTexture  |  ReadTextureP \n");
+			printf("         b/µs  px/µs |   b/µs  px/µs |   b/µs  px/µs |   b/µs  px/µs \n");
 
 			for(size_t i = 0; i < countof(s_format); i++)
 			{
@@ -1197,11 +1216,11 @@ EXPORT_C GSBenchmark(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow
 				int trlen = w * h * psm.trbpp / 8;
 				int len = w * h * psm.bpp / 8;
 
-				clock_t start, end;
+				float time;
 
 				printf("[%4s] ", s_format[i].name);
 
-				start = clock();
+				BENCH_BEGIN
 
 				for(int j = 0; j < n; j++)
 				{
@@ -1211,11 +1230,12 @@ EXPORT_C GSBenchmark(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow
 					(mem->*wi)(x, y, ptr, trlen, BITBLTBUF, TRXPOS, TRXREG);
 				}
 
-				end = clock();
+				BENCH_END
+				time = GSBenchmarkSummary(times);
 
-				printf("%6d %6d | ", (int)((float)trlen * n / (end - start) / 1000), (int)((float)(w * h) * n / (end - start) / 1000));
+				printf("%6d %6d | ", (int)((float)trlen * n / time), (int)((float)(w * h) * n / time));
 
-				start = clock();
+				BENCH_BEGIN
 
 				for(int j = 0; j < n; j++)
 				{
@@ -1225,35 +1245,38 @@ EXPORT_C GSBenchmark(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow
 					(mem->*ri)(x, y, ptr, trlen, BITBLTBUF, TRXPOS, TRXREG);
 				}
 
-				end = clock();
+				BENCH_END
+				time = GSBenchmarkSummary(times);
 
-				printf("%6d %6d | ", (int)((float)trlen * n / (end - start) / 1000), (int)((float)(w * h) * n / (end - start) / 1000));
+				printf("%6d %6d | ", (int)((float)trlen * n / time), (int)((float)(w * h) * n / time));
 
 				const GSOffset* off = mem->GetOffset(TEX0.TBP0, TEX0.TBW, TEX0.PSM);
 
-				start = clock();
+				BENCH_BEGIN
 
 				for(int j = 0; j < n; j++)
 				{
 					(mem->*rtx)(off, r, ptr, w * 4, TEXA);
 				}
 
-				end = clock();
+				BENCH_END
+				time = GSBenchmarkSummary(times);
 
-				printf("%6d %6d ", (int)((float)len * n / (end - start) / 1000), (int)((float)(w * h) * n / (end - start) / 1000));
+				printf("%6d %6d ", (int)((float)len * n / time), (int)((float)(w * h) * n / time));
 
 				if(psm.pal > 0)
 				{
-					start = clock();
+					BENCH_BEGIN
 
 					for(int j = 0; j < n; j++)
 					{
 						(mem->*rtxP)(off, r, ptr, w, TEXA);
 					}
 
-					end = clock();
+					BENCH_END
+					time = GSBenchmarkSummary(times);
 
-					printf("| %6d %6d ", (int)((float)len * n / (end - start) / 1000), (int)((float)(w * h) * n / (end - start) / 1000));
+					printf("| %6d %6d ", (int)((float)len * n / time), (int)((float)(w * h) * n / time));
 				}
 
 				printf("\n");
@@ -1306,10 +1329,26 @@ EXPORT_C GSBenchmark(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow
 
 		delete mem;
 	}
+}
 
-	//
+#ifdef _WIN32
+
+EXPORT_C GSBenchmark(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow)
+{
+	::SetPriorityClass(::GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+
+	Console console("GSdx", true);
+
+	GSBenchmarkRun();
 
 	PostQuitMessage(0);
+}
+
+#else
+
+EXPORT_C GSBenchmark()
+{
+	GSBenchmarkRun();
 }
 
 #endif
