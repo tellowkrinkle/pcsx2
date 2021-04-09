@@ -38,8 +38,8 @@
 class RendererTab : public wxPanel
 {
 public:
-	wxCheckBox *eight_bit_check, *framebuffer_check, *flush_check, *edge_check, *mipmap_check;
-	wxChoice *m_res_select, *m_anisotropic_select, *m_mipmap_select, *m_crc_select, *m_date_select, *m_blend_select;
+	wxCheckBox *acc_date_check, *eight_bit_check, *framebuffer_check, *flush_check, *edge_check, *mipmap_check;
+	wxChoice *m_res_select, *m_anisotropic_select, *m_mipmap_select, *m_crc_select, *m_blend_select;
 	wxSpinCtrl* thread_spin;
 
 	RendererTab(wxWindow* parent);

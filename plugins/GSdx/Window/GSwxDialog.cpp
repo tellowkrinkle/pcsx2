@@ -92,10 +92,12 @@ RendererTab::RendererTab(wxWindow* parent)
 	auto* hardware_box = new wxStaticBoxSizer(wxVERTICAL, this, "Hardware Mode");
 	auto* software_box = new wxStaticBoxSizer(wxVERTICAL, this, "Software Mode");
 
-	eight_bit_check = new wxCheckBox(this, wxID_ANY, "Allow 8 bit textures");
+	eight_bit_check = new wxCheckBox(this, wxID_ANY, "GPU Palette Conversion");
 	add_tooltip(eight_bit_check, IDC_PALTEX);
-	framebuffer_check = new wxCheckBox(this, wxID_ANY, "Large Framebuffer");
-	add_tooltip(framebuffer_check, IDC_LARGE_FB);
+	framebuffer_check = new wxCheckBox(this, wxID_ANY, "Conservative Buffer Allocation");
+	add_tooltip(framebuffer_check, IDC_CONSERVATIVE_FB);
+	acc_date_check = new wxCheckBox(this, wxID_ANY, "Accurate DATE");
+	add_tooltip(acc_date_check, IDC_ACCURATE_DATE);
 
 	auto* hw_choice_grid = new wxFlexGridSizer(2, 0, 0);
 
@@ -103,12 +105,12 @@ RendererTab::RendererTab(wxWindow* parent)
 	add_label_and_combo_box(this, hw_choice_grid, m_anisotropic_select, "Anisotropic Filtering:", theApp.m_gs_hw_mipmapping, IDC_AFCOMBO);
 	add_label_and_combo_box(this, hw_choice_grid, m_mipmap_select, "Mipmapping (Insert):", theApp.m_gs_max_anisotropy, IDC_MIPMAP_HW);
 	add_label_and_combo_box(this, hw_choice_grid, m_crc_select, "CRC Hack Level:", theApp.m_gs_crc_level, IDC_CRC_LEVEL);
-	add_label_and_combo_box(this, hw_choice_grid, m_date_select, "DATE Accuracy:", theApp.m_gs_acc_date_level, IDC_ACCURATE_DATE);
 	add_label_and_combo_box(this, hw_choice_grid, m_blend_select, "Blending Accuracy:", theApp.m_gs_acc_blend_level, IDC_ACCURATE_BLEND_UNIT);
 
 	auto* top_checks_box = new wxWrapSizer(wxHORIZONTAL);
 	top_checks_box->Add(eight_bit_check, wxSizerFlags().Centre());
 	top_checks_box->Add(framebuffer_check, wxSizerFlags().Centre());
+	top_checks_box->Add(acc_date_check, wxSizerFlags().Centre());
 
 	hardware_box->Add(top_checks_box, wxSizerFlags().Centre());
 	hardware_box->Add(hw_choice_grid, wxSizerFlags().Centre());
@@ -150,8 +152,9 @@ void RendererTab::CallUpdate(wxCommandEvent& /*event*/)
 
 void RendererTab::Load()
 {
+	acc_date_check->SetValue(theApp.GetConfigB("accurate_date"));
 	eight_bit_check->SetValue(theApp.GetConfigB("paltex"));
-	framebuffer_check->SetValue(theApp.GetConfigB("large_framebuffer"));
+	framebuffer_check->SetValue(theApp.GetConfigB("conservative_framebuffer"));
 	flush_check->SetValue(theApp.GetConfigB("autoflush_sw"));
 	edge_check->SetValue(theApp.GetConfigB("aa1"));
 	mipmap_check->SetValue(theApp.GetConfigB("mipmap"));
@@ -162,15 +165,15 @@ void RendererTab::Load()
 	m_anisotropic_select->SetSelection(get_config_index(theApp.m_gs_max_anisotropy, "MaxAnisotropy"));
 	m_mipmap_select->SetSelection(get_config_index(theApp.m_gs_hw_mipmapping, "mipmap_hw"));
 	m_crc_select->SetSelection(get_config_index(theApp.m_gs_crc_level, "crc_hack_level"));
-	m_date_select->SetSelection(get_config_index(theApp.m_gs_acc_date_level, "accurate_date"));
 	m_blend_select->SetSelection(get_config_index(theApp.m_gs_acc_blend_level, "accurate_blending_unit"));
 	Update();
 }
 
 void RendererTab::Save()
 {
+	theApp.SetConfig("accurate_date", acc_date_check->GetValue());
 	theApp.SetConfig("paltex", eight_bit_check->GetValue());
-	theApp.SetConfig("large_framebuffer", framebuffer_check->GetValue());
+	theApp.SetConfig("conservative_framebuffer", framebuffer_check->GetValue());
 	theApp.SetConfig("autoflush_sw", flush_check->GetValue());
 	theApp.SetConfig("aa1", edge_check->GetValue());
 	theApp.SetConfig("mipmap", mipmap_check->GetValue());
@@ -181,7 +184,6 @@ void RendererTab::Save()
 	set_config_from_choice(m_anisotropic_select, theApp.m_gs_max_anisotropy, "MaxAnisotropy");
 	set_config_from_choice(m_mipmap_select, theApp.m_gs_hw_mipmapping, "mipmap_hw");
 	set_config_from_choice(m_crc_select, theApp.m_gs_crc_level, "crc_hack_level");
-	set_config_from_choice(m_date_select, theApp.m_gs_acc_date_level, "accurate_date");
 	set_config_from_choice(m_blend_select, theApp.m_gs_acc_blend_level, "accurate_blending_unit");
 }
 
