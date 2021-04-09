@@ -209,7 +209,10 @@ if(Windows)
         )
 elseif(APPLE)
     LIST(APPEND GSdxSources
-        Window/GSLinuxDialog.cpp
+        Window/GSwxDialog.cpp
+        )
+    LIST(APPEND GSdxHeaders
+        Window/GSwxDialog.h
         )
 else()
     LIST(APPEND GSdxSources
