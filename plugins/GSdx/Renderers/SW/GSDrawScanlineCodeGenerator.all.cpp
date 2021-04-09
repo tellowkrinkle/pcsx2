@@ -640,7 +640,7 @@ L("exit");
 #ifdef _WIN32
 		for (int i = 0; i < 10; i++)
 		{
-			movdqa(ptr[rsp + _64_win_xmm_start + 16*i], Xmm(i+6));
+			movdqa(Xmm(i + 6), ptr[rsp + _64_win_xmm_start + 16*i]);
 		}
 		add(rsp, _64_win_stack_size);
 
