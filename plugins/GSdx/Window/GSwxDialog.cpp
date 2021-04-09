@@ -102,8 +102,8 @@ RendererTab::RendererTab(wxWindow* parent)
 	auto* hw_choice_grid = new wxFlexGridSizer(2, 0, 0);
 
 	add_label_and_combo_box(this, hw_choice_grid, m_res_select, "Internal Resolution:", theApp.m_gs_upscale_multiplier);
-	add_label_and_combo_box(this, hw_choice_grid, m_anisotropic_select, "Anisotropic Filtering:", theApp.m_gs_hw_mipmapping, IDC_AFCOMBO);
-	add_label_and_combo_box(this, hw_choice_grid, m_mipmap_select, "Mipmapping (Insert):", theApp.m_gs_max_anisotropy, IDC_MIPMAP_HW);
+	add_label_and_combo_box(this, hw_choice_grid, m_anisotropic_select, "Anisotropic Filtering:", theApp.m_gs_max_anisotropy, IDC_AFCOMBO);
+	add_label_and_combo_box(this, hw_choice_grid, m_mipmap_select, "Mipmapping (Insert):", theApp.m_gs_hw_mipmapping, IDC_MIPMAP_HW);
 	add_label_and_combo_box(this, hw_choice_grid, m_crc_select, "CRC Hack Level:", theApp.m_gs_crc_level, IDC_CRC_LEVEL);
 	add_label_and_combo_box(this, hw_choice_grid, m_blend_select, "Blending Accuracy:", theApp.m_gs_acc_blend_level, IDC_ACCURATE_BLEND_UNIT);
 
