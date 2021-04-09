@@ -106,10 +106,11 @@ void GSSetupPrimCodeGenerator2::Generate()
 	many_regs = is64 && isYmm && !m_sel.notest && needs_shift;
 
 #ifdef _WIN64
-	if (many_regs)
+	int needs_saving = many_regs ? 6 : m_sel.notest ? 0 : 2;
+	if (needs_saving)
 	{
-		sub(rsp, 8 + 16 * 6);
-		for (int i = 0; i < 6; i++)
+		sub(rsp, 8 + 16 * needs_saving);
+		for (int i = 0; i < needs_saving; i++)
 		{
 			movdqa(ptr[rsp + i*16], Xmm(i + 6));
 		}
@@ -145,13 +146,13 @@ void GSSetupPrimCodeGenerator2::Generate()
 	Color();
 
 #ifdef _WIN64
-	if (many_regs)
+	if (needs_saving)
 	{
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < needs_saving; i++)
 		{
 			movdqa(Xmm(i + 6), ptr[rsp + i*16]);
 		}
-		add(rsp, 8 + 16*6);
+		add(rsp, 8 + 16*needs_saving);
 	}
 #endif
 	if (isYmm)
