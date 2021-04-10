@@ -244,39 +244,60 @@ typedef int64 sint64;
 	#define _M_SSE 0x500
 #elif defined(__SSE4_1__)
 	#define _M_SSE 0x401
+#elif defined(__SSSE3__)
+	#define _M_SSE 0x301
+#elif defined(__SSE2__)
+	#define _M_SSE 0x200
 #endif
 
 #endif
 
 #if !defined(_M_SSE) && (!defined(_WIN32) || defined(_M_AMD64) || defined(_M_IX86_FP) && _M_IX86_FP >= 2)
 
-	#define _M_SSE 0x401
+	#define _M_SSE 0x200
 
 #endif
 
-#include <xmmintrin.h>
-#include <emmintrin.h>
+#if _M_SSE >= 0x200
 
-#ifndef _MM_DENORMALS_ARE_ZERO
-#define _MM_DENORMALS_ARE_ZERO 0x0040
+	#include <xmmintrin.h>
+	#include <emmintrin.h>
+
+	#ifndef _MM_DENORMALS_ARE_ZERO
+	#define _MM_DENORMALS_ARE_ZERO 0x0040
+	#endif
+
+	#define MXCSR (_MM_DENORMALS_ARE_ZERO | _MM_MASK_MASK | _MM_ROUND_NEAREST | _MM_FLUSH_ZERO_ON)
+
+	#define _MM_TRANSPOSE4_SI128(row0, row1, row2, row3) \
+	{ \
+		__m128 tmp0 = _mm_shuffle_ps(_mm_castsi128_ps(row0), _mm_castsi128_ps(row1), 0x44); \
+		__m128 tmp2 = _mm_shuffle_ps(_mm_castsi128_ps(row0), _mm_castsi128_ps(row1), 0xEE); \
+		__m128 tmp1 = _mm_shuffle_ps(_mm_castsi128_ps(row2), _mm_castsi128_ps(row3), 0x44); \
+		__m128 tmp3 = _mm_shuffle_ps(_mm_castsi128_ps(row2), _mm_castsi128_ps(row3), 0xEE); \
+		(row0) = _mm_castps_si128(_mm_shuffle_ps(tmp0, tmp1, 0x88)); \
+		(row1) = _mm_castps_si128(_mm_shuffle_ps(tmp0, tmp1, 0xDD)); \
+		(row2) = _mm_castps_si128(_mm_shuffle_ps(tmp2, tmp3, 0x88)); \
+		(row3) = _mm_castps_si128(_mm_shuffle_ps(tmp2, tmp3, 0xDD)); \
+	}
+
+#else
+
+#error TODO: GSVector4 and GSRasterizer needs SSE2
+
 #endif
 
-#define MXCSR (_MM_DENORMALS_ARE_ZERO | _MM_MASK_MASK | _MM_ROUND_NEAREST | _MM_FLUSH_ZERO_ON)
+#if _M_SSE >= 0x301
 
-#define _MM_TRANSPOSE4_SI128(row0, row1, row2, row3) \
-{ \
-	__m128 tmp0 = _mm_shuffle_ps(_mm_castsi128_ps(row0), _mm_castsi128_ps(row1), 0x44); \
-	__m128 tmp2 = _mm_shuffle_ps(_mm_castsi128_ps(row0), _mm_castsi128_ps(row1), 0xEE); \
-	__m128 tmp1 = _mm_shuffle_ps(_mm_castsi128_ps(row2), _mm_castsi128_ps(row3), 0x44); \
-	__m128 tmp3 = _mm_shuffle_ps(_mm_castsi128_ps(row2), _mm_castsi128_ps(row3), 0xEE); \
-	(row0) = _mm_castps_si128(_mm_shuffle_ps(tmp0, tmp1, 0x88)); \
-	(row1) = _mm_castps_si128(_mm_shuffle_ps(tmp0, tmp1, 0xDD)); \
-	(row2) = _mm_castps_si128(_mm_shuffle_ps(tmp2, tmp3, 0x88)); \
-	(row3) = _mm_castps_si128(_mm_shuffle_ps(tmp2, tmp3, 0xDD)); \
-}
+	#include <tmmintrin.h>
 
-#include <tmmintrin.h>
-#include <smmintrin.h>
+#endif
+
+#if _M_SSE >= 0x401
+
+	#include <smmintrin.h>
+
+#endif
 
 #if _M_SSE >= 0x500
 
