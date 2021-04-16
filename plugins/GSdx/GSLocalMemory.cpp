@@ -1655,7 +1655,7 @@ void GSLocalMemory::ReadTexture4HLP(const GSOffset& off, const GSVector4i& r, ui
 
 void GSLocalMemory::ReadTexture4HHP(const GSOffset& off, const GSVector4i& r, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA)
 {
-	foreachBlock(off.assertSizesMatch(swizzle32), this, r, dst, dstpitch, 32, [&](uint8* read_dst, const uint8* src)
+	foreachBlock(off.assertSizesMatch(swizzle32), this, r, dst, dstpitch, 8, [&](uint8* read_dst, const uint8* src)
 	{
 		GSBlock::ReadBlock4HHP(src, read_dst, dstpitch);
 	});
