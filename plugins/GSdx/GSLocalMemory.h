@@ -901,6 +901,13 @@ public:
 	void ReadTextureBlock4HL(uint32 bp, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA) const;
 	void ReadTextureBlock4HH(uint32 bp, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA) const;
 
+#if _M_SSE == 0x501
+	void ReadTexture8HSW(const GSOffset* RESTRICT off, const GSVector4i& r, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA);
+	void ReadTexture8HHSW(const GSOffset* RESTRICT off, const GSVector4i& r, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA);
+	void ReadTextureBlock8HSW(uint32 bp, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA) const;
+	void ReadTextureBlock8HHSW(uint32 bp, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA) const;
+#endif
+
 	// pal ? 8 : 32
 
 	void ReadTexture8P(const GSOffset* RESTRICT off, const GSVector4i& r, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA);

@@ -27,6 +27,7 @@
 #include "stdafx.h"
 #include "GSLocalMemory.h"
 #include "GSdx.h"
+#include "xbyak/xbyak_util.h"
 
 #define ASSERT_BLOCK(r, w, h) \
 	ASSERT((r).width() >= (w) && (r).height() >= (h) && !((r).left & ((w) - 1)) && !((r).top & ((h) - 1)) && !((r).right & ((w) - 1)) && !((r).bottom & ((h) - 1))); \
@@ -419,6 +420,35 @@ GSLocalMemory::GSLocalMemory()
 	m_psm[PSM_PSMZ24].rtxbP = &GSLocalMemory::ReadTextureBlock24;
 	m_psm[PSM_PSMZ16].rtxbP = &GSLocalMemory::ReadTextureBlock16;
 	m_psm[PSM_PSMZ16S].rtxbP = &GSLocalMemory::ReadTextureBlock16;
+
+#if _M_SSE == 0x501
+	Xbyak::util::Cpu cpu;
+	bool slowVPGATHERDD;
+	if (cpu.has(Xbyak::util::Cpu::tINTEL))
+	{
+		// Slow on Haswell
+		// CPUID data from https://en.wikichip.org/wiki/intel/cpuid
+		slowVPGATHERDD = cpu.displayModel == 0x46 || cpu.displayModel == 0x45 || cpu.displayModel == 0x3c;
+	}
+	else
+	{
+		// Currently no Zen CPUs with fast VPGATHERDD
+		// Check https://uops.info/table.html as new CPUs come out for one that doesn't split it into like 40 µops
+		// Doing it manually is about 28 µops (8x xmm -> gpr, 6x extr, 8x load, 6x insr)
+		slowVPGATHERDD = true;
+	}
+	if (const char* over = getenv("SLOW_VPGATHERDD_OVERRIDE")) // Easy override for comparing on vs off
+	{
+		slowVPGATHERDD = over[0] == 'Y' || over[0] == 'y' || over[0] == '1';
+	}
+	if (slowVPGATHERDD)
+	{
+		m_psm[PSM_PSMT8].rtx = &GSLocalMemory::ReadTexture8HSW;
+		m_psm[PSM_PSMT8H].rtx = &GSLocalMemory::ReadTexture8HHSW;
+		m_psm[PSM_PSMT8].rtxb = &GSLocalMemory::ReadTextureBlock8HSW;
+		m_psm[PSM_PSMT8H].rtxb = &GSLocalMemory::ReadTextureBlock8HHSW;
+	}
+#endif
 
 	m_psm[PSM_PSGPU24].bpp = 16;
 	m_psm[PSM_PSMCT16].bpp = m_psm[PSM_PSMCT16S].bpp = 16;
@@ -1842,6 +1872,30 @@ void GSLocalMemory::ReadTexture8H(const GSOffset* RESTRICT off, const GSVector4i
 	FOREACH_BLOCK_END
 }
 
+#if _M_SSE == 0x501
+void GSLocalMemory::ReadTexture8HSW(const GSOffset* RESTRICT off, const GSVector4i& r, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA)
+{
+	const uint32* pal = m_clut;
+
+	FOREACH_BLOCK_START(r, 16, 16, 32)
+	{
+		GSBlock::ReadAndExpandBlock8_32HSW(src, read_dst, dstpitch, pal);
+	}
+	FOREACH_BLOCK_END
+}
+
+void GSLocalMemory::ReadTexture8HHSW(const GSOffset* RESTRICT off, const GSVector4i& r, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA)
+{
+	const uint32* pal = m_clut;
+
+	FOREACH_BLOCK_START(r, 8, 8, 32)
+	{
+		GSBlock::ReadAndExpandBlock8H_32HSW(src, read_dst, dstpitch, pal);
+	}
+	FOREACH_BLOCK_END
+}
+#endif
+
 void GSLocalMemory::ReadTexture4HL(const GSOffset* RESTRICT off, const GSVector4i& r, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA)
 {
 	const uint32* pal = m_clut;
@@ -1921,6 +1975,22 @@ void GSLocalMemory::ReadTextureBlock8H(uint32 bp, uint8* dst, int dstpitch, cons
 
 	GSBlock::ReadAndExpandBlock8H_32(BlockPtr(bp), dst, dstpitch, m_clut);
 }
+
+#if _M_SSE == 0x501
+void GSLocalMemory::ReadTextureBlock8HSW(uint32 bp, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA) const
+{
+	ALIGN_STACK(32);
+
+	GSBlock::ReadAndExpandBlock8_32HSW(BlockPtr(bp), dst, dstpitch, m_clut);
+}
+
+void GSLocalMemory::ReadTextureBlock8HHSW(uint32 bp, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA) const
+{
+	ALIGN_STACK(32);
+
+	GSBlock::ReadAndExpandBlock8H_32HSW(BlockPtr(bp), dst, dstpitch, m_clut);
+}
+#endif
 
 void GSLocalMemory::ReadTextureBlock4HL(uint32 bp, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA) const
 {
