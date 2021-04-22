@@ -22,10 +22,33 @@
 #include "MultiISA.h"
 #include "GSUtil.h"
 
+#ifdef _MSC_VER
+#  define strcasecmp _stricmp
+#endif
+
 static Xbyak::util::Cpu s_cpu;
 
 static VectorISA getCurrentISA()
 {
+	// For debugging
+	if (const char* over = getenv("OVERRIDE_VECTOR_ISA"))
+	{
+		if (strcasecmp(over, "avx2") == 0)
+		{
+			fprintf(stderr, "Vector ISA Override: AVX2\n");
+			return VectorISA::AVX2;
+		}
+		if (strcasecmp(over, "avx") == 0)
+		{
+			fprintf(stderr, "Vector ISA Override: AVX\n");
+			return VectorISA::AVX;
+		}
+		if (strcasecmp(over, "sse4") == 0)
+		{
+			fprintf(stderr, "Vector ISA Override: SSE4\n");
+			return VectorISA::SSE4;
+		}
+	}
 	if (s_cpu.has(Xbyak::util::Cpu::tAVX2) && s_cpu.has(Xbyak::util::Cpu::tBMI1) && s_cpu.has(Xbyak::util::Cpu::tBMI2))
 		return VectorISA::AVX2;
 	else if (s_cpu.has(Xbyak::util::Cpu::tAVX))
