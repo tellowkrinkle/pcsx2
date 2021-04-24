@@ -1852,11 +1852,12 @@ void GSLocalMemory::ReadTexture8(const GSOffset* RESTRICT off, const GSVector4i&
 
 void GSLocalMemory::ReadTexture4(const GSOffset* RESTRICT off, const GSVector4i& r, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA)
 {
-	const uint32* pal = m_clut;
+	const uint64* pal64 = m_clut;
+	const uint32* pal32 = m_clut;
 
 	FOREACH_BLOCK_START(r, 32, 16, 32)
 	{
-		GSBlock::ReadAndExpandBlock4_32(src, read_dst, dstpitch, pal);
+		GSBlock::ReadAndExpandBlock4_32(src, read_dst, dstpitch, pal32, pal64);
 	}
 	FOREACH_BLOCK_END
 }
@@ -1966,7 +1967,7 @@ void GSLocalMemory::ReadTextureBlock4(uint32 bp, uint8* dst, int dstpitch, const
 {
 	ALIGN_STACK(32);
 
-	GSBlock::ReadAndExpandBlock4_32(BlockPtr(bp), dst, dstpitch, m_clut);
+	GSBlock::ReadAndExpandBlock4_32(BlockPtr(bp), dst, dstpitch, m_clut, m_clut);
 }
 
 void GSLocalMemory::ReadTextureBlock8H(uint32 bp, uint8* dst, int dstpitch, const GIFRegTEXA& TEXA) const
