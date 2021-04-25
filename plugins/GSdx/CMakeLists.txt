@@ -97,6 +97,9 @@ set(GSdxSources
     Renderers/SW/GSSetupPrimCodeGenerator.x86.avx2.cpp
     Renderers/SW/GSTextureCacheSW.cpp
     Renderers/SW/GSTextureSW.cpp
+    Renderers/SWNew/GSPixelProcessor.cpp
+    Renderers/SWNew/GSPixelSetup.cpp
+    Renderers/SWNew/GSRendererSWNew.cpp
     Renderers/OpenGL/GLLoader.cpp
     Renderers/OpenGL/GLState.cpp
     Renderers/OpenGL/GSDeviceOGL.cpp
@@ -162,6 +165,9 @@ set(GSdxHeaders
     Renderers/SW/GSTextureCacheSW.h
     Renderers/SW/GSTextureSW.h
     Renderers/SW/GSVertexSW.h
+    Renderers/SWNew/GSPixelProcessor.h
+    Renderers/SWNew/GSPixelSetup.h
+    Renderers/SWNew/GSRendererSWNew.h
     Renderers/OpenGL/GLLoader.h
     Renderers/OpenGL/GLState.h
     Renderers/OpenGL/GSDeviceOGL.h
