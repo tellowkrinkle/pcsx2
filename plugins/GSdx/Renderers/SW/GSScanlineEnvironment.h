@@ -28,46 +28,46 @@ union GSScanlineSelector
 {
 	struct
 	{
-		uint32 fpsm  : 2; // 0
-		uint32 zpsm  : 2; // 2
-		uint32 ztst  : 2; // 4 (0: off, 1: write, 2: test (ge), 3: test (g))
-		uint32 atst  : 3; // 6
-		uint32 afail : 2; // 9
-		uint32 iip   : 1; // 11
-		uint32 tfx   : 3; // 12
-		uint32 tcc   : 1; // 15
-		uint32 fst   : 1; // 16
-		uint32 ltf   : 1; // 17
-		uint32 tlu   : 1; // 18
-		uint32 fge   : 1; // 19
-		uint32 date  : 1; // 20
-		uint32 abe   : 1; // 21
-		uint32 aba   : 2; // 22
-		uint32 abb   : 2; // 24
-		uint32 abc   : 2; // 26
-		uint32 abd   : 2; // 28
-		uint32 pabe  : 1; // 30
-		uint32 aa1   : 1; // 31
+		uint32 fpsm  : 2; //  0 PSM of framebuffer (0 → 32, 1 → 24, 2 → 16)
+		uint32 zpsm  : 2; //  2 PSM of z buffer    (0 → 32, 1 → 24, 2 → 16)
+		uint32 ztst  : 2; //  4 (0: off, 1: write, 2: test (ge), 3: test (g))
+		uint32 atst  : 3; //  6 (GS_ATST)
+		uint32 afail : 2; //  9 (GS_AFAIL)
+		uint32 iip   : 1; // 11 (GS register)
+		uint32 tfx   : 3; // 12 (GS_TFX)
+		uint32 tcc   : 1; // 15 (GS register)
+		uint32 fst   : 1; // 16 (GS register)
+		uint32 ltf   : 1; // 17 (Linear Texture Function, 1 → bilinear/trilinear depending on mmin)
+		uint32 tlu   : 1; // 18 (Texture LookUp, 1 → use CLUT)
+		uint32 fge   : 1; // 19 (GS register)
+		uint32 date  : 1; // 20 (GS register)
+		uint32 abe   : 1; // 21 (GS register)
+		uint32 aba   : 2; // 22 (GS register, alpha blend A param)
+		uint32 abb   : 2; // 24 (GS register, alpha blend B param)
+		uint32 abc   : 2; // 26 (GS register, alpha blend C param)
+		uint32 abd   : 2; // 28 (GS register, alpha blend D param)
+		uint32 pabe  : 1; // 30 (GS register)
+		uint32 aa1   : 1; // 31 (GS register)
 
-		uint32 fwrite    : 1; // 32
-		uint32 ftest     : 1; // 33
-		uint32 rfb       : 1; // 34
-		uint32 zwrite    : 1; // 35
-		uint32 ztest     : 1; // 36
+		uint32 fwrite    : 1; // 32 (Writes to framebuffer)
+		uint32 ftest     : 1; // 33 (Alpha testing enabled (either atst or date))
+		uint32 rfb       : 1; // 34 (Reads existing framebuffer content)
+		uint32 zwrite    : 1; // 35 (Writes to z)
+		uint32 ztest     : 1; // 36 (z tests are enabled)
 		uint32 zoverflow : 1; // 37 (z max >= 0x80000000)
-		uint32 zclamp    : 1; // 38
-		uint32 wms       : 2; // 39
-		uint32 wmt       : 2; // 41
-		uint32 datm      : 1; // 43
-		uint32 colclamp  : 1; // 44
-		uint32 fba       : 1; // 45
-		uint32 dthe      : 1; // 46
-		uint32 prim      : 2; // 47
+		uint32 zclamp    : 1; // 38 (some z greater than current format max)
+		uint32 wms       : 2; // 39 (GS register)
+		uint32 wmt       : 2; // 41 (GS register)
+		uint32 datm      : 1; // 43 (GS register)
+		uint32 colclamp  : 1; // 44 (GS register)
+		uint32 fba       : 1; // 45 (GS register)
+		uint32 dthe      : 1; // 46 (GS register)
+		uint32 prim      : 2; // 47 (GS_PRIM_CLASS)
 
-		uint32 edge   : 1; // 49
+		uint32 edge   : 1; // 49 (Is the pixel part of an edge?  (for AA1))
 		uint32 tw     : 3; // 50 (encodes values between 3 -> 10, texture cache makes sure it is at least 3)
-		uint32 lcm    : 1; // 53
-		uint32 mmin   : 2; // 54
+		uint32 lcm    : 1; // 53 (GS register)
+		uint32 mmin   : 2; // 54 (Mipmapping mode, 0 → no mipmapping, 1 → round-off, 2 → linear)
 		uint32 notest : 1; // 55 (no ztest, no atest, no date, no scissor test, and horizontally aligned to 4 pixels)
 		// TODO: 1D texture flag? could save 2 texture reads and 4 lerps with bilinear, and also the texture coordinate clamp/wrap code in one direction
 
