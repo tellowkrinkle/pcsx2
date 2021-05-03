@@ -58,6 +58,7 @@ set(GSdxSources
     GSLzma.cpp
     GSPerfMon.cpp
     GSPng.cpp
+    GSSPMCHeap.cpp
     GSState.cpp
     GSTables.cpp
     GSUtil.cpp
@@ -126,6 +127,7 @@ set(GSdxHeaders
     GSLzma.h
     GSPerfMon.h
     GSPng.h
+    GSSPMCHeap.h
     GSState.h
     GSTables.h
     GSThread_CXX11.h
