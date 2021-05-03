@@ -23,6 +23,7 @@
 
 #include "Renderers/SW/GSTextureCacheSW.h"
 #include "Renderers/SW/GSDrawScanline.h"
+#include "GSSPMCHeap.h"
 
 class GSRendererSW : public GSRenderer
 {
@@ -69,6 +70,7 @@ class GSRendererSW : public GSRenderer
 
 protected:
 	IRasterizer* m_rl;
+	GSSPMCHeap m_vertex_heap;
 	GSTextureCacheSW* m_tc;
 	GSTexture* m_texture[2];
 	uint8* m_output;
@@ -86,7 +88,7 @@ protected:
 	GSTexture* GetFeedbackOutput();
 
 	void Draw();
-	void Queue(std::shared_ptr<GSRasterizerData>& item);
+	void Queue(GSSPMCHeap::SharedPtr<GSRasterizerData>& item);
 	void Sync(int reason);
 	void InvalidateVideoMem(const GIFRegBITBLTBUF& BITBLTBUF, const GSVector4i& r);
 	void InvalidateLocalMem(const GIFRegBITBLTBUF& BITBLTBUF, const GSVector4i& r, bool clut = false);

@@ -27,6 +27,11 @@ public:
 	GSAlignedClass() {}
 	virtual ~GSAlignedClass() {}
 
+	void* operator new (size_t size, void* ptr)
+	{
+		return ptr;
+	}
+
 	void* operator new (size_t size)
 	{
 		return _aligned_malloc(size, i);

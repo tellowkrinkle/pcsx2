@@ -379,12 +379,11 @@ void GSRendererSW::Draw()
 {
 	const GSDrawingContext* context = m_context;
 
-	SharedData* sd = new SharedData(this);
-
-	std::shared_ptr<GSRasterizerData> data(sd);
+	auto data = m_vertex_heap.make_shared<SharedData>(this).cast<GSRasterizerData>();
+	SharedData* sd = static_cast<SharedData*>(data.get());
 
 	sd->primclass = m_vt.m_primclass;
-	sd->buff = (uint8*)_aligned_malloc(sizeof(GSVertexSW) * ((m_vertex.next + 1) & ~1) + sizeof(uint32) * m_index.tail, 64);
+	sd->buff = (uint8*)m_vertex_heap.alloc(sizeof(GSVertexSW) * ((m_vertex.next + 1) & ~1) + sizeof(uint32) * m_index.tail, 64);
 	sd->vertex = (GSVertexSW*)sd->buff;
 	sd->vertex_count = m_vertex.next;
 	sd->index = (uint32*)(sd->buff + sizeof(GSVertexSW) * ((m_vertex.next + 1) & ~1));
@@ -579,7 +578,7 @@ void GSRendererSW::Draw()
 	*/
 }
 
-void GSRendererSW::Queue(std::shared_ptr<GSRasterizerData>& item)
+void GSRendererSW::Queue(GSSPMCHeap::SharedPtr<GSRasterizerData>& item)
 {
 	SharedData* sd = (SharedData*)item.get();
 
@@ -1049,7 +1048,7 @@ bool GSRendererSW::GetScanlineGlobalData(SharedData* data)
 			{
 				gd.sel.tlu = 1;
 
-				gd.clut = (uint32*)_aligned_malloc(sizeof(uint32) * 256, 32); // FIXME: might address uninitialized data of the texture (0xCD) that is not in 0-15 range for 4-bpp formats
+				gd.clut = (uint32*)m_vertex_heap.alloc(sizeof(uint32) * 256, 32); // FIXME: might address uninitialized data of the texture (0xCD) that is not in 0-15 range for 4-bpp formats
 
 				memcpy(gd.clut, (const uint32*)m_mem.m_clut, sizeof(uint32) * GSLocalMemory::m_psm[context->TEX0.PSM].pal);
 			}
@@ -1318,7 +1317,7 @@ bool GSRendererSW::GetScanlineGlobalData(SharedData* data)
 		{
 			gd.sel.dthe = 1;
 
-			gd.dimx = (GSVector4i*)_aligned_malloc(sizeof(env.dimx), 32);
+			gd.dimx = (GSVector4i*)m_vertex_heap.alloc(sizeof(env.dimx), 32);
 
 			memcpy(gd.dimx, env.dimx, sizeof(env.dimx));
 		}
@@ -1436,8 +1435,8 @@ GSRendererSW::SharedData::~SharedData()
 {
 	ReleasePages();
 
-	if(global.clut) _aligned_free(global.clut);
-	if(global.dimx) _aligned_free(global.dimx);
+	if(global.clut) GSSPMCHeap::free(global.clut);
+	if(global.dimx) GSSPMCHeap::free(global.dimx);
 
 	if(LOG) {fprintf(s_fp, "[%d] done t=%lld p=%d | %d %d %d | %08x_%08x\n", 
 		counter, 
