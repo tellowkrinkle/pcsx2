@@ -82,4 +82,3 @@ void InitNet();
 void TermNet();
 
 const wxChar* NetApiToWxString(NetApi api);
-const wchar_t* NetApiToWstring(NetApi api);

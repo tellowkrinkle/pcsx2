@@ -24,13 +24,13 @@
 #include <wx/slider.h>
 #include <wx/spinctrl.h>
 
-#include "../Config.h"
-#include "../DEV9.h"
-#include "../pcap_io.h"
-#include "../net.h"
+#include "Config.h"
+#include "DEV9.h"
+#include "pcap_io.h"
+#include "net.h"
 #include "AppCoreThread.h"
 
-#include "../ATA/HddCreate.h"
+#include "ATA/HddCreate.h"
 
 class DEV9Dialog : public wxDialog
 {
