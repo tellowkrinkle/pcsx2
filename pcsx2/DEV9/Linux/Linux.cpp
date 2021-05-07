@@ -1,5 +1,5 @@
 /*  PCSX2 - PS2 Emulator for PCs
- *  Copyright (C) 2002-2020  PCSX2 Dev Team
+ *  Copyright (C) 2002-2021 PCSX2 Dev Team
  *
  *  PCSX2 is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU Lesser General Public License as published by the Free Software Found-
@@ -15,202 +15,208 @@
 
 #include "PrecompiledHeader.h"
 
-#include <stdio.h>
-
-#include <gtk/gtk.h>
-
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
-#include <string.h>
 #include <vector>
-#include "fmt/format.h"
+#include <ghc/filesystem.h>
 
-#include <string>
-#include "ghc/filesystem.h"
+#include <wx/wx.h>
+#include <wx/collpane.h>
+#include <wx/filepicker.h>
+#include <wx/slider.h>
+#include <wx/spinctrl.h>
 
 #include "../Config.h"
 #include "../DEV9.h"
-#include "pcap.h"
 #include "../pcap_io.h"
 #include "../net.h"
 #include "AppCoreThread.h"
 
 #include "../ATA/HddCreate.h"
 
-static GtkBuilder* builder = nullptr;
-std::vector<AdapterEntry> adapters;
-
-void OnInitDialog()
+class DEV9Dialog : public wxDialog
 {
-	gint idx = 0;
-	static int initialized = 0;
+	wxCheckBox* m_eth_enable;
+	wxChoice* m_eth_adapter;
+	std::vector<AdapterEntry> m_adapter_list;
 
-	LoadConf();
+	wxCheckBox* m_hdd_enable;
+	wxFilePickerCtrl* m_hdd_file;
+	wxSpinCtrl* m_hdd_size_spin;
+	wxSlider* m_hdd_size_slider;
 
-	if (initialized)
-		return;
-
-	gtk_combo_box_text_append_text((GtkComboBoxText*)gtk_builder_get_object(builder, "IDC_BAYTYPE"), "Expansion");
-	gtk_combo_box_text_append_text((GtkComboBoxText*)gtk_builder_get_object(builder, "IDC_BAYTYPE"), "PC Card");
-
-	adapters = PCAPAdapter::GetAdapters();
-
-	for (size_t i = 0; i < adapters.size(); i++)
+public:
+	DEV9Dialog()
+		: wxDialog(nullptr, wxID_ANY, _("Network and HDD Settings"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX)
 	{
-		std::string dev = fmt::format("{}: {}", (char*)NetApiToString(adapters[i].type), adapters[i].name.c_str());
+		auto* padding = new wxBoxSizer(wxVERTICAL);
+		auto* top_box = new wxBoxSizer(wxVERTICAL);
 
-		gtk_combo_box_text_append_text((GtkComboBoxText*)gtk_builder_get_object(builder, "IDC_ETHDEV"), dev.c_str());
-		if (config.EthApi == adapters[i].type && strcmp(adapters[i].guid.c_str(), config.Eth) == 0)
-			gtk_combo_box_set_active((GtkComboBox*)gtk_builder_get_object(builder, "IDC_ETHDEV"), idx);
+		// Ethernet section
+		auto* eth_section = new wxCollapsiblePane(this, wxID_ANY, _("Ethernet"));
+		auto* eth_pane = eth_section->GetPane();
+		auto* eth_sizer = new wxBoxSizer(wxVERTICAL);
 
-		idx++;
+		m_eth_enable = new wxCheckBox(eth_pane, wxID_ANY, _("Enabled"));
+		eth_sizer->Add(m_eth_enable);
+		eth_sizer->AddSpacer(5);
+
+		auto* eth_adapter_box = new wxBoxSizer(wxHORIZONTAL);
+		auto* eth_adapter_label = new wxStaticText(eth_pane, wxID_ANY, _("Ethernet Device:"));
+		m_adapter_list = PCAPAdapter::GetAdapters();
+		wxArrayString adapter_name_list;
+		adapter_name_list.Add("");
+		for (const AdapterEntry& adapter : m_adapter_list)
+			adapter_name_list.Add(wxString::Format(_("%s (%s)"), adapter.name, NetApiToWxString(adapter.type)));
+		m_eth_adapter = new wxChoice(eth_pane, wxID_ANY, wxDefaultPosition, wxDefaultSize, adapter_name_list);
+
+		eth_adapter_box->Add(eth_adapter_label);
+		eth_adapter_box->Add(m_eth_adapter);
+		eth_sizer->Add(eth_adapter_box, wxSizerFlags().Expand());
+		eth_pane->SetSizer(eth_sizer);
+
+		// HDD section
+		auto* hdd_section = new wxCollapsiblePane(this, wxID_ANY, _("Hard Disk Drive"));
+		auto* hdd_pane = hdd_section->GetPane();
+		auto* hdd_sizer = new wxBoxSizer(wxVERTICAL);
+
+		m_hdd_enable = new wxCheckBox(hdd_pane, wxID_ANY, _("Enabled"));
+		hdd_sizer->Add(m_hdd_enable);
+		hdd_sizer->AddSpacer(5);
+
+		auto* hdd_grid = new wxFlexGridSizer(2, 0, 5);
+		hdd_grid->AddGrowableCol(1);
+		auto* hdd_file_label = new wxStaticText(hdd_pane, wxID_ANY, _("HDD File:"));
+		m_hdd_file = new wxFilePickerCtrl(hdd_pane, wxID_ANY, wxEmptyString, _("HDD image file"), "HDD|*.raw", wxDefaultPosition, wxDefaultSize, wxFLP_SAVE | wxFLP_USE_TEXTCTRL);
+		hdd_grid->Add(hdd_file_label, wxSizerFlags().Centre().Right());
+		hdd_grid->Add(m_hdd_file,     wxSizerFlags().Centre().Expand());
+		auto* hdd_size_label = new wxStaticText(hdd_pane, wxID_ANY, _("HDD Size (GiB):"));
+		m_hdd_size_spin = new wxSpinCtrl(hdd_pane, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, HDD_MIN_GB, HDD_MAX_GB, HDD_MIN_GB);
+		hdd_grid->Add(hdd_size_label,  wxSizerFlags().Centre().Right());
+		hdd_grid->Add(m_hdd_size_spin, wxSizerFlags().Centre().Expand());
+		m_hdd_size_slider = new wxSlider(hdd_pane, wxID_ANY, HDD_MIN_GB, HDD_MIN_GB, HDD_MAX_GB, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_VALUE_LABEL | wxSL_MIN_MAX_LABELS | wxSL_AUTOTICKS);
+		m_hdd_size_slider->SetPageSize(10);
+		for (int i = 15; i < HDD_MAX_GB; i += 5)
+			m_hdd_size_slider->SetTick(i);
+		hdd_grid->AddSpacer(0);
+		hdd_grid->Add(m_hdd_size_slider, wxSizerFlags().Centre().Expand());
+
+		hdd_sizer->Add(hdd_grid, wxSizerFlags().Expand());
+		hdd_pane->SetSizer(hdd_sizer);
+
+		top_box->Add(eth_section, wxSizerFlags().Expand());
+		top_box->Add(hdd_section, wxSizerFlags().Expand());
+		top_box->Add(CreateStdDialogButtonSizer(wxOK | wxCANCEL), wxSizerFlags().Right());
+
+		padding->Add(top_box, wxSizerFlags().Centre().Expand().Border(wxALL, 5));
+		SetSizerAndFit(padding);
+
+		Bind(wxEVT_CHECKBOX, &DEV9Dialog::OnCheck, this);
+		Bind(wxEVT_SLIDER,   &DEV9Dialog::OnSlide, this);
+		Bind(wxEVT_SPINCTRL, &DEV9Dialog::OnSpin,  this);
 	}
 
-	gtk_entry_set_text((GtkEntry*)gtk_builder_get_object(builder, "IDC_HDDFILE"), config.Hdd);
-
-	//HDDSpin
-	gtk_spin_button_set_range((GtkSpinButton*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SPIN"), HDD_MIN_GB, HDD_MAX_GB);
-	gtk_spin_button_set_increments((GtkSpinButton*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SPIN"), 1, 10);
-	gtk_spin_button_set_value((GtkSpinButton*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SPIN"), config.HddSize / 1024);
-
-	//HDDSlider
-	gtk_range_set_range((GtkRange*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SLIDER"), HDD_MIN_GB, HDD_MAX_GB);
-	gtk_range_set_increments((GtkRange*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SLIDER"), 1, 10);
-
-	gtk_scale_add_mark((GtkScale*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SLIDER"), HDD_MIN_GB, GTK_POS_BOTTOM, (std::to_string(HDD_MIN_GB) + " GiB").c_str());
-	gtk_scale_add_mark((GtkScale*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SLIDER"), HDD_MAX_GB, GTK_POS_BOTTOM, (std::to_string(HDD_MAX_GB) + " GiB").c_str());
-
-	for (int i = 15; i < HDD_MAX_GB; i += 5)
+	void Load(const Config& config)
 	{
-		gtk_scale_add_mark((GtkScale*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SLIDER"), i, GTK_POS_BOTTOM, nullptr);
-	}
-
-	gtk_range_set_value((GtkRange*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SLIDER"), config.HddSize / 1024);
-
-	//Checkboxes
-	gtk_toggle_button_set_active((GtkToggleButton*)gtk_builder_get_object(builder, "IDC_ETHENABLED"),
-								 config.ethEnable);
-	gtk_toggle_button_set_active((GtkToggleButton*)gtk_builder_get_object(builder, "IDC_HDDENABLED"),
-								 config.hddEnable);
-
-	initialized = 1;
-}
-
-void OnBrowse(GtkButton* button, gpointer usr_data)
-{
-	ghc::filesystem::path inis(GetSettingsFolder().ToString().ToStdString());
-
-	static const wxChar* hddFilterType = L"HDD|*.raw;*.RAW";
-
-	wxFileDialog ctrl(nullptr, _("HDD Image File"), GetSettingsFolder().ToString(), HDD_DEF,
-					  (wxString)hddFilterType + L"|" + _("All Files (*.*)") + L"|*.*", wxFD_SAVE);
-
-	if (ctrl.ShowModal() != wxID_CANCEL)
-	{
-		ghc::filesystem::path hddFile(ctrl.GetPath().ToStdString());
-
-		if (ghc::filesystem::exists(hddFile))
+		m_eth_enable->SetValue(config.ethEnable);
+		m_eth_adapter->SetSelection(0);
+		for (size_t i = 0; i < m_adapter_list.size(); i++)
 		{
-			//Get file size
-			int filesizeGb = ghc::filesystem::file_size(hddFile) / (1024 * 1024 * 1024);
-
-			gtk_range_set_value((GtkRange*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SLIDER"), filesizeGb);
-			gtk_spin_button_set_value((GtkSpinButton*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SPIN"), filesizeGb);
+			const AdapterEntry& adapter = m_adapter_list[i];
+			if (adapter.type == config.EthApi && adapter.name == config.Eth)
+			{
+				m_eth_adapter->SetSelection(i + 1);
+				break;
+			}
 		}
 
-		if (hddFile.parent_path() == inis)
-			hddFile = hddFile.filename();
+		m_hdd_enable->SetValue(config.hddEnable);
+		m_hdd_file->SetInitialDirectory(config.Hdd);
+		m_hdd_file->SetPath(config.Hdd);
+		m_hdd_size_spin->SetValue(config.HddSize / 1024);
+		m_hdd_size_slider->SetValue(config.HddSize / 1024);
 
-		gtk_entry_set_text((GtkEntry*)gtk_builder_get_object(builder, "IDC_HDDFILE"), hddFile.c_str());
+		UpdateEnable();
 	}
-}
 
-void OnSpin(GtkSpinButton* spin, gpointer usr_data)
-{
-	gtk_range_set_value((GtkRange*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SLIDER"),
-						gtk_spin_button_get_value(spin));
-}
-
-void OnSlide(GtkRange* range, gpointer usr_data)
-{
-	gtk_spin_button_set_value((GtkSpinButton*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SPIN"),
-							  gtk_range_get_value(range));
-}
-
-void OnOk()
-{
-	int ethIndex = gtk_combo_box_get_active((GtkComboBox*)gtk_builder_get_object(builder, "IDC_ETHDEV"));
-	if (ethIndex != -1)
+	void Save(Config& config)
 	{
-		strcpy(config.Eth, adapters[ethIndex].guid.c_str());
-		config.EthApi = adapters[ethIndex].type;
+		config.ethEnable = m_eth_enable->GetValue();
+		int eth = m_eth_adapter->GetSelection();
+		if (eth)
+		{
+			wxStrncpy(config.Eth, m_adapter_list[eth - 1].name, ArraySize(config.Eth) - 1);
+			config.EthApi = m_adapter_list[eth - 1].type;
+		}
+		else
+		{
+			config.Eth[0] = 0;
+			config.EthApi = NetApi::Unset;
+		}
+
+		config.hddEnable = m_hdd_enable->GetValue();
+		wxStrncpy(config.Hdd, m_hdd_file->GetPath(), ArraySize(config.Hdd) - 1);
+		config.HddSize = m_hdd_size_spin->GetValue() * 1024;
 	}
 
-	strcpy(config.Hdd, gtk_entry_get_text((GtkEntry*)gtk_builder_get_object(builder, "IDC_HDDFILE")));
-	config.HddSize = gtk_spin_button_get_value((GtkSpinButton*)gtk_builder_get_object(builder, "IDC_HDDSIZE_SPIN")) * 1024;
-
-	config.ethEnable = gtk_toggle_button_get_active((GtkToggleButton*)gtk_builder_get_object(builder, "IDC_ETHENABLED"));
-	config.hddEnable = gtk_toggle_button_get_active((GtkToggleButton*)gtk_builder_get_object(builder, "IDC_HDDENABLED"));
-
-	ghc::filesystem::path hddPath(config.Hdd);
-
-	if (hddPath.is_relative())
+	void UpdateEnable()
 	{
-		//GHC uses UTF8 on all platforms
-		ghc::filesystem::path path(GetSettingsFolder().ToUTF8().data());
-		hddPath = path / hddPath;
+		bool eth_enable = m_eth_enable->GetValue();
+		bool hdd_enable = m_hdd_enable->GetValue();
+
+		m_eth_adapter->Enable(eth_enable);
+		m_hdd_file->Enable(hdd_enable);
+		m_hdd_size_spin->Enable(hdd_enable);
+		m_hdd_size_slider->Enable(hdd_enable);
 	}
 
-	if (config.hddEnable && !ghc::filesystem::exists(hddPath))
+	void OnCheck(wxCommandEvent&)
 	{
-		HddCreate hddCreator;
-		hddCreator.filePath = hddPath;
-		hddCreator.neededSize = config.HddSize;
-		hddCreator.Start();
+		UpdateEnable();
 	}
 
-	SaveConf();
-}
+	void OnSlide(wxCommandEvent&)
+	{
+		m_hdd_size_spin->SetValue(m_hdd_size_slider->GetValue());
+	}
+
+	void OnSpin(wxCommandEvent&)
+	{
+		m_hdd_size_slider->SetValue(m_hdd_size_spin->GetValue());
+	}
+};
 
 void DEV9configure()
 {
 	ScopedCoreThreadPause paused_core;
-	Config oldConfig = config;
 
-	gtk_init(NULL, NULL);
-	GError* error = NULL;
-	if (builder == nullptr)
+	DEV9Dialog dialog;
+	LoadConf();
+	dialog.Load(config);
+	if (dialog.ShowModal() == wxID_OK)
 	{
-		builder = gtk_builder_new();
-		gtk_builder_add_callback_symbols(builder,
-										 "OnBrowse", G_CALLBACK(&OnBrowse),
-										 "OnSpin", G_CALLBACK(&OnSpin),
-										 "OnSlide", G_CALLBACK(&OnSlide), nullptr);
-		if (!gtk_builder_add_from_resource(builder, "/net/pcsx2/dev9/DEV9/Linux/dev9.ui", &error))
+		Config oldConfig = config;
+		dialog.Save(config);
+
+		ghc::filesystem::path hddPath(config.Hdd);
+
+		if (hddPath.is_relative())
 		{
-			g_warning("Could not build config ui: %s", error->message);
-			g_error_free(error);
-			g_object_unref(G_OBJECT(builder));
-			builder = nullptr;
-			return;
+			//GHC uses UTF8 on all platforms
+			ghc::filesystem::path path(GetSettingsFolder().ToUTF8().data());
+			hddPath = path / hddPath;
 		}
-		gtk_builder_connect_signals(builder, nullptr);
-	}
-	GtkDialog* dlg = GTK_DIALOG(gtk_builder_get_object(builder, "IDD_CONFDLG"));
-	OnInitDialog();
-	gint result = gtk_dialog_run(dlg);
-	switch (result)
-	{
-		case -5: //IDOK
-			OnOk();
-			break;
-		case -6: //IDCANCEL
-			break;
-	}
-	gtk_widget_hide(GTK_WIDGET(dlg));
 
-	ApplyConfigIfRunning(oldConfig);
+		if (config.hddEnable && !ghc::filesystem::exists(hddPath))
+		{
+			HddCreate hddCreator;
+			hddCreator.filePath = hddPath;
+			hddCreator.neededSize = config.HddSize;
+			hddCreator.Start();
+		}
+
+		SaveConf();
+
+		ApplyConfigIfRunning(oldConfig);
+	}
 
 	paused_core.AllowResume();
 }
