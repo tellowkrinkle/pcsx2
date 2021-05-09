@@ -16,7 +16,7 @@
     <Filter Include="System\ISO">
       <UniqueIdentifier>{a3f5cf44-2d2b-4822-b530-57286c85374a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="System\Include">
+    <Filter Include="System">
       <UniqueIdentifier>{a7187804-2892-4f90-9360-cf2bd6c31540}</UniqueIdentifier>
     </Filter>
     <Filter Include="System\Linux">
@@ -109,7 +109,7 @@
     <Filter Include="System\Ps2\Debug\rdebug">
       <UniqueIdentifier>{bba4d866-e26f-49c8-83fb-fb970c33798b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="System\Ps2\Include">
+    <Filter Include="System\Ps2">
       <UniqueIdentifier>{96937113-fef0-4e63-92e5-a30edcc78dc2}</UniqueIdentifier>
     </Filter>
     <Filter Include="System\Ps2\iCore">
@@ -130,7 +130,7 @@
     <Filter Include="AppHost\Panels">
       <UniqueIdentifier>{ebbed875-840b-4b7b-96e4-4da2d4e38d4b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="AppHost\Include">
+    <Filter Include="AppHost">
       <UniqueIdentifier>{510ab530-0308-44f7-a7e3-08e474065651}</UniqueIdentifier>
     </Filter>
     <Filter Include="AppHost\Win32">
@@ -1349,31 +1349,31 @@
       <Filter>System\ISO</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Common.h">
-      <Filter>System\Include</Filter>
+      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Config.h">
-      <Filter>System\Include</Filter>
+      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Dump.h">
-      <Filter>System\Include</Filter>
+      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="..\..\IopCommon.h">
-      <Filter>System\Include</Filter>
+      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Plugins.h">
-      <Filter>System\Include</Filter>
+      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="..\..\SaveState.h">
-      <Filter>System\Include</Filter>
+      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="..\..\System.h">
-      <Filter>System\Include</Filter>
+      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="..\..\System\SysThreads.h">
-      <Filter>System\Include</Filter>
+      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="..\..\System\RecTypes.h">
-      <Filter>System\Include</Filter>
+      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Counters.h">
       <Filter>System\Ps2\EmotionEngine</Filter>
@@ -1577,13 +1577,13 @@
       <Filter>System\Ps2\Debug</Filter>
     </ClInclude>
     <ClInclude Include="..\..\x86\BaseblockEx.h">
-      <Filter>System\Ps2\Include</Filter>
+      <Filter>System\Ps2</Filter>
     </ClInclude>
     <ClInclude Include="..\..\ps2\BiosTools.h">
-      <Filter>System\Ps2\Include</Filter>
+      <Filter>System\Ps2</Filter>
     </ClInclude>
     <ClInclude Include="..\..\MemoryTypes.h">
-      <Filter>System\Ps2\Include</Filter>
+      <Filter>System\Ps2</Filter>
     </ClInclude>
     <ClInclude Include="..\..\x86\iCore.h">
       <Filter>System\Ps2\iCore</Filter>
@@ -1628,70 +1628,70 @@
       <Filter>AppHost\Panels</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\App.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\AppCommon.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\AppConfig.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\AppEventListeners.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\AppForwardDefs.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\ApplyState.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\AppSaveStates.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\ConsoleLogger.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\CpuUsageProvider.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\IsoDropTarget.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\MainFrame.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\MemoryCardFile.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\MemoryCardFolder.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\RecentIsoList.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\Saveslots.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\AppAccelerators.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\AppCorePlugins.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\AppCoreThread.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\GSFrame.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\pxEventThread.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\PathDefs.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\SysForwardDefs.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\ZipTools\ThreadedZipTools.h">
       <Filter>Misc</Filter>
@@ -1796,7 +1796,7 @@
       <Filter>System\ISO</Filter>
     </ClInclude>
     <ClInclude Include="..\..\x86\R5900_Profiler.h">
-      <Filter>System\Include</Filter>
+      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="..\..\IopGte.h">
       <Filter>System\Ps2\Iop</Filter>
@@ -1838,10 +1838,10 @@
       <Filter>System\Ps2\Iop\CDVD</Filter>
     </ClInclude>
     <ClInclude Include="..\..\gui\DriveList.h">
-      <Filter>AppHost\Include</Filter>
+      <Filter>AppHost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\IPC.h">
-      <Filter>System\Include</Filter>
+      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="..\..\FW.h">
       <Filter>System\Ps2\Iop\FW</Filter>
