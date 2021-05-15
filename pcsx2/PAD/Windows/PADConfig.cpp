@@ -186,12 +186,12 @@ void RefreshEnabledDevices(int updateDeviceList)
 		}
 
 		if ((dev->type == KEYBOARD && dev->api == IGNORE_KEYBOARD) ||
-			(dev->type == KEYBOARD && dev->api == config.keyboardApi) ||
-			(dev->type == MOUSE && dev->api == config.mouseApi) ||
-			(dev->type == OTHER &&
-			 ((dev->api == DI && config.gameApis.directInput) ||
-			  (dev->api == DS3 && config.gameApis.dualShock3) ||
-			  (dev->api == XINPUT && config.gameApis.xInput))))
+		    (dev->type == KEYBOARD && dev->api == config.keyboardApi) ||
+		    (dev->type == MOUSE && dev->api == config.mouseApi) ||
+		    (dev->type == OTHER &&
+		     ((dev->api == DI && config.gameApis.directInput) ||
+		      (dev->api == DS3 && config.gameApis.dualShock3) ||
+		      (dev->api == XINPUT && config.gameApis.xInput))))
 		{
 			if (config.gameApis.dualShock3 && dev->api == DI && dev->displayName &&
 				!wcsicmp(dev->displayName, L"DX PLAYSTATION(R)3 Controller"))
@@ -1373,9 +1373,9 @@ void AddTooltip(UINT id, HWND hWnd)
 
 	// TTS_NOPREFIX allows tabs and '&' to be used.
 	HWND hWndTip = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL,
-								  TTS_ALWAYSTIP | TTS_NOPREFIX,
-								  CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-								  hWnd, NULL, GetModuleHandle(nullptr), NULL);
+		TTS_ALWAYSTIP | TTS_NOPREFIX,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+		hWnd, NULL, GetModuleHandle(nullptr), NULL);
 	if (hWndTip == NULL)
 		return;
 
@@ -2451,13 +2451,14 @@ bool ProfilesBindingCheck(unsigned int port, unsigned int slot, unsigned int pad
 						{
 							if (showWarning)
 							{
-								int msgboxID = MessageBoxA(hWndProp, "Warning!  You have selected a pad type that has one or several bindings that conflict with the active pad type of the opposing port or slot(s).\n\n"
-																	 "Do you want to keep the bindings of the pad type you are switching to?\n"
-																	 "Click \"Yes\" to continue without deleting any binding.\n"
-																	 "Click \"No\" to continue and delete any conflicting bindings from the selected pad type.\n"
-																	 "Click \"Cancel\" to revert to the previously selected pad type and avoid any further action.\n\n"
-																	 "Note: Enable the 'Allow binding multiple PS2 controls to one PC control' option to allow conflicting bindings between opposing ports and slots, and avoid this warning and the possibility of bindings getting deleted.",
-														   "Duplicate Binding Warning", MB_YESNOCANCEL | MB_DEFBUTTON3 | MB_ICONWARNING);
+								int msgboxID = MessageBoxA(hWndProp,
+									"Warning!  You have selected a pad type that has one or several bindings that conflict with the active pad type of the opposing port or slot(s).\n\n"
+									"Do you want to keep the bindings of the pad type you are switching to?\n"
+									"Click \"Yes\" to continue without deleting any binding.\n"
+									"Click \"No\" to continue and delete any conflicting bindings from the selected pad type.\n"
+									"Click \"Cancel\" to revert to the previously selected pad type and avoid any further action.\n\n"
+									"Note: Enable the 'Allow binding multiple PS2 controls to one PC control' option to allow conflicting bindings between opposing ports and slots, and avoid this warning and the possibility of bindings getting deleted.",
+									"Duplicate Binding Warning", MB_YESNOCANCEL | MB_DEFBUTTON3 | MB_ICONWARNING);
 								switch (msgboxID)
 								{
 									case IDCANCEL:
@@ -2768,7 +2769,7 @@ INT_PTR CALLBACK GeneralDialogProc(HWND hWnd, unsigned int msg, WPARAM wParam, L
 			else if (HIWORD(wParam) == BN_CLICKED && LOWORD(wParam) == ID_RESTORE_DEFAULTS)
 			{
 				int msgboxID = MessageBoxA(hWndProp, "This will delete all current settings and revert back to the default settings of PAD. Continue?",
-										   "Restore Defaults Confirmation", MB_YESNO | MB_DEFBUTTON2 | MB_ICONEXCLAMATION);
+					"Restore Defaults Confirmation", MB_YESNO | MB_DEFBUTTON2 | MB_ICONEXCLAMATION);
 				switch (msgboxID)
 				{
 					case IDNO:

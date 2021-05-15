@@ -330,29 +330,29 @@ extern "C" {
 usb_dev_handle* usb_open(struct usb_device* dev);
 int usb_close(usb_dev_handle* dev);
 int usb_get_string(usb_dev_handle* dev, int index, int langid, char* buf,
-				   size_t buflen);
+	size_t buflen);
 int usb_get_string_simple(usb_dev_handle* dev, int index, char* buf,
-						  size_t buflen);
+	size_t buflen);
 
 /* descriptors.c */
 int usb_get_descriptor_by_endpoint(usb_dev_handle* udev, int ep,
-								   unsigned char type, unsigned char index,
-								   void* buf, int size);
+	unsigned char type, unsigned char index,
+	void* buf, int size);
 int usb_get_descriptor(usb_dev_handle* udev, unsigned char type,
-					   unsigned char index, void* buf, int size);
+	unsigned char index, void* buf, int size);
 
 /* <arch>.c */
 int usb_bulk_write(usb_dev_handle* dev, int ep, char* bytes, int size,
-				   int timeout);
+	int timeout);
 int usb_bulk_read(usb_dev_handle* dev, int ep, char* bytes, int size,
-				  int timeout);
+	int timeout);
 int usb_interrupt_write(usb_dev_handle* dev, int ep, char* bytes, int size,
-						int timeout);
+	int timeout);
 int usb_interrupt_read(usb_dev_handle* dev, int ep, char* bytes, int size,
-					   int timeout);
+	int timeout);
 int usb_control_msg(usb_dev_handle* dev, int requesttype, int request,
-					int value, int index, char* bytes, int size,
-					int timeout);
+	int value, int index, char* bytes, int size,
+	int timeout);
 int usb_set_configuration(usb_dev_handle* dev, int configuration);
 int usb_claim_interface(usb_dev_handle* dev, int interface);
 int usb_release_interface(usb_dev_handle* dev, int interface);
@@ -376,22 +376,22 @@ struct usb_bus* usb_get_busses(void);
 #define LIBUSB_HAS_INSTALL_SERVICE_NP 1
 int usb_install_service_np(void);
 void CALLBACK usb_install_service_np_rundll(HWND wnd, HINSTANCE instance,
-											LPSTR cmd_line, int cmd_show);
+	LPSTR cmd_line, int cmd_show);
 
 #define LIBUSB_HAS_UNINSTALL_SERVICE_NP 1
 int usb_uninstall_service_np(void);
 void CALLBACK usb_uninstall_service_np_rundll(HWND wnd, HINSTANCE instance,
-											  LPSTR cmd_line, int cmd_show);
+	LPSTR cmd_line, int cmd_show);
 
 #define LIBUSB_HAS_INSTALL_DRIVER_NP 1
 int usb_install_driver_np(const char* inf_file);
 void CALLBACK usb_install_driver_np_rundll(HWND wnd, HINSTANCE instance,
-										   LPSTR cmd_line, int cmd_show);
+	LPSTR cmd_line, int cmd_show);
 
 #define LIBUSB_HAS_TOUCH_INF_FILE_NP 1
 int usb_touch_inf_file_np(const char* inf_file);
 void CALLBACK usb_touch_inf_file_np_rundll(HWND wnd, HINSTANCE instance,
-										   LPSTR cmd_line, int cmd_show);
+	LPSTR cmd_line, int cmd_show);
 
 #define LIBUSB_HAS_INSTALL_NEEDS_RESTART_NP 1
 int usb_install_needs_restart_np(void);
@@ -399,11 +399,11 @@ int usb_install_needs_restart_np(void);
 const struct usb_version* usb_get_version(void);
 
 int usb_isochronous_setup_async(usb_dev_handle* dev, void** context,
-								unsigned char ep, int pktsize);
+	unsigned char ep, int pktsize);
 int usb_bulk_setup_async(usb_dev_handle* dev, void** context,
-						 unsigned char ep);
+	unsigned char ep);
 int usb_interrupt_setup_async(usb_dev_handle* dev, void** context,
-							  unsigned char ep);
+	unsigned char ep);
 
 int usb_submit_async(void* context, char* bytes, int size);
 int usb_reap_async(void* context, int timeout);

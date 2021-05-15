@@ -32,13 +32,13 @@
 // media SDK also be installed for a simple macro.  This is
 // simpler and less silly.
 #ifndef SAFE_RELEASE
-#define SAFE_RELEASE(p)     \
-	{                       \
-		if (p)              \
-		{                   \
+#define SAFE_RELEASE(p) \
+	{ \
+		if (p) \
+		{ \
 			(p)->Release(); \
-			(p) = NULL;     \
-		}                   \
+			(p) = NULL; \
+		} \
 	}
 #endif
 
@@ -57,10 +57,10 @@ inline static u32 flipLong(u32 l)
 static void GUIDtoString(wchar_t* data, const GUID* pg)
 {
 	wsprintfW(data, L"%08X-%04X-%04X-%04X-%04X%08X",
-			  pg->Data1, (u32)pg->Data2, (u32)pg->Data3,
-			  flipShort(((u16*)pg->Data4)[0]),
-			  flipShort(((u16*)pg->Data4)[1]),
-			  flipLong(((u32*)pg->Data4)[1]));
+		pg->Data1, (u32)pg->Data2, (u32)pg->Data3,
+		flipShort(((u16*)pg->Data4)[0]),
+		flipShort(((u16*)pg->Data4)[1]),
+		flipLong(((u32*)pg->Data4)[1]));
 }
 
 struct DirectInput8Data
@@ -109,8 +109,8 @@ static int StringToGUID(GUID* pg, wchar_t* dataw)
 	data[w] = 0;
 	u32 temp[5];
 	sscanf(data, "%08X-%04X-%04X-%04X-%04X%08X",
-		   &pg->Data1, temp, temp + 1,
-		   temp + 2, temp + 3, temp + 4);
+		&pg->Data1, temp, temp + 1,
+		temp + 2, temp + 3, temp + 4);
 	pg->Data2 = (u16)temp[0];
 	pg->Data3 = (u16)temp[1];
 	((u16*)pg->Data4)[0] = flipShort((u16)temp[2]);
@@ -588,10 +588,10 @@ BOOL IsXInputDevice(const GUID* pGuidProductFromDirectInput)
 
 	// Create WMI
 	hr = CoCreateInstance(__uuidof(WbemLocator),
-						  NULL,
-						  CLSCTX_INPROC_SERVER,
-						  __uuidof(IWbemLocator),
-						  (LPVOID*)&pIWbemLocator);
+		NULL,
+		CLSCTX_INPROC_SERVER,
+		__uuidof(IWbemLocator),
+		(LPVOID*)&pIWbemLocator);
 	if (FAILED(hr) || pIWbemLocator == NULL)
 		goto LCleanup;
 
@@ -607,13 +607,13 @@ BOOL IsXInputDevice(const GUID* pGuidProductFromDirectInput)
 
 	// Connect to WMI
 	hr = pIWbemLocator->ConnectServer(bstrNamespace, NULL, NULL, 0L,
-									  0L, NULL, NULL, &pIWbemServices);
+		0L, NULL, NULL, &pIWbemServices);
 	if (FAILED(hr) || pIWbemServices == NULL)
 		goto LCleanup;
 
 	// Switch security level to IMPERSONATE.
 	CoSetProxyBlanket(pIWbemServices, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, NULL,
-					  RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE);
+		RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE);
 
 	hr = pIWbemServices->CreateInstanceEnum(bstrClassName, 0, NULL, &pEnumDevices);
 	if (FAILED(hr) || pEnumDevices == NULL)

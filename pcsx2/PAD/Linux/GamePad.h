@@ -35,7 +35,7 @@ public:
 	{
 	}
 
-	GamePad(const GamePad&);            // copy constructor
+	GamePad(const GamePad&); // copy constructor
 	GamePad& operator=(const GamePad&); // assignment
 
 	/*

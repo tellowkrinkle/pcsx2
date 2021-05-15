@@ -124,8 +124,8 @@ static LRESULT CALLBACK OverrideWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 {
 	WndProcEater* obj = (WndProcEater*)GetProp(hWnd, L"PADHaxxor");
 	return (obj == NULL) ?
-			   DefWindowProc(hWnd, uMsg, wParam, lParam) :
-			   obj->_OverrideWndProc(hWnd, uMsg, wParam, lParam);
+		DefWindowProc(hWnd, uMsg, wParam, lParam) :
+		obj->_OverrideWndProc(hWnd, uMsg, wParam, lParam);
 }
 
 bool WndProcEater::SetWndHandle(HWND hWnd)

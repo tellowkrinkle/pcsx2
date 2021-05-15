@@ -305,8 +305,8 @@ void EnumXInputDevices()
 		if (hMod)
 		{
 			if ((pXInputEnable = (_XInputEnable)GetProcAddress(hMod, "XInputEnable")) &&
-				((pXInputGetStateEx = (_XInputGetStateEx)GetProcAddress(hMod, (LPCSTR)100)) || // Try Ex version first
-				 (pXInputGetStateEx = (_XInputGetStateEx)GetProcAddress(hMod, "XInputGetState"))))
+			    ((pXInputGetStateEx = (_XInputGetStateEx)GetProcAddress(hMod, (LPCSTR)100)) || // Try Ex version first
+			     (pXInputGetStateEx = (_XInputGetStateEx)GetProcAddress(hMod, "XInputGetState"))))
 			{
 				pXInputGetExtended = (_XInputGetExtended)GetProcAddress(hMod, "XInputGetExtended");
 				pXInputSetState = (_XInputSetState)GetProcAddress(hMod, "XInputSetState");

@@ -472,7 +472,7 @@ void Update(unsigned int port, unsigned int slot)
 		return;
 	}
 
-// Lock prior to timecheck code to avoid pesky race conditions.
+	// Lock prior to timecheck code to avoid pesky race conditions.
 	std::lock_guard<std::mutex> lock(updateLock);
 
 	static unsigned int LastCheck = 0;
@@ -882,17 +882,17 @@ s32 PADinit()
 // Note to self:  Has to be a define for the sizeof() to work right.
 // Note to self 2: All are the same size, anyways, except for longer full DS2 response
 //   and shorter digital mode response.
-#define SET_RESULT(a)                             \
-	{                                             \
+#define SET_RESULT(a) \
+	{ \
 		memcpy(query.response + 2, a, sizeof(a)); \
-		query.numBytes = 2 + sizeof(a);           \
+		query.numBytes = 2 + sizeof(a); \
 	}
 
-#define SET_FINAL_RESULT(a)                       \
-	{                                             \
+#define SET_FINAL_RESULT(a) \
+	{ \
 		memcpy(query.response + 2, a, sizeof(a)); \
-		query.numBytes = 2 + sizeof(a);           \
-		query.queryDone = 1;                      \
+		query.numBytes = 2 + sizeof(a); \
+		query.queryDone = 1; \
 	}
 
 static const u8 ConfigExit[7] = {0x5A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -908,8 +908,10 @@ static const u8 queryModelDS2[7] = {0x5A, 0x03, 0x02, 0x00, 0x02, 0x01, 0x00};
 // DS1
 static const u8 queryModelDS1[7] = {0x5A, 0x01, 0x02, 0x00, 0x02, 0x01, 0x00};
 
-static const u8 queryAct[2][7] = {{0x5A, 0x00, 0x00, 0x01, 0x02, 0x00, 0x0A},
-								  {0x5A, 0x00, 0x00, 0x01, 0x01, 0x01, 0x14}};
+static const u8 queryAct[2][7] = {
+	{0x5A, 0x00, 0x00, 0x01, 0x02, 0x00, 0x0A},
+	{0x5A, 0x00, 0x00, 0x01, 0x01, 0x01, 0x14}
+};
 
 static const u8 queryComb[7] = {0x5A, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00};
 
@@ -990,7 +992,7 @@ void PADconfigure()
 	ScopedCoreThreadPause paused_core;
 	Configure();
 	paused_core.AllowResume();
-	if(tmp != nullptr)
+	if (tmp != nullptr)
 		PADopen(tmp);
 }
 
@@ -1015,12 +1017,12 @@ s32 PADopen(void* pDsp)
 		{
 			openCount = 0;
 			MessageBoxA(GetActiveWindow(),
-						"Invalid Window handle passed to PAD.\n"
-						"\n"
-						"Either your emulator or gs plugin is buggy,\n"
-						"Despite the fact the emulator is about to\n"
-						"blame PAD for failing to initialize.",
-						"Non-PAD Error", MB_OK | MB_ICONERROR);
+				"Invalid Window handle passed to PAD.\n"
+				"\n"
+				"Either your emulator or gs plugin is buggy,\n"
+				"Despite the fact the emulator is about to\n"
+				"blame PAD for failing to initialize.",
+				"Non-PAD Error", MB_OK | MB_ICONERROR);
 			return -1;
 		}
 		hWndTop = GetAncestor(hWnd, GA_ROOT);
@@ -1139,7 +1141,7 @@ u8 PADstartPoll(int port)
 inline int IsDualshock2(u8 port, u8 slot)
 {
 	return config.padConfigs[query.port][query.slot].type == Dualshock2Pad ||
-		   (config.padConfigs[query.port][query.slot].type == GuitarPad && config.GH2);
+	       (config.padConfigs[query.port][query.slot].type == GuitarPad && config.GH2);
 }
 
 u8 PADpoll(u8 value)
@@ -1226,9 +1228,9 @@ u8 PADpoll(u8 value)
 						query.response[3] = b1;
 						query.response[4] = b2;
 						query.response[5] = Cap((sum->sticks[1].horiz + 255) / 2); // Swivel
-						query.response[6] = (unsigned char)sum->buttons[10];       // I
-						query.response[7] = (unsigned char)sum->buttons[11];       // II
-						query.response[8] = (unsigned char)sum->buttons[6];        // L
+						query.response[6] = (unsigned char)sum->buttons[10]; // I
+						query.response[7] = (unsigned char)sum->buttons[11]; // II
+						query.response[8] = (unsigned char)sum->buttons[ 6]; // L
 
 						query.numBytes = 9;
 						query.lastByte = 1;
@@ -1269,9 +1271,9 @@ u8 PADpoll(u8 value)
 					if (pad->mode != MODE_DIGITAL)
 					{
 						query.response[5] = Cap((sum->sticks[0].horiz + 255) / 2); // Right stick: left & right
-						query.response[6] = Cap((sum->sticks[0].vert + 255) / 2);  // Right stick: up & down
+						query.response[6] = Cap((sum->sticks[0].vert  + 255) / 2); // Right stick: up & down
 						query.response[7] = Cap((sum->sticks[1].horiz + 255) / 2); // Left stick: left & right
-						query.response[8] = Cap((sum->sticks[1].vert + 255) / 2);  // Left stick: up & down
+						query.response[8] = Cap((sum->sticks[1].vert  + 255) / 2); // Left stick: up & down
 
 						query.numBytes = 9;
 						if (pad->mode != MODE_ANALOG && !pad->config)
@@ -1281,13 +1283,13 @@ u8 PADpoll(u8 value)
 							//query.response[4] &= pad->mask[1];
 
 							// No need to cap these, already done int CapSum().
-							query.response[9] = (unsigned char)sum->buttons[13];  // D-pad right
+							query.response[ 9] = (unsigned char)sum->buttons[13]; // D-pad right
 							query.response[10] = (unsigned char)sum->buttons[15]; // D-pad left
 							query.response[11] = (unsigned char)sum->buttons[12]; // D-pad up
 							query.response[12] = (unsigned char)sum->buttons[14]; // D-pad down
 
-							query.response[13] = (unsigned char)sum->buttons[8];  // Triangle
-							query.response[14] = (unsigned char)sum->buttons[9];  // Circle
+							query.response[13] = (unsigned char)sum->buttons[ 8]; // Triangle
+							query.response[14] = (unsigned char)sum->buttons[ 9]; // Circle
 							query.response[15] = (unsigned char)sum->buttons[10]; // Cross
 							query.response[16] = (unsigned char)sum->buttons[11]; // Square
 
@@ -1480,7 +1482,7 @@ u8 PADpoll(u8 value)
 				break;
 			// SET_DS2_NATIVE_MODE
 			case 0x4F:
-				if (query.lastByte >2 && query.lastByte < 6)
+				if (query.lastByte > 2 && query.lastByte < 6)
 				{
 					pad->umask[query.lastByte - 3] = value;
 				}

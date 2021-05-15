@@ -39,9 +39,9 @@
 #include "ImgHeader/arrow_left.h"
 
 opPanel::opPanel(wxWindow* parent,
-				 wxWindowID id = wxID_ANY,
-				 const wxPoint& pos = wxDefaultPosition,
-				 const wxSize& size = wxDefaultSize)
+	             wxWindowID id = wxID_ANY,
+	             const wxPoint& pos = wxDefaultPosition,
+	             const wxSize& size = wxDefaultSize)
 	: wxPanel(parent, id, pos, size)
 {
 	m_picture[img_background] = EmbeddedImage<res_dualshock2>().Get();

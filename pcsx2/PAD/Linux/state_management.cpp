@@ -203,17 +203,19 @@ u8 pad_poll(u8 value)
 				ButtonSum *sum = &pad->sum;
 
 				u8 b1 = 0xFF, b2 = 0xFF;
-				for (i = 0; i<4; i++) {
-					b1 -= (sum->buttons[i]   > 0) << i;
+				for (i = 0; i < 4; i++)
+				{
+					b1 -= (sum->buttons[i + 0] > 0) << i;
 				}
-				for (i = 0; i<8; i++) {
-					b2 -= (sum->buttons[i+4] > 0) << i;
+				for (i = 0; i < 8; i++) {
+					b2 -= (sum->buttons[i + 4] > 0) << i;
 				}
 #endif
 
 // FIXME
 #if 0
-				if (config.padConfigs[query.port][query.slot].type == GuitarPad && !config.GH2) {
+				if (config.padConfigs[query.port][query.slot].type == GuitarPad && !config.GH2)
+				{
 					sum->buttons[15] = 255;
 					// Not sure about this.  Forces wammy to be from 0 to 0x7F.
 					// if (sum->sticks[2].vert > 0) sum->sticks[2].vert = 0;
@@ -221,8 +223,8 @@ u8 pad_poll(u8 value)
 #endif
 
 #if 0
-				for (i = 4; i<8; i++) {
-					b1 -= (sum->buttons[i+8] > 0) << i;
+				for (i = 4; i < 8; i++) {
+					b1 -= (sum->buttons[i + 8] > 0) << i;
 				}
 #endif
 
@@ -230,7 +232,7 @@ u8 pad_poll(u8 value)
 #if 0
 				//Left, Right and Down are always pressed on Pop'n Music controller.
 				if (config.padConfigs[query.port][query.slot].type == PopnPad)
-					b1=b1 & 0x1f;
+					b1 = b1 & 0x1f;
 #endif
 
 				uint16_t buttons = g_key_status.get(query.port);
@@ -240,8 +242,8 @@ u8 pad_poll(u8 value)
 				query.response[3] = (buttons >> 8) & 0xFF;
 				query.response[4] = (buttons >> 0) & 0xFF;
 
-				if (pad->mode != MODE_DIGITAL)
-				{ // ANALOG || DS2 native
+				if (pad->mode != MODE_DIGITAL) // ANALOG || DS2 native
+				{
 					query.numBytes = 9;
 
 					query.response[5] = g_key_status.get(query.port, PAD_R_RIGHT);
@@ -249,19 +251,19 @@ u8 pad_poll(u8 value)
 					query.response[7] = g_key_status.get(query.port, PAD_L_RIGHT);
 					query.response[8] = g_key_status.get(query.port, PAD_L_UP);
 
-					if (pad->mode != MODE_ANALOG)
-					{ // DS2 native
+					if (pad->mode != MODE_ANALOG) // DS2 native
+					{
 						query.numBytes = 21;
 
-						query.response[9] = !test_bit(buttons, 13) ? g_key_status.get(query.port, PAD_RIGHT) : 0;
-						query.response[10] = !test_bit(buttons, 15) ? g_key_status.get(query.port, PAD_LEFT) : 0;
-						query.response[11] = !test_bit(buttons, 12) ? g_key_status.get(query.port, PAD_UP) : 0;
-						query.response[12] = !test_bit(buttons, 14) ? g_key_status.get(query.port, PAD_DOWN) : 0;
+						query.response[ 9] = !test_bit(buttons, 13) ? g_key_status.get(query.port, PAD_RIGHT) : 0;
+						query.response[10] = !test_bit(buttons, 15) ? g_key_status.get(query.port, PAD_LEFT)  : 0;
+						query.response[11] = !test_bit(buttons, 12) ? g_key_status.get(query.port, PAD_UP)    : 0;
+						query.response[12] = !test_bit(buttons, 14) ? g_key_status.get(query.port, PAD_DOWN)  : 0;
 
 						query.response[13] = !test_bit(buttons, 4) ? g_key_status.get(query.port, PAD_TRIANGLE) : 0;
-						query.response[14] = !test_bit(buttons, 5) ? g_key_status.get(query.port, PAD_CIRCLE) : 0;
-						query.response[15] = !test_bit(buttons, 6) ? g_key_status.get(query.port, PAD_CROSS) : 0;
-						query.response[16] = !test_bit(buttons, 7) ? g_key_status.get(query.port, PAD_SQUARE) : 0;
+						query.response[14] = !test_bit(buttons, 5) ? g_key_status.get(query.port, PAD_CIRCLE)   : 0;
+						query.response[15] = !test_bit(buttons, 6) ? g_key_status.get(query.port, PAD_CROSS)    : 0;
+						query.response[16] = !test_bit(buttons, 7) ? g_key_status.get(query.port, PAD_SQUARE)   : 0;
 						query.response[17] = !test_bit(buttons, 2) ? g_key_status.get(query.port, PAD_L1) : 0;
 						query.response[18] = !test_bit(buttons, 3) ? g_key_status.get(query.port, PAD_R1) : 0;
 						query.response[19] = !test_bit(buttons, 0) ? g_key_status.get(query.port, PAD_L2) : 0;
@@ -274,32 +276,34 @@ u8 pad_poll(u8 value)
 				query.response[4] = b2;
 
 				query.numBytes = 5;
-				if (pad->mode != MODE_DIGITAL) {
-					query.response[5] = Cap((sum->sticks[0].horiz+255)/2);
-					query.response[6] = Cap((sum->sticks[0].vert+255)/2);
-					query.response[7] = Cap((sum->sticks[1].horiz+255)/2);
-					query.response[8] = Cap((sum->sticks[1].vert+255)/2);
+				if (pad->mode != MODE_DIGITAL)
+				{
+					query.response[5] = Cap((sum->sticks[0].horiz + 255) / 2);
+					query.response[6] = Cap((sum->sticks[0].vert  + 255) / 2);
+					query.response[7] = Cap((sum->sticks[1].horiz + 255) / 2);
+					query.response[8] = Cap((sum->sticks[1].vert  + 255) / 2);
 
 					query.numBytes = 9;
-					if (pad->mode != MODE_ANALOG) {
+					if (pad->mode != MODE_ANALOG)
+					{
 						// Good idea?  No clue.
 						//query.response[3] &= pad->mask[0];
 						//query.response[4] &= pad->mask[1];
 
 						// No need to cap these, already done int CapSum().
-						query.response[9] = (unsigned char)sum->buttons[13]; //D-pad right
+						query.response[ 9] = (unsigned char)sum->buttons[13]; //D-pad right
 						query.response[10] = (unsigned char)sum->buttons[15]; //D-pad left
 						query.response[11] = (unsigned char)sum->buttons[12]; //D-pad up
 						query.response[12] = (unsigned char)sum->buttons[14]; //D-pad down
 
-						query.response[13] = (unsigned char) sum->buttons[8];
-						query.response[14] = (unsigned char) sum->buttons[9];
+						query.response[13] = (unsigned char) sum->buttons[ 8];
+						query.response[14] = (unsigned char) sum->buttons[ 9];
 						query.response[15] = (unsigned char) sum->buttons[10];
 						query.response[16] = (unsigned char) sum->buttons[11];
-						query.response[17] = (unsigned char) sum->buttons[6];
-						query.response[18] = (unsigned char) sum->buttons[7];
-						query.response[19] = (unsigned char) sum->buttons[4];
-						query.response[20] = (unsigned char) sum->buttons[5];
+						query.response[17] = (unsigned char) sum->buttons[ 6];
+						query.response[18] = (unsigned char) sum->buttons[ 7];
+						query.response[19] = (unsigned char) sum->buttons[ 4];
+						query.response[20] = (unsigned char) sum->buttons[ 5];
 						query.numBytes = 21;
 					}
 				}

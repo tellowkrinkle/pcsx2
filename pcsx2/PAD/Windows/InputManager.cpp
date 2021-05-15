@@ -225,9 +225,9 @@ void Device::CalcVirtualState()
 						for (i = 0; i < numPhysicalControls; i++)
 						{
 							if (virtualControlState[physicalControls[i].baseVirtualControlIndex] &&
-								(physicalControls[i].vkey == VK_MENU ||
-								 physicalControls[i].vkey == VK_RMENU ||
-								 physicalControls[i].vkey == VK_LMENU))
+							    (physicalControls[i].vkey == VK_MENU ||
+							     physicalControls[i].vkey == VK_RMENU ||
+							     physicalControls[i].vkey == VK_LMENU))
 							{
 								break;
 							}
@@ -528,8 +528,8 @@ Device* InputDeviceManager::GetActiveDevice(InitInfo* info, unsigned int* uid, i
 						if ((((devices[i]->virtualControls[j].uid >> 16) & 0xFF) != ABSAXIS))
 							continue;
 						// Very picky when binding entire axes.  Prefer binding half-axes.
-						if (!((devices[i]->oldVirtualControlState[j] < FULLY_DOWN / 32 && devices[i]->virtualControlState[j] > FULLY_DOWN / 8) ||
-							  (devices[i]->oldVirtualControlState[j] > 31 * FULLY_DOWN / 32 && devices[i]->virtualControlState[j] < 7 * FULLY_DOWN / 8)))
+						if (!((devices[i]->oldVirtualControlState[j] <      FULLY_DOWN / 32 && devices[i]->virtualControlState[j] >     FULLY_DOWN / 8) ||
+						      (devices[i]->oldVirtualControlState[j] > 31 * FULLY_DOWN / 32 && devices[i]->virtualControlState[j] < 7 * FULLY_DOWN / 8)))
 						{
 							continue;
 						}

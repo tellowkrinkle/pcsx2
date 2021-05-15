@@ -50,30 +50,32 @@
 
 #define PADdefs
 
+// clang-format off
+
 enum PadOptions
 {
-	PADOPTION_FORCEFEEDBACK = 0x1,
-	PADOPTION_REVERSELX = 0x2,
-	PADOPTION_REVERSELY = 0x4,
-	PADOPTION_REVERSERX = 0x8,
-	PADOPTION_REVERSERY = 0x10,
-	PADOPTION_MOUSE_L = 0x20,
-	PADOPTION_MOUSE_R = 0x40,
+	PADOPTION_FORCEFEEDBACK = 1 << 0,
+	PADOPTION_REVERSELX     = 1 << 1,
+	PADOPTION_REVERSELY     = 1 << 2,
+	PADOPTION_REVERSERX     = 1 << 3,
+	PADOPTION_REVERSERY     = 1 << 4,
+	PADOPTION_MOUSE_L       = 1 << 5,
+	PADOPTION_MOUSE_R       = 1 << 6,
 };
 
 enum PadCommands
 {
-	CMD_SET_VREF_PARAM = 0x40,
+	CMD_SET_VREF_PARAM        = 0x40,
 	CMD_QUERY_DS2_ANALOG_MODE = 0x41,
 	CMD_READ_DATA_AND_VIBRATE = 0x42,
-	CMD_CONFIG_MODE = 0x43,
-	CMD_SET_MODE_AND_LOCK = 0x44,
-	CMD_QUERY_MODEL_AND_MODE = 0x45,
-	CMD_QUERY_ACT = 0x46,  // ??
-	CMD_QUERY_COMB = 0x47, // ??
-	CMD_QUERY_MODE = 0x4C, // QUERY_MODE ??
-	CMD_VIBRATION_TOGGLE = 0x4D,
-	CMD_SET_DS2_NATIVE_MODE = 0x4F // SET_DS2_NATIVE_MODE
+	CMD_CONFIG_MODE           = 0x43,
+	CMD_SET_MODE_AND_LOCK     = 0x44,
+	CMD_QUERY_MODEL_AND_MODE  = 0x45,
+	CMD_QUERY_ACT             = 0x46, // ??
+	CMD_QUERY_COMB            = 0x47, // ??
+	CMD_QUERY_MODE            = 0x4C, // QUERY_MODE ??
+	CMD_VIBRATION_TOGGLE      = 0x4D,
+	CMD_SET_DS2_NATIVE_MODE   = 0x4F  // SET_DS2_NATIVE_MODE
 };
 
 enum gamePadValues
@@ -103,6 +105,8 @@ enum gamePadValues
 	PAD_R_DOWN,   // Right joystick (Down) ↓
 	PAD_R_LEFT    // Right joystick (Left) ←
 };
+
+// clang-format on
 
 #if defined(__unix__) || defined(__APPLE__)
 #include "GamePad.h"
