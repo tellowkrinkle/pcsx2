@@ -15,6 +15,8 @@
 
 #pragma once
 
+// clang-format off
+
 typedef struct _cdvdSubQ
 {
 	u8 ctrl : 4;   // control and mode bits
@@ -30,8 +32,8 @@ typedef struct _cdvdSubQ
 	u8 discF;      // current frame offset from first track (BCD encoded)
 } cdvdSubQ;
 
-typedef struct _cdvdTD
-{ // NOT bcd coded
+typedef struct _cdvdTD // NOT bcd coded
+{
 	u32 lsn;
 	u8 type;
 } cdvdTD;
@@ -50,24 +52,24 @@ typedef struct _cdvdTN
 #define CDVD_MODE_2368 4 // full 2352 bytes + 16 subq
 
 // CDVDgetDiskType returns:
-#define CDVD_TYPE_ILLEGAL 0xff   // Illegal Disc
-#define CDVD_TYPE_DVDV 0xfe      // DVD Video
-#define CDVD_TYPE_CDDA 0xfd      // Audio CD
-#define CDVD_TYPE_PS2DVD 0x14    // PS2 DVD
-#define CDVD_TYPE_PS2CDDA 0x13   // PS2 CD (with audio)
-#define CDVD_TYPE_PS2CD 0x12     // PS2 CD
-#define CDVD_TYPE_PSCDDA 0x11    // PS CD (with audio)
-#define CDVD_TYPE_PSCD 0x10      // PS CD
-#define CDVD_TYPE_UNKNOWN 0x05   // Unknown
+#define CDVD_TYPE_ILLEGAL   0xff // Illegal Disc
+#define CDVD_TYPE_DVDV      0xfe // DVD Video
+#define CDVD_TYPE_CDDA      0xfd // Audio CD
+#define CDVD_TYPE_PS2DVD    0x14 // PS2 DVD
+#define CDVD_TYPE_PS2CDDA   0x13 // PS2 CD (with audio)
+#define CDVD_TYPE_PS2CD     0x12 // PS2 CD
+#define CDVD_TYPE_PSCDDA    0x11 // PS CD (with audio)
+#define CDVD_TYPE_PSCD      0x10 // PS CD
+#define CDVD_TYPE_UNKNOWN   0x05 // Unknown
 #define CDVD_TYPE_DETCTDVDD 0x04 // Detecting Dvd Dual Sided
 #define CDVD_TYPE_DETCTDVDS 0x03 // Detecting Dvd Single Sided
-#define CDVD_TYPE_DETCTCD 0x02   // Detecting Cd
-#define CDVD_TYPE_DETCT 0x01     // Detecting
-#define CDVD_TYPE_NODISC 0x00    // No Disc
+#define CDVD_TYPE_DETCTCD   0x02 // Detecting Cd
+#define CDVD_TYPE_DETCT     0x01 // Detecting
+#define CDVD_TYPE_NODISC    0x00 // No Disc
 
 // CDVDgetTrayStatus returns:
 #define CDVD_TRAY_CLOSE 0x00
-#define CDVD_TRAY_OPEN 0x01
+#define CDVD_TRAY_OPEN  0x01
 
 // cdvdTD.type (track types for cds)
 #define CDVD_AUDIO_TRACK 0x01
@@ -75,7 +77,7 @@ typedef struct _cdvdTN
 #define CDVD_MODE2_TRACK 0x61
 
 #define CDVD_AUDIO_MASK 0x00
-#define CDVD_DATA_MASK 0x40
+#define CDVD_DATA_MASK  0x40
 //	CDROM_DATA_TRACK	0x04	//do not enable this! (from linux kernel)
 
 // CDVD

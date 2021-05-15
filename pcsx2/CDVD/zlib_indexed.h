@@ -112,7 +112,7 @@ Comments) 1950 to 1952 in the files http://tools.ietf.org/html/rfc1950
 #define local static
 
 //#define SPAN (1048576L)  /* desired distance between access points */
-#define WINSIZE 32768U    /* sliding window size */
+#define WINSIZE 32768U /* sliding window size */
 #define CHUNK (64 * 1024) /* file input buffer size */
 
 #ifdef _WIN32
@@ -122,9 +122,9 @@ Comments) 1950 to 1952 in the files http://tools.ietf.org/html/rfc1950
 /* access point entry */
 struct point
 {
-	PX_off_t out;                  /* corresponding offset in uncompressed data */
-	PX_off_t in;                   /* offset in input file of first full byte */
-	int bits;                      /* number of bits (1-7) from byte at in - 1, or 0 */
+	PX_off_t out; /* corresponding offset in uncompressed data */
+	PX_off_t in; /* offset in input file of first full byte */
+	int bits; /* number of bits (1-7) from byte at in - 1, or 0 */
 	unsigned char window[WINSIZE]; /* preceding 32K of uncompressed data */
 }
 #ifndef _WIN32
@@ -137,11 +137,11 @@ typedef struct point Point;
 /* access point list */
 struct access
 {
-	int have;           /* number of list entries filled in */
-	int size;           /* number of list entries allocated (only used internally during build)*/
+	int have; /* number of list entries filled in */
+	int size; /* number of list entries allocated (only used internally during build)*/
 	struct point* list; /* allocated list */
 
-	s32 span;                   /* once the index is built, holds the span size used to build it */
+	s32 span; /* once the index is built, holds the span size used to build it */
 	PX_off_t uncompressed_size; /* filled by build_index */
 }
 #ifndef _WIN32
@@ -168,7 +168,7 @@ local void free_index(struct access* index)
 /* Add an entry to the access point list.  If out of memory, deallocate the
    existing list and return NULL. */
 local struct access* addpoint(struct access* index, int bits,
-							  PX_off_t in, PX_off_t out, unsigned left, unsigned char* window)
+	PX_off_t in, PX_off_t out, unsigned left, unsigned char* window)
 {
 	struct point* next;
 
@@ -228,8 +228,8 @@ local int build_index(FILE* in, PX_off_t span, struct access** built)
 {
 	int ret;
 	PX_off_t totin, totout, totPrinted; /* our own total counters to avoid 4GB limit */
-	PX_off_t last;                      /* totout value of last access point */
-	struct access* index;               /* access points being generated */
+	PX_off_t last; /* totout value of last access point */
+	struct access* index; /* access points being generated */
 	z_stream strm;
 	unsigned char input[CHUNK];
 	unsigned char window[WINSIZE];
@@ -303,7 +303,7 @@ local int build_index(FILE* in, PX_off_t span, struct access** built)
 				(totout == 0 || totout - last > span))
 			{
 				index = addpoint(index, strm.data_type & 7, totin,
-								 totout, strm.avail_out, window);
+					totout, strm.avail_out, window);
 				if (index == NULL)
 				{
 					ret = Z_MEM_ERROR;
@@ -363,7 +363,7 @@ static inline PX_off_t getInOffset(zstate* state)
    was generated.  extract() may also return Z_ERRNO if there is an error on
    reading or seeking the input file. */
 local int extract(FILE* in, struct access* index, PX_off_t offset,
-				  unsigned char* buf, int len, zstate* state)
+	unsigned char* buf, int len, zstate* state)
 {
 	int ret, skip;
 	struct point* here;

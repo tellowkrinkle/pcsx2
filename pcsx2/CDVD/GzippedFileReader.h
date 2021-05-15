@@ -21,9 +21,9 @@ typedef struct zstate Zstate;
 #include "ChunksCache.h"
 #include "zlib_indexed.h"
 
-#define GZFILE_SPAN_DEFAULT (1048576L * 4)  /* distance between direct access points when creating a new index */
+#define GZFILE_SPAN_DEFAULT (1048576L * 4) /* distance between direct access points when creating a new index */
 #define GZFILE_READ_CHUNK_SIZE (256 * 1024) /* zlib extraction chunks size (at 0-based boundaries) */
-#define GZFILE_CACHE_SIZE_MB 200            /* cache size for extracted data. must be at least GZFILE_READ_CHUNK_SIZE (in MB)*/
+#define GZFILE_CACHE_SIZE_MB 200 /* cache size for extracted data. must be at least GZFILE_READ_CHUNK_SIZE (in MB)*/
 
 class GzippedFileReader : public AsyncFileReader
 {
@@ -75,7 +75,7 @@ private:
 	int _ReadSync(void* pBuffer, PX_off_t offset, uint bytesToRead);
 	void InitZstates();
 
-	int mBytesRead;   // Temp sync read result when simulating async read
+	int mBytesRead; // Temp sync read result when simulating async read
 	Access* m_pIndex; // Quick access index
 	Czstate* m_zstates;
 	FILE* m_src;

@@ -137,7 +137,7 @@ void keepAliveThread()
 	std::unique_lock<std::mutex> guard(s_keepalive_lock);
 
 	while (!s_keepalive_cv.wait_for(guard, std::chrono::seconds(30),
-									[]() { return !s_keepalive_is_open; }))
+		[]() { return !s_keepalive_is_open; }))
 	{
 
 		//printf(" * keepAliveThread: polling drive.\n");
@@ -350,8 +350,8 @@ s32 CALLBACK DISCgetTOC(void* toc)
 		if (mt < 0)
 			return -1;
 
-		if (mt == 0)
-		{ //single layer
+		if (mt == 0) // single layer
+		{
 			// fake it
 			tocBuff[0] = 0x04;
 			tocBuff[1] = 0x02;
@@ -365,8 +365,8 @@ s32 CALLBACK DISCgetTOC(void* toc)
 			tocBuff[18] = 0x00;
 			tocBuff[19] = 0x00;
 		}
-		else if (mt == 1)
-		{ //PTP
+		else if (mt == 1) // PTP
+		{
 			u32 layer1start = src->GetLayerBreakAddress() + 0x30000;
 
 			// dual sided
@@ -389,8 +389,8 @@ s32 CALLBACK DISCgetTOC(void* toc)
 			tocBuff[22] = (layer1start >> 8) & 0xff;
 			tocBuff[23] = (layer1start >> 0) & 0xff;
 		}
-		else
-		{ //OTP
+		else // OTP
+		{
 			u32 layer1start = src->GetLayerBreakAddress() + 0x30000;
 
 			// dual sided

@@ -123,21 +123,21 @@ static wxString INDEX_TEMPLATE_KEY(L"$(f)");
 // No checks are performed if the result file name can be created.
 // If this proves useful, we can move it into Path:: . Right now there's no need.
 static wxString ApplyTemplate(const wxString& name, const wxDirName& base,
-							  const wxString& fileTemplate, const wxString& filename,
-							  bool canEndWithKey)
+	const wxString& fileTemplate, const wxString& filename,
+	bool canEndWithKey)
 {
 	wxString tem(fileTemplate);
 	wxString key = INDEX_TEMPLATE_KEY;
 	tem = tem.Trim(true).Trim(false); // both sides
 
 	size_t first = tem.find(key);
-	if (first == wxString::npos    // not found
+	if (first == wxString::npos // not found
 		|| first != tem.rfind(key) // more than one instance
 		|| !canEndWithKey && first == tem.length() - key.length())
 	{
 		Console.Error(L"Invalid %s template '%s'.\n"
-					  L"Template must contain exactly one '%s' and must not end with it. Abotring.",
-					  WX_STR(name), WX_STR(tem), WX_STR(key));
+		              L"Template must contain exactly one '%s' and must not end with it. Abotring.",
+			WX_STR(name), WX_STR(tem), WX_STR(key));
 		return L"";
 	}
 
@@ -317,7 +317,7 @@ bool GzippedFileReader::OkIndex()
 		if (m_pIndex->span != GZFILE_SPAN_DEFAULT)
 		{
 			Console.Warning(L"Note: This index has %1.1f MB intervals, while the current default for new indexes is %1.1f MB.",
-							(float)m_pIndex->span / 1024 / 1024, (float)GZFILE_SPAN_DEFAULT / 1024 / 1024);
+				(float)m_pIndex->span / 1024 / 1024, (float)GZFILE_SPAN_DEFAULT / 1024 / 1024);
 			Console.Warning(L"It will work fine, but if you want to generate a new index with default intervals, delete this index file.");
 			Console.Warning(L"(smaller intervals mean bigger index file and quicker but more frequent decompressions)");
 		}
@@ -475,8 +475,8 @@ int GzippedFileReader::_ReadSync(void* pBuffer, PX_off_t offset, uint bytesToRea
 
 	if (size <= GZFILE_READ_CHUNK_SIZE)
 		m_cache.Take(extracted, extractOffset, res, size);
-	else
-	{ // split into cacheable chunks
+	else // split into cacheable chunks
+	{
 		for (int i = 0; i < size; i += GZFILE_READ_CHUNK_SIZE)
 		{
 			int available = CLAMP(res - i, 0, GZFILE_READ_CHUNK_SIZE);
@@ -491,10 +491,10 @@ int GzippedFileReader::_ReadSync(void* pBuffer, PX_off_t offset, uint bytesToRea
 	int duration = NOW() - s;
 	if (duration > 10)
 		Console.WriteLn(Color_Gray, L"gunzip: chunk #%5d-%2d : %1.2f MB - %d ms",
-						(int)(offset / 4 / 1024 / 1024),
-						(int)(offset % (4 * 1024 * 1024) / GZFILE_READ_CHUNK_SIZE),
-						(float)size / 1024 / 1024,
-						duration);
+			(int)(offset / 4 / 1024 / 1024),
+			(int)(offset % (4 * 1024 * 1024) / GZFILE_READ_CHUNK_SIZE),
+			(float)size / 1024 / 1024,
+			duration);
 
 	return copied;
 }

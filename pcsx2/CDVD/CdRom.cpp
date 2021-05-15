@@ -19,57 +19,61 @@
 #include "CdRom.h"
 #include "CDVD.h"
 
+// clang-format off
+
 //THIS ALL IS FOR THE CDROM REGISTERS HANDLING
 
 enum cdrom_registers
 {
-	CdlSync = 0,
-	CdlNop = 1,
-	CdlSetloc = 2,
-	CdlPlay = 3,
-	CdlForward = 4,
-	CdlBackward = 5,
-	CdlReadN = 6,
-	CdlStandby = 7,
-	CdlStop = 8,
-	CdlPause = 9,
-	CdlInit = 10,
-	CdlMute = 11,
-	CdlDemute = 12,
+	CdlSync      =  0,
+	CdlNop       =  1,
+	CdlSetloc    =  2,
+	CdlPlay      =  3,
+	CdlForward   =  4,
+	CdlBackward  =  5,
+	CdlReadN     =  6,
+	CdlStandby   =  7,
+	CdlStop      =  8,
+	CdlPause     =  9,
+	CdlInit      = 10,
+	CdlMute      = 11,
+	CdlDemute    = 12,
 	CdlSetfilter = 13,
-	CdlSetmode = 14,
-	CdlGetmode = 15,
-	CdlGetlocL = 16,
-	CdlGetlocP = 17,
-	Cdl18 = 18,
-	CdlGetTN = 19,
-	CdlGetTD = 20,
-	CdlSeekL = 21,
-	CdlSeekP = 22,
-	CdlTest = 25,
-	CdlID = 26,
-	CdlReadS = 27,
-	CdlReset = 28,
-	CdlReadToc = 30,
+	CdlSetmode   = 14,
+	CdlGetmode   = 15,
+	CdlGetlocL   = 16,
+	CdlGetlocP   = 17,
+	Cdl18        = 18,
+	CdlGetTN     = 19,
+	CdlGetTD     = 20,
+	CdlSeekL     = 21,
+	CdlSeekP     = 22,
+	CdlTest      = 25,
+	CdlID        = 26,
+	CdlReadS     = 27,
+	CdlReset     = 28,
+	CdlReadToc   = 30,
 
-	AUTOPAUSE = 249,
-	READ_ACK = 250,
-	READ = 251,
+	AUTOPAUSE   = 249,
+	READ_ACK    = 250,
+	READ        = 251,
 	REPPLAY_ACK = 252,
-	REPPLAY = 253,
-	ASYNC = 254
+	REPPLAY     = 253,
+	ASYNC       = 254
 	/* don't set 255, it's reserved */
 };
 
-const char* CmdName[0x100] = {
-	"CdlSync", "CdlNop", "CdlSetloc", "CdlPlay",
-	"CdlForward", "CdlBackward", "CdlReadN", "CdlStandby",
-	"CdlStop", "CdlPause", "CdlInit", "CdlMute",
-	"CdlDemute", "CdlSetfilter", "CdlSetmode", "CdlGetmode",
-	"CdlGetlocL", "CdlGetlocP", "Cdl18", "CdlGetTN",
-	"CdlGetTD", "CdlSeekL", "CdlSeekP", NULL,
-	NULL, "CdlTest", "CdlID", "CdlReadS",
-	"CdlReset", NULL, "CDlReadToc", NULL};
+const char* CmdName[0x100] =
+{
+	"CdlSync",    "CdlNop",       "CdlSetloc",  "CdlPlay",
+	"CdlForward", "CdlBackward",  "CdlReadN",   "CdlStandby",
+	"CdlStop",    "CdlPause",     "CdlInit",    "CdlMute",
+	"CdlDemute",  "CdlSetfilter", "CdlSetmode", "CdlGetmode",
+	"CdlGetlocL", "CdlGetlocP",   "Cdl18",      "CdlGetTN",
+	"CdlGetTD",   "CdlSeekL",     "CdlSeekP",   NULL,
+	NULL,         "CdlTest",      "CdlID",      "CdlReadS",
+	"CdlReset",   NULL,           "CDlReadToc", NULL
+};
 
 cdrStruct cdr;
 s32 LoadCdBios;
@@ -82,38 +86,40 @@ u8 Test23[] = {0x43, 0x58, 0x44, 0x32, 0x39, 0x34, 0x30, 0x51};
 
 //backported from PCSXR
 // cdr.Stat:
-#define NoIntr 0
-#define DataReady 1
-#define Complete 2
+#define NoIntr      0
+#define DataReady   1
+#define Complete    2
 #define Acknowledge 3
-#define DataEnd 4
-#define DiskError 5
+#define DataEnd     4
+#define DiskError   5
 
 /* Modes flags */
-#define MODE_SPEED (1 << 7)     // 0x80
-#define MODE_STRSND (1 << 6)    // 0x40 ADPCM on/off
+#define MODE_SPEED     (1 << 7) // 0x80
+#define MODE_STRSND    (1 << 6) // 0x40 ADPCM on/off
 #define MODE_SIZE_2340 (1 << 5) // 0x20
 #define MODE_SIZE_2328 (1 << 4) // 0x10
 #define MODE_SIZE_2048 (0 << 4) // 0x00
-#define MODE_SF (1 << 3)        // 0x08 channel on/off
-#define MODE_REPORT (1 << 2)    // 0x04
+#define MODE_SF        (1 << 3) // 0x08 channel on/off
+#define MODE_REPORT    (1 << 2) // 0x04
 #define MODE_AUTOPAUSE (1 << 1) // 0x02
-#define MODE_CDDA (1 << 0)      // 0x01
+#define MODE_CDDA      (1 << 0) // 0x01
 
 /* Status flags, to go on cdr.StatP */
-#define STATUS_PLAY (1 << 7)      // 0x80
-#define STATUS_SEEK (1 << 6)      // 0x40
-#define STATUS_READ (1 << 5)      // 0x20
+#define STATUS_PLAY      (1 << 7) // 0x80
+#define STATUS_SEEK      (1 << 6) // 0x40
+#define STATUS_READ      (1 << 5) // 0x20
 #define STATUS_SHELLOPEN (1 << 4) // 0x10
-#define STATUS_UNKNOWN3 (1 << 3)  // 0x08
-#define STATUS_UNKNOWN2 (1 << 2)  // 0x04
-#define STATUS_ROTATING (1 << 1)  // 0x02
-#define STATUS_ERROR (1 << 0)     // 0x01
+#define STATUS_UNKNOWN3  (1 << 3) // 0x08
+#define STATUS_UNKNOWN2  (1 << 2) // 0x04
+#define STATUS_ROTATING  (1 << 1) // 0x02
+#define STATUS_ERROR     (1 << 0) // 0x01
 
 /* Errors */
-#define ERROR_NOTREADY (1 << 7)   // 0x80
+#define ERROR_NOTREADY   (1 << 7) // 0x80
 #define ERROR_INVALIDCMD (1 << 6) // 0x40
 #define ERROR_INVALIDARG (1 << 5) // 0x20
+
+// clang-format on
 
 // 1x = 75 sectors per second
 // PSXCLK = 1 sec in the ps
@@ -124,7 +130,7 @@ u32 cdReadTime; // = ((PSXCLK / 75) / BIAS);
 #define CDREAD_INT(eCycle) PSX_INT(IopEvt_CdromRead, eCycle)
 
 const uint shortSectorSeekReadDelay = 1000; // delay for reads/seeks that may or may not have a seek action preceeding it
-uint sectorSeekReadDelay = 0x800;           // for calculated seek delays
+uint sectorSeekReadDelay = 0x800; // for calculated seek delays
 
 static void AddIrqQueue(u8 irq, u32 ecycle);
 
@@ -542,8 +548,8 @@ void cdrReadInterrupt()
 	if (!cdr.Reading)
 		return;
 
-	if (cdr.Stat)
-	{                          // CDR_LOG_I("cdrom: read stat hack %02x %x\n", cdr.Irq, cdr.Stat);
+	if (cdr.Stat) // CDR_LOG_I("cdrom: read stat hack %02x %x\n", cdr.Irq, cdr.Stat);
+	{
 		CDREAD_INT(0x800 * 4); // * 4 reduces dma3 errors lots here
 		return;
 	}
@@ -595,8 +601,8 @@ void cdrReadInterrupt()
 
 	cdr.Readed = 0;
 
-	if ((cdr.Transfer[4 + 2] & 0x80) && (cdr.Mode & 0x2))
-	{ // EOF
+	if ((cdr.Transfer[4 + 2] & 0x80) && (cdr.Mode & 0x2)) // EOF
+	{
 		DevCon.Warning("CD AutoPausing Read");
 		AddIrqQueue(CdlPause, 0x800);
 	}
@@ -1063,7 +1069,7 @@ void psxDma3(u32 madr, u32 bcr, u32 chcr)
 			{
 				DevCon.Warning("*** DMA 3 *** NOT READY");
 				HW_DMA3_CHCR &= ~0x01000000; //hack
-				psxDmaInterrupt(3);          //hack
+				psxDmaInterrupt(3); //hack
 				return;
 			}
 
