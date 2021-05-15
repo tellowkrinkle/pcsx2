@@ -26,12 +26,13 @@ void ADMAOutLogWrite(void* lpData, u32 ulSize);
 #include "interpolate_table.h"
 
 static const s32 tbl_XA_Factor[16][2] =
-	{
-		{0, 0},
-		{60, 0},
-		{115, -52},
-		{98, -55},
-		{122, -60}};
+{
+	{0, 0},
+	{60, 0},
+	{115, -52},
+	{98, -55},
+	{122, -60}
+};
 
 
 // Performs a 64-bit multiplication between two values and returns the
@@ -158,7 +159,7 @@ static __forceinline s32 GetNextDataBuffered(V_Core& thiscore, uint voiceidx)
 	{
 		if (vc.PendingLoopStart)
 		{
-			if ((Cycles - vc.PlayCycle) >= 4 )
+			if ((Cycles - vc.PlayCycle) >= 4)
 			{
 				if (vc.LoopCycle < vc.PlayCycle)
 				{
@@ -364,10 +365,10 @@ static __forceinline void CalculateADSR(V_Core& thiscore, uint voiceidx)
 __forceinline static s32 GaussianInterpolate(s32 pv4, s32 pv3, s32 pv2, s32 pv1, s32 i)
 {
 	s32 out = 0;
-	out =  (interpTable[0x0FF-i] * pv4) >> 15;
-	out += (interpTable[0x1FF-i] * pv3) >> 15;
-	out += (interpTable[0x100+i] * pv2) >> 15;
-	out += (interpTable[0x000+i] * pv1) >> 15;
+	out  = (interpTable[0x0FF - i] * pv4) >> 15;
+	out += (interpTable[0x1FF - i] * pv3) >> 15;
+	out += (interpTable[0x100 + i] * pv2) >> 15;
+	out += (interpTable[0x000 + i] * pv1) >> 15;
 
 	return out;
 }
@@ -393,9 +394,9 @@ __forceinline static s32 HermiteInterpolate(
 	s32 m11 = ((y3 - y2) * i_tension) >> 16; // 16.0
 	s32 m1 = m10 + m11;
 
-	s32 val = ((2 * y1 + m0 + m1 - 2 * y2) * mu) >> 12;       // 16.0
+	s32 val = ((2 * y1 + m0 + m1 - 2 * y2) * mu) >> 12; // 16.0
 	val = ((val - 3 * y1 - 2 * m0 - m1 + 3 * y2) * mu) >> 12; // 16.0
-	val = ((val + m0) * mu) >> 12;                            // 16.0
+	val = ((val + m0) * mu) >> 12; // 16.0
 
 	return (val + (y1));
 }
@@ -641,8 +642,8 @@ static __forceinline StereoOut32 MixVoice(uint coreidx, uint voiceidx)
 	else
 	{
 		// Continue processing voice, even if it's "off". Or else we miss interrupts! (Fatal Frame engine died because of this.)
-		if (NEVER_SKIP_VOICES || (*GetMemPtr(vc.NextA & 0xFFFF8) >> 8 & 3) != 3 || vc.LoopStartA != (vc.NextA & ~7)    // not in a tight loop
-			|| (Cores[0].IRQEnable && (Cores[0].IRQA & ~7) == vc.LoopStartA)                                           // or should be interrupting regularly
+		if (NEVER_SKIP_VOICES || (*GetMemPtr(vc.NextA & 0xFFFF8) >> 8 & 3) != 3 || vc.LoopStartA != (vc.NextA & ~7) // not in a tight loop
+			|| (Cores[0].IRQEnable && (Cores[0].IRQA & ~7) == vc.LoopStartA) // or should be interrupting regularly
 			|| (Cores[1].IRQEnable && (Cores[1].IRQA & ~7) == vc.LoopStartA) || !(thiscore.Regs.ENDX & 1 << voiceidx)) // or isn't currently flagged as having passed the endpoint
 		{
 			UpdatePitch(coreidx, voiceidx);
@@ -937,7 +938,7 @@ __forceinline
 
 	SndBuffer::Write(Out);
 
-	if(SampleRate == 96000) // Double up samples for 96khz (Port Audio Non-Exclusive)
+	if (SampleRate == 96000) // Double up samples for 96khz (Port Audio Non-Exclusive)
 		SndBuffer::Write(Out);
 
 	// Update AutoDMA output positioning
@@ -953,9 +954,9 @@ __forceinline
 			p_cachestat_counter = 0;
 			if (MsgCache())
 				ConLog(" * SPU2 > CacheStats > Hits: %d  Misses: %d  Ignores: %d\n",
-					   g_counter_cache_hits,
-					   g_counter_cache_misses,
-					   g_counter_cache_ignores);
+					g_counter_cache_hits,
+					g_counter_cache_misses,
+					g_counter_cache_ignores);
 
 			g_counter_cache_hits =
 				g_counter_cache_misses =

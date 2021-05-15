@@ -23,7 +23,7 @@ __forceinline void _RegLog_(const char* action, int level, const char* RName, u3
 {
 	if (level > 1)
 		FileLog("[%10d] SPU2 %s mem %08x (core %d, register %s) value %04x\n",
-				Cycles, action, mem, core, RName, value);
+			Cycles, action, mem, core, RName, value);
 }
 
 #define RegLog(lev, rname, mem, core, val) _RegLog_(action, lev, rname, mem, core, val)
@@ -271,11 +271,11 @@ void SPU2writeLog(const char* action, u32 rmem, u16 value)
 				RegLog(2, "EEAH", rmem, core, value);
 				break;
 
-#define LOG_REVB_REG(n, t)                  \
-	case R_##n:                             \
+#define LOG_REVB_REG(n, t) \
+	case R_##n: \
 		RegLog(2, t "H", mem, core, value); \
-		break;                              \
-	case (R_##n + 2):                       \
+		break; \
+	case (R_##n + 2): \
 		RegLog(2, t "L", mem, core, value); \
 		break;
 

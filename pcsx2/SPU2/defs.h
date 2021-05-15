@@ -124,8 +124,8 @@ struct V_ADSR
 		};
 	};
 
-	s32 Value;      // Ranges from 0 to 0x7fffffff (signed values are clamped to 0) [Reg_ENVX]
-	u8 Phase;       // monitors current phase of ADSR envelope
+	s32 Value; // Ranges from 0 to 0x7fffffff (signed values are clamped to 0) [Reg_ENVX]
+	u8 Phase;  // monitors current phase of ADSR envelope
 	bool Releasing; // Ready To Release, triggered by Voice.Stop();
 
 public:
@@ -387,9 +387,9 @@ struct V_Core
 	V_CoreGates WetGate;
 
 	V_VolumeSlideLR MasterVol; // Master Volume
-	V_VolumeLR ExtVol;         // Volume for External Data Input
-	V_VolumeLR InpVol;         // Volume for Sound Data Input
-	V_VolumeLR FxVol;          // Volume for Output from Effects
+	V_VolumeLR ExtVol; // Volume for External Data Input
+	V_VolumeLR InpVol; // Volume for Sound Data Input
+	V_VolumeLR FxVol;  // Volume for Output from Effects
 
 	V_Voice Voices[NumVoices];
 
@@ -402,19 +402,19 @@ struct V_Core
 	bool Mute;      // Mute
 	bool AdmaInProgress;
 
-	s8 DMABits;        // DMA related?
-	u8 NoiseClk;       // Noise Clock
-	u32 NoiseCnt;      // Noise Counter
-	u32 NoiseOut;      // Noise Output
-	u16 AutoDMACtrl;   // AutoDMA Status
-	s32 DMAICounter;   // DMA Interrupt Counter
-	u32 LastClock;     // DMA Interrupt Clock Cycle Counter
+	s8 DMABits;   // DMA related?
+	u8 NoiseClk;  // Noise Clock
+	u32 NoiseCnt; // Noise Counter
+	u32 NoiseOut; // Noise Output
+	u16 AutoDMACtrl; // AutoDMA Status
+	s32 DMAICounter; // DMA Interrupt Counter
+	u32 LastClock;   // DMA Interrupt Clock Cycle Counter
 	u32 InputDataLeft; // Input Buffer
 	u32 InputDataTransferred; // Used for simulating MADR increase (GTA VC)
 	u32 InputPosWrite;
 	u32 InputDataProgress;
 
-	V_Reverb Revb;              // Reverb Registers
+	V_Reverb Revb; // Reverb Registers
 	V_ReverbBuffers RevBuffers; // buffer pointers for reverb, pre-calculated and pre-clipped.
 
 	s32 RevbDownBuf[2][64]; // Downsample buffer for reverb, one for each channel

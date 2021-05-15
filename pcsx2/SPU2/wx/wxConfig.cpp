@@ -124,10 +124,10 @@ SyncTab::SyncTab(wxWindow* parent)
 	auto* adv_box = new wxStaticBoxSizer(wxVERTICAL, this, "Advanced");
 
 	auto* babble_label = new wxStaticText(this, wxID_ANY,
-										  "For fine-tuning time stretching.\n"
-										  "Larger is better for slowdown, && smaller for speedup (60+ fps).\n"
-										  "All options in microseconds.",
-										  wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
+		"For fine-tuning time stretching.\n"
+		"Larger is better for slowdown, && smaller for speedup (60+ fps).\n"
+		"All options in microseconds.",
+		wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
 	babble_label->Wrap(300);
 
 	adv_box->Add(babble_label, wxSizerFlags().Centre());
@@ -393,7 +393,7 @@ Dialog::Dialog()
 	m_sdl_text = new wxStaticText(this, wxID_ANY, "SDL API");
 	m_sdl_box->Add(m_sdl_text, wxSizerFlags().Centre());
 
-	wxArrayString  sdl_entries;
+	wxArrayString sdl_entries;
 	for (int i = 0; i < SDL_GetNumAudioDrivers(); ++i)
 		sdl_entries.Add(SDL_GetAudioDriver(i));
 

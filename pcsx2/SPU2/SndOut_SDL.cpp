@@ -50,7 +50,7 @@ namespace
 
 	void callback_fillBuffer(void* userdata, Uint8* stream, int len)
 	{
-		StereoOut16 *out = (StereoOut16 *)stream;
+		StereoOut16* out = (StereoOut16*)stream;
 
 		// Length should always be samples in bytes.
 		assert(len / sizeof(StereoOut_SDL) == samples);
@@ -178,7 +178,7 @@ private:
 	SDLAudioMod()
 		: m_api("pulseaudio")
 		, spec({SampleRate, format, channels, 0,
-				desiredSamples, 0, 0, &callback_fillBuffer, nullptr})
+		        desiredSamples, 0, 0, &callback_fillBuffer, nullptr})
 	{
 		// Number of samples must be a multiple of packet size.
 		assert(samples % SndOutPacketSize == 0);

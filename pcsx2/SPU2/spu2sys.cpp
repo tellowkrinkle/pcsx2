@@ -41,8 +41,8 @@ u32 Cycles;
 
 int PlayMode;
 
-bool has_to_call_irq[2] = { false, false };
-bool has_to_call_irq_dma[2] = { false, false };
+bool has_to_call_irq[2] = {false, false};
+bool has_to_call_irq_dma[2] = {false, false};
 
 bool psxmode = false;
 
@@ -443,10 +443,10 @@ __forceinline void TimeUpdate(u32 cClocks)
 		Cycles++;
 
 		// Start Queued Voices, they start after 2T (Tested on real HW)
-		for(int c = 0; c < 2; c++)
+		for (int c = 0; c < 2; c++)
 			for (int v = 0; v < 24; v++)
-				if(Cores[c].KeyOn & (1 << v))
-					if(StartQueuedVoice(c, v))
+				if (Cores[c].KeyOn & (1 << v))
+					if (StartQueuedVoice(c, v))
 						Cores[c].KeyOn &= ~(1 << v);
 		// Note: IOP does not use MMX regs, so no need to save them.
 		//SaveMMXRegs();
@@ -460,7 +460,7 @@ __forceinline void TimeUpdate(u32 cClocks)
 		const u32 amt = std::min(*cyclePtr - Cores[0].LastClock, (u32)Cores[0].DMAICounter);
 		Cores[0].DMAICounter -= amt;
 		Cores[0].LastClock = *cyclePtr;
-		if(!Cores[0].AdmaInProgress)
+		if (!Cores[0].AdmaInProgress)
 			Cores[0].MADR += amt / 2;
 
 		if (Cores[0].DMAICounter <= 0)
@@ -589,7 +589,7 @@ __forceinline void UpdateSpdifMode()
 	if (OPM != PlayMode)
 	{
 		ConLog("* SPU2: Play Mode Set to %s (%d).\n",
-			   (PlayMode == 0) ? "Normal" : ((PlayMode == 1) ? "PCM Clone" : ((PlayMode == 2) ? "PCM Bypass" : "BitStream Bypass")), PlayMode);
+			(PlayMode == 0) ? "Normal" : ((PlayMode == 1) ? "PCM Clone" : ((PlayMode == 2) ? "PCM Bypass" : "BitStream Bypass")), PlayMode);
 	}
 }
 
@@ -826,23 +826,23 @@ void V_Core::WriteRegPS1(u32 mem, u16 value)
 				break;
 
 			case 0x1dae: // 1F801DAEh - SPU Status Register (SPUSTAT) (R)
-						 // The SPUSTAT register should be treated read-only (writing is possible in so far that the written
-						 // value can be read-back for a short moment, however, thereafter the hardware is overwriting that value).
-						 //Regs.STATX = value;
+				// The SPUSTAT register should be treated read-only (writing is possible in so far that the written
+				// value can be read-back for a short moment, however, thereafter the hardware is overwriting that value).
+				//Regs.STATX = value;
 				break;
 
 			case 0x1DB0: // 1F801DB0h 4  CD Volume Left/Right
-				break;   // cd left?
+				break; // cd left?
 			case 0x1DB2:
-				break;   // cd right?
+				break; // cd right?
 			case 0x1DB4: // 1F801DB4h 4  Extern Volume Left / Right
-				break;   // Extern left?
+				break; // Extern left?
 			case 0x1DB6:
-				break;   // Extern right?
+				break; // Extern right?
 			case 0x1DB8: // 1F801DB8h 4  Current Main Volume Left/Right
-				break;   // Current left?
+				break; // Current left?
 			case 0x1DBA:
-				break;   // Current right?
+				break; // Current right?
 			case 0x1DBC: // 1F801DBCh 4  Unknown? (R/W)
 				break;
 			case 0x1DBE:
@@ -994,7 +994,7 @@ u16 V_Core::ReadRegPS1(u32 mem)
 			case 0xa:
 				value = Voices[voice].ADSR.regADSR2;
 				break;
-			case 0xc:                                   // Voice 0..23 ADSR Current Volume
+			case 0xc: // Voice 0..23 ADSR Current Volume
 				value = Voices[voice].ADSR.Value >> 16; // no clue
 				//if (value != 0) ConLog("voice %d read ADSR.Value result = %x\n", voice, value);
 				break;
@@ -1213,40 +1213,40 @@ static void __fastcall RegWrite_VoiceAddr(u16 value)
 			break;
 
 		case 2:
+		{
+			u32* LoopReg;
+			if ((Cycles - thisvoice.PlayCycle) < 4)
 			{
-				u32* LoopReg;
-				if ((Cycles - thisvoice.PlayCycle) < 4)
-				{
-					LoopReg = &thisvoice.PendingLoopStartA;
-					thisvoice.PendingLoopStart = true;
-				}
-				else
-				{
-					LoopReg = &thisvoice.LoopStartA;
-					thisvoice.LoopMode = 1;
-				}
-
-				*LoopReg = ((u32)(value & 0x0F) << 16) | (*LoopReg & 0xFFF8);
+				LoopReg = &thisvoice.PendingLoopStartA;
+				thisvoice.PendingLoopStart = true;
 			}
-			break;
+			else
+			{
+				LoopReg = &thisvoice.LoopStartA;
+				thisvoice.LoopMode = 1;
+			}
+
+			*LoopReg = ((u32)(value & 0x0F) << 16) | (*LoopReg & 0xFFF8);
+		}
+		break;
 
 		case 3:
+		{
+			u32* LoopReg;
+			if ((Cycles - thisvoice.PlayCycle) < 4)
 			{
-				u32* LoopReg;
-				if ((Cycles - thisvoice.PlayCycle) < 4)
-				{
-					LoopReg = &thisvoice.PendingLoopStartA;
-					thisvoice.PendingLoopStart = true;
-				}
-				else
-				{
-					LoopReg = &thisvoice.LoopStartA;
-					thisvoice.LoopMode = 1;
-				}
-				
-				*LoopReg = (*LoopReg & 0x0F0000) | (value & 0xFFF8);
+				LoopReg = &thisvoice.PendingLoopStartA;
+				thisvoice.PendingLoopStart = true;
 			}
-			break;
+			else
+			{
+				LoopReg = &thisvoice.LoopStartA;
+				thisvoice.LoopMode = 1;
+			}
+
+			*LoopReg = (*LoopReg & 0x0F0000) | (value & 0xFFF8);
+		}
+		break;
 
 			// Note that there's no proof that I know of that writing to NextA is
 			// even allowed or handled by the SPU2 (it might be disabled or ignored,
@@ -1308,15 +1308,15 @@ static void __fastcall RegWrite_Core(u16 value)
 			bool fxenable = thiscore.FxEnable;
 			u8 oldDmaMode = thiscore.DmaMode;
 
-			thiscore.AttrBit0 = (value >> 0) & 0x01;  //1 bit
-			thiscore.DMABits = (value >> 1) & 0x07;   //3 bits
-			thiscore.DmaMode = (value >> 4) & 0x03;   //2 bit (not necessary, we get the direction from the iop)
+			thiscore.AttrBit0  = (value >> 0) & 0x01; //1 bit
+			thiscore.DMABits   = (value >> 1) & 0x07; //3 bits
+			thiscore.DmaMode   = (value >> 4) & 0x03; //2 bit (not necessary, we get the direction from the iop)
 			thiscore.IRQEnable = (value >> 6) & 0x01; //1 bit
-			thiscore.FxEnable = (value >> 7) & 0x01;  //1 bit
-			thiscore.NoiseClk = (value >> 8) & 0x3f;  //6 bits
-			//thiscore.Mute		=(value>>14) & 0x01; //1 bit
+			thiscore.FxEnable  = (value >> 7) & 0x01; //1 bit
+			thiscore.NoiseClk  = (value >> 8) & 0x3f; //6 bits
+			//thiscore.Mute      = (value >> 14) & 0x01; //1 bit
 			thiscore.Mute = 0;
-			//thiscore.CoreEnabled=(value>>15) & 0x01; //1 bit
+			//thiscore.CoreEnabled = (value >> 15) & 0x01; //1 bit
 			// no clue
 			thiscore.Regs.ATTR = value & 0xffff;
 
@@ -1330,7 +1330,7 @@ static void __fastcall RegWrite_Core(u16 value)
 
 			if (!thiscore.DmaMode && !(thiscore.Regs.STATX & 0x400))
 				thiscore.Regs.STATX &= ~0x80;
-			else if(!oldDmaMode && thiscore.DmaMode)
+			else if (!oldDmaMode && thiscore.DmaMode)
 				thiscore.Regs.STATX |= 0x80;
 
 			thiscore.ActiveTSA = thiscore.TSA;
@@ -1353,9 +1353,8 @@ static void __fastcall RegWrite_Core(u16 value)
 
 				if (!thiscore.IRQEnable)
 					Spdif.Info &= ~(4 << thiscore.Index);
-				else
-					if ((thiscore.IRQA & 0xFFF00000) != 0)
-						DevCon.Warning("SPU2: Core %d IRQA Outside of SPU2 memory, Addr %x", thiscore.Index, thiscore.IRQA);
+				else if ((thiscore.IRQA & 0xFFF00000) != 0)
+					DevCon.Warning("SPU2: Core %d IRQA Outside of SPU2 memory, Addr %x", thiscore.Index, thiscore.IRQA);
 			}
 		}
 		break;
@@ -1386,20 +1385,20 @@ static void __fastcall RegWrite_Core(u16 value)
 
 // Games like to repeatedly write these regs over and over with the same value, hence
 // the shortcut that skips the bitloop if the values are equal.
-#define vx_SetSomeBits(reg_out, mask_out, hiword)                       \
-	{                                                                   \
-		const u32 result = thiscore.Regs.reg_out;                       \
-		if (hiword)                                                     \
-			SetHiWord(thiscore.Regs.reg_out, value);                    \
-		else                                                            \
-			SetLoWord(thiscore.Regs.reg_out, value);                    \
-		if (result == thiscore.Regs.reg_out)                            \
-			break;                                                      \
-                                                                        \
-		const uint start_bit = (hiword) ? 16 : 0;                       \
-		const uint end_bit = (hiword) ? 24 : 16;                        \
+#define vx_SetSomeBits(reg_out, mask_out, hiword) \
+	{ \
+		const u32 result = thiscore.Regs.reg_out; \
+		if (hiword) \
+			SetHiWord(thiscore.Regs.reg_out, value); \
+		else \
+			SetLoWord(thiscore.Regs.reg_out, value); \
+		if (result == thiscore.Regs.reg_out) \
+			break; \
+		\
+		const uint start_bit = (hiword) ? 16 : 0; \
+		const uint end_bit = (hiword) ? 24 : 16; \
 		for (uint vc = start_bit, vx = 1; vc < end_bit; ++vc, vx <<= 1) \
-			thiscore.VoiceGates[vc].mask_out = (value & vx) ? -1 : 0;   \
+			thiscore.VoiceGates[vc].mask_out = (value & vx) ? -1 : 0; \
 	}
 
 		case REG_S_VMIXL:
@@ -1690,27 +1689,29 @@ static void __fastcall RegWrite_Null(u16 value)
 {
 }
 
+// clang-format off
+
 // --------------------------------------------------------------------------------------
 //  Macros for tbl_reg_writes
 // --------------------------------------------------------------------------------------
-#define VoiceParamsSet(core, voice)                                                 \
-	RegWrite_VoiceParams<core, voice, 0>, RegWrite_VoiceParams<core, voice, 1>,     \
-		RegWrite_VoiceParams<core, voice, 2>, RegWrite_VoiceParams<core, voice, 3>, \
-		RegWrite_VoiceParams<core, voice, 4>, RegWrite_VoiceParams<core, voice, 5>, \
-		RegWrite_VoiceParams<core, voice, 6>, RegWrite_VoiceParams<core, voice, 7>
+#define VoiceParamsSet(core, voice) \
+	RegWrite_VoiceParams<core, voice, 0>, RegWrite_VoiceParams<core, voice, 1>, \
+	RegWrite_VoiceParams<core, voice, 2>, RegWrite_VoiceParams<core, voice, 3>, \
+	RegWrite_VoiceParams<core, voice, 4>, RegWrite_VoiceParams<core, voice, 5>, \
+	RegWrite_VoiceParams<core, voice, 6>, RegWrite_VoiceParams<core, voice, 7>
 
-#define VoiceParamsCore(core)                                                                                   \
-	VoiceParamsSet(core, 0), VoiceParamsSet(core, 1), VoiceParamsSet(core, 2), VoiceParamsSet(core, 3),         \
-		VoiceParamsSet(core, 4), VoiceParamsSet(core, 5), VoiceParamsSet(core, 6), VoiceParamsSet(core, 7),     \
-		VoiceParamsSet(core, 8), VoiceParamsSet(core, 9), VoiceParamsSet(core, 10), VoiceParamsSet(core, 11),   \
-		VoiceParamsSet(core, 12), VoiceParamsSet(core, 13), VoiceParamsSet(core, 14), VoiceParamsSet(core, 15), \
-		VoiceParamsSet(core, 16), VoiceParamsSet(core, 17), VoiceParamsSet(core, 18), VoiceParamsSet(core, 19), \
-		VoiceParamsSet(core, 20), VoiceParamsSet(core, 21), VoiceParamsSet(core, 22), VoiceParamsSet(core, 23)
+#define VoiceParamsCore(core) \
+	VoiceParamsSet(core,  0), VoiceParamsSet(core,  1), VoiceParamsSet(core,  2), VoiceParamsSet(core,  3), \
+	VoiceParamsSet(core,  4), VoiceParamsSet(core,  5), VoiceParamsSet(core,  6), VoiceParamsSet(core,  7), \
+	VoiceParamsSet(core,  8), VoiceParamsSet(core,  9), VoiceParamsSet(core, 10), VoiceParamsSet(core, 11), \
+	VoiceParamsSet(core, 12), VoiceParamsSet(core, 13), VoiceParamsSet(core, 14), VoiceParamsSet(core, 15), \
+	VoiceParamsSet(core, 16), VoiceParamsSet(core, 17), VoiceParamsSet(core, 18), VoiceParamsSet(core, 19), \
+	VoiceParamsSet(core, 20), VoiceParamsSet(core, 21), VoiceParamsSet(core, 22), VoiceParamsSet(core, 23)
 
-#define VoiceAddrSet(core, voice)                                               \
-	RegWrite_VoiceAddr<core, voice, 0>, RegWrite_VoiceAddr<core, voice, 1>,     \
-		RegWrite_VoiceAddr<core, voice, 2>, RegWrite_VoiceAddr<core, voice, 3>, \
-		RegWrite_VoiceAddr<core, voice, 4>, RegWrite_VoiceAddr<core, voice, 5>
+#define VoiceAddrSet(core, voice) \
+	RegWrite_VoiceAddr<core, voice, 0>, RegWrite_VoiceAddr<core, voice, 1>, \
+	RegWrite_VoiceAddr<core, voice, 2>, RegWrite_VoiceAddr<core, voice, 3>, \
+	RegWrite_VoiceAddr<core, voice, 4>, RegWrite_VoiceAddr<core, voice, 5>
 
 
 #define CoreParamsPair(core, omem) \
@@ -1727,235 +1728,236 @@ static void __fastcall RegWrite_Null(u16 value)
 
 typedef void __fastcall RegWriteHandler(u16 value);
 static RegWriteHandler* const tbl_reg_writes[0x401] =
-	{
-		VoiceParamsCore(0), // 0x000 -> 0x180
-		CoreParamsPair(0, REG_S_PMON),
-		CoreParamsPair(0, REG_S_NON),
-		CoreParamsPair(0, REG_S_VMIXL),
-		CoreParamsPair(0, REG_S_VMIXEL),
-		CoreParamsPair(0, REG_S_VMIXR),
-		CoreParamsPair(0, REG_S_VMIXER),
+{
+	VoiceParamsCore(0), // 0x000 -> 0x180
+	CoreParamsPair(0, REG_S_PMON),
+	CoreParamsPair(0, REG_S_NON),
+	CoreParamsPair(0, REG_S_VMIXL),
+	CoreParamsPair(0, REG_S_VMIXEL),
+	CoreParamsPair(0, REG_S_VMIXR),
+	CoreParamsPair(0, REG_S_VMIXER),
 
-		RegWrite_Core<0, REG_P_MMIX>,
-		RegWrite_Core<0, REG_C_ATTR>,
+	RegWrite_Core<0, REG_P_MMIX>,
+	RegWrite_Core<0, REG_C_ATTR>,
 
-		CoreParamsPair(0, REG_A_IRQA),
-		CoreParamsPair(0, REG_S_KON),
-		CoreParamsPair(0, REG_S_KOFF),
-		CoreParamsPair(0, REG_A_TSA),
-		CoreParamsPair(0, REG__1AC),
+	CoreParamsPair(0, REG_A_IRQA),
+	CoreParamsPair(0, REG_S_KON),
+	CoreParamsPair(0, REG_S_KOFF),
+	CoreParamsPair(0, REG_A_TSA),
+	CoreParamsPair(0, REG__1AC),
 
-		RegWrite_Core<0, REG_S_ADMAS>,
-		REGRAW(0x1b2),
+	RegWrite_Core<0, REG_S_ADMAS>,
+	REGRAW(0x1b2),
 
-		REGRAW(0x1b4), REGRAW(0x1b6),
-		REGRAW(0x1b8), REGRAW(0x1ba),
-		REGRAW(0x1bc), REGRAW(0x1be),
+	REGRAW(0x1b4), REGRAW(0x1b6),
+	REGRAW(0x1b8), REGRAW(0x1ba),
+	REGRAW(0x1bc), REGRAW(0x1be),
 
-		// 0x1c0!
+	// 0x1c0!
 
-		VoiceAddrSet(0, 0), VoiceAddrSet(0, 1), VoiceAddrSet(0, 2), VoiceAddrSet(0, 3), VoiceAddrSet(0, 4), VoiceAddrSet(0, 5),
-		VoiceAddrSet(0, 6), VoiceAddrSet(0, 7), VoiceAddrSet(0, 8), VoiceAddrSet(0, 9), VoiceAddrSet(0, 10), VoiceAddrSet(0, 11),
-		VoiceAddrSet(0, 12), VoiceAddrSet(0, 13), VoiceAddrSet(0, 14), VoiceAddrSet(0, 15), VoiceAddrSet(0, 16), VoiceAddrSet(0, 17),
-		VoiceAddrSet(0, 18), VoiceAddrSet(0, 19), VoiceAddrSet(0, 20), VoiceAddrSet(0, 21), VoiceAddrSet(0, 22), VoiceAddrSet(0, 23),
+	VoiceAddrSet(0,  0), VoiceAddrSet(0,  1), VoiceAddrSet(0,  2), VoiceAddrSet(0,  3), VoiceAddrSet(0,  4), VoiceAddrSet(0,  5),
+	VoiceAddrSet(0,  6), VoiceAddrSet(0,  7), VoiceAddrSet(0,  8), VoiceAddrSet(0,  9), VoiceAddrSet(0, 10), VoiceAddrSet(0, 11),
+	VoiceAddrSet(0, 12), VoiceAddrSet(0, 13), VoiceAddrSet(0, 14), VoiceAddrSet(0, 15), VoiceAddrSet(0, 16), VoiceAddrSet(0, 17),
+	VoiceAddrSet(0, 18), VoiceAddrSet(0, 19), VoiceAddrSet(0, 20), VoiceAddrSet(0, 21), VoiceAddrSet(0, 22), VoiceAddrSet(0, 23),
 
-		CoreParamsPair(0, REG_A_ESA),
+	CoreParamsPair(0, REG_A_ESA),
 
-		ReverbPair(0, R_APF1_SIZE),   //       0x02E4		// Feedback Source A
-		ReverbPair(0, R_APF2_SIZE),   //       0x02E8		// Feedback Source B
-		ReverbPair(0, R_SAME_L_DST),  //    0x02EC
-		ReverbPair(0, R_SAME_R_DST),  //    0x02F0
-		ReverbPair(0, R_COMB1_L_SRC), //     0x02F4
-		ReverbPair(0, R_COMB1_R_SRC), //     0x02F8
-		ReverbPair(0, R_COMB2_L_SRC), //     0x02FC
-		ReverbPair(0, R_COMB2_R_SRC), //     0x0300
-		ReverbPair(0, R_SAME_L_SRC),  //     0x0304
-		ReverbPair(0, R_SAME_R_SRC),  //     0x0308
-		ReverbPair(0, R_DIFF_L_DST),  //    0x030C
-		ReverbPair(0, R_DIFF_R_DST),  //    0x0310
-		ReverbPair(0, R_COMB3_L_SRC), //     0x0314
-		ReverbPair(0, R_COMB3_R_SRC), //     0x0318
-		ReverbPair(0, R_COMB4_L_SRC), //     0x031C
-		ReverbPair(0, R_COMB4_R_SRC), //     0x0320
-		ReverbPair(0, R_DIFF_L_SRC),  //     0x0324
-		ReverbPair(0, R_DIFF_R_SRC),  //     0x0328
-		ReverbPair(0, R_APF1_L_DST),  //    0x032C
-		ReverbPair(0, R_APF1_R_DST),  //    0x0330
-		ReverbPair(0, R_APF2_L_DST),  //    0x0334
-		ReverbPair(0, R_APF2_R_DST),  //    0x0338
+	ReverbPair(0, R_APF1_SIZE),   // 0x02E4 // Feedback Source A
+	ReverbPair(0, R_APF2_SIZE),   // 0x02E8 // Feedback Source B
+	ReverbPair(0, R_SAME_L_DST),  // 0x02EC
+	ReverbPair(0, R_SAME_R_DST),  // 0x02F0
+	ReverbPair(0, R_COMB1_L_SRC), // 0x02F4
+	ReverbPair(0, R_COMB1_R_SRC), // 0x02F8
+	ReverbPair(0, R_COMB2_L_SRC), // 0x02FC
+	ReverbPair(0, R_COMB2_R_SRC), // 0x0300
+	ReverbPair(0, R_SAME_L_SRC),  // 0x0304
+	ReverbPair(0, R_SAME_R_SRC),  // 0x0308
+	ReverbPair(0, R_DIFF_L_DST),  // 0x030C
+	ReverbPair(0, R_DIFF_R_DST),  // 0x0310
+	ReverbPair(0, R_COMB3_L_SRC), // 0x0314
+	ReverbPair(0, R_COMB3_R_SRC), // 0x0318
+	ReverbPair(0, R_COMB4_L_SRC), // 0x031C
+	ReverbPair(0, R_COMB4_R_SRC), // 0x0320
+	ReverbPair(0, R_DIFF_L_SRC),  // 0x0324
+	ReverbPair(0, R_DIFF_R_SRC),  // 0x0328
+	ReverbPair(0, R_APF1_L_DST),  // 0x032C
+	ReverbPair(0, R_APF1_R_DST),  // 0x0330
+	ReverbPair(0, R_APF2_L_DST),  // 0x0334
+	ReverbPair(0, R_APF2_R_DST),  // 0x0338
 
-		RegWrite_Core<0, REG_A_EEA>, RegWrite_Null,
+	RegWrite_Core<0, REG_A_EEA>, RegWrite_Null,
 
-		CoreParamsPair(0, REG_S_ENDX), //       0x0340	// End Point passed flag
-		RegWrite_Core<0, REG_P_STATX>, //      0x0344 	// Status register?
+	CoreParamsPair(0, REG_S_ENDX), // 0x0340 // End Point passed flag
+	RegWrite_Core<0, REG_P_STATX>, // 0x0344 // Status register?
 
-		//0x346 here
-		REGRAW(0x346),
-		REGRAW(0x348), REGRAW(0x34A), REGRAW(0x34C), REGRAW(0x34E),
-		REGRAW(0x350), REGRAW(0x352), REGRAW(0x354), REGRAW(0x356),
-		REGRAW(0x358), REGRAW(0x35A), REGRAW(0x35C), REGRAW(0x35E),
-		REGRAW(0x360), REGRAW(0x362), REGRAW(0x364), REGRAW(0x366),
-		REGRAW(0x368), REGRAW(0x36A), REGRAW(0x36C), REGRAW(0x36E),
-		REGRAW(0x370), REGRAW(0x372), REGRAW(0x374), REGRAW(0x376),
-		REGRAW(0x378), REGRAW(0x37A), REGRAW(0x37C), REGRAW(0x37E),
-		REGRAW(0x380), REGRAW(0x382), REGRAW(0x384), REGRAW(0x386),
-		REGRAW(0x388), REGRAW(0x38A), REGRAW(0x38C), REGRAW(0x38E),
-		REGRAW(0x390), REGRAW(0x392), REGRAW(0x394), REGRAW(0x396),
-		REGRAW(0x398), REGRAW(0x39A), REGRAW(0x39C), REGRAW(0x39E),
-		REGRAW(0x3A0), REGRAW(0x3A2), REGRAW(0x3A4), REGRAW(0x3A6),
-		REGRAW(0x3A8), REGRAW(0x3AA), REGRAW(0x3AC), REGRAW(0x3AE),
-		REGRAW(0x3B0), REGRAW(0x3B2), REGRAW(0x3B4), REGRAW(0x3B6),
-		REGRAW(0x3B8), REGRAW(0x3BA), REGRAW(0x3BC), REGRAW(0x3BE),
-		REGRAW(0x3C0), REGRAW(0x3C2), REGRAW(0x3C4), REGRAW(0x3C6),
-		REGRAW(0x3C8), REGRAW(0x3CA), REGRAW(0x3CC), REGRAW(0x3CE),
-		REGRAW(0x3D0), REGRAW(0x3D2), REGRAW(0x3D4), REGRAW(0x3D6),
-		REGRAW(0x3D8), REGRAW(0x3DA), REGRAW(0x3DC), REGRAW(0x3DE),
-		REGRAW(0x3E0), REGRAW(0x3E2), REGRAW(0x3E4), REGRAW(0x3E6),
-		REGRAW(0x3E8), REGRAW(0x3EA), REGRAW(0x3EC), REGRAW(0x3EE),
-		REGRAW(0x3F0), REGRAW(0x3F2), REGRAW(0x3F4), REGRAW(0x3F6),
-		REGRAW(0x3F8), REGRAW(0x3FA), REGRAW(0x3FC), REGRAW(0x3FE),
+	//0x346 here
+	REGRAW(0x346),
+	REGRAW(0x348), REGRAW(0x34A), REGRAW(0x34C), REGRAW(0x34E),
+	REGRAW(0x350), REGRAW(0x352), REGRAW(0x354), REGRAW(0x356),
+	REGRAW(0x358), REGRAW(0x35A), REGRAW(0x35C), REGRAW(0x35E),
+	REGRAW(0x360), REGRAW(0x362), REGRAW(0x364), REGRAW(0x366),
+	REGRAW(0x368), REGRAW(0x36A), REGRAW(0x36C), REGRAW(0x36E),
+	REGRAW(0x370), REGRAW(0x372), REGRAW(0x374), REGRAW(0x376),
+	REGRAW(0x378), REGRAW(0x37A), REGRAW(0x37C), REGRAW(0x37E),
+	REGRAW(0x380), REGRAW(0x382), REGRAW(0x384), REGRAW(0x386),
+	REGRAW(0x388), REGRAW(0x38A), REGRAW(0x38C), REGRAW(0x38E),
+	REGRAW(0x390), REGRAW(0x392), REGRAW(0x394), REGRAW(0x396),
+	REGRAW(0x398), REGRAW(0x39A), REGRAW(0x39C), REGRAW(0x39E),
+	REGRAW(0x3A0), REGRAW(0x3A2), REGRAW(0x3A4), REGRAW(0x3A6),
+	REGRAW(0x3A8), REGRAW(0x3AA), REGRAW(0x3AC), REGRAW(0x3AE),
+	REGRAW(0x3B0), REGRAW(0x3B2), REGRAW(0x3B4), REGRAW(0x3B6),
+	REGRAW(0x3B8), REGRAW(0x3BA), REGRAW(0x3BC), REGRAW(0x3BE),
+	REGRAW(0x3C0), REGRAW(0x3C2), REGRAW(0x3C4), REGRAW(0x3C6),
+	REGRAW(0x3C8), REGRAW(0x3CA), REGRAW(0x3CC), REGRAW(0x3CE),
+	REGRAW(0x3D0), REGRAW(0x3D2), REGRAW(0x3D4), REGRAW(0x3D6),
+	REGRAW(0x3D8), REGRAW(0x3DA), REGRAW(0x3DC), REGRAW(0x3DE),
+	REGRAW(0x3E0), REGRAW(0x3E2), REGRAW(0x3E4), REGRAW(0x3E6),
+	REGRAW(0x3E8), REGRAW(0x3EA), REGRAW(0x3EC), REGRAW(0x3EE),
+	REGRAW(0x3F0), REGRAW(0x3F2), REGRAW(0x3F4), REGRAW(0x3F6),
+	REGRAW(0x3F8), REGRAW(0x3FA), REGRAW(0x3FC), REGRAW(0x3FE),
 
-		// AND... we reached 0x400!
-		// Last verse, same as the first:
+	// AND... we reached 0x400!
+	// Last verse, same as the first:
 
-		VoiceParamsCore(1), // 0x000 -> 0x180
-		CoreParamsPair(1, REG_S_PMON),
-		CoreParamsPair(1, REG_S_NON),
-		CoreParamsPair(1, REG_S_VMIXL),
-		CoreParamsPair(1, REG_S_VMIXEL),
-		CoreParamsPair(1, REG_S_VMIXR),
-		CoreParamsPair(1, REG_S_VMIXER),
+	VoiceParamsCore(1), // 0x000 -> 0x180
+	CoreParamsPair(1, REG_S_PMON),
+	CoreParamsPair(1, REG_S_NON),
+	CoreParamsPair(1, REG_S_VMIXL),
+	CoreParamsPair(1, REG_S_VMIXEL),
+	CoreParamsPair(1, REG_S_VMIXR),
+	CoreParamsPair(1, REG_S_VMIXER),
 
-		RegWrite_Core<1, REG_P_MMIX>,
-		RegWrite_Core<1, REG_C_ATTR>,
+	RegWrite_Core<1, REG_P_MMIX>,
+	RegWrite_Core<1, REG_C_ATTR>,
 
-		CoreParamsPair(1, REG_A_IRQA),
-		CoreParamsPair(1, REG_S_KON),
-		CoreParamsPair(1, REG_S_KOFF),
-		CoreParamsPair(1, REG_A_TSA),
-		CoreParamsPair(1, REG__1AC),
+	CoreParamsPair(1, REG_A_IRQA),
+	CoreParamsPair(1, REG_S_KON),
+	CoreParamsPair(1, REG_S_KOFF),
+	CoreParamsPair(1, REG_A_TSA),
+	CoreParamsPair(1, REG__1AC),
 
-		RegWrite_Core<1, REG_S_ADMAS>,
-		REGRAW(0x5b2),
+	RegWrite_Core<1, REG_S_ADMAS>,
+	REGRAW(0x5b2),
 
-		REGRAW(0x5b4), REGRAW(0x5b6),
-		REGRAW(0x5b8), REGRAW(0x5ba),
-		REGRAW(0x5bc), REGRAW(0x5be),
+	REGRAW(0x5b4), REGRAW(0x5b6),
+	REGRAW(0x5b8), REGRAW(0x5ba),
+	REGRAW(0x5bc), REGRAW(0x5be),
 
-		// 0x1c0!
+	// 0x1c0!
 
-		VoiceAddrSet(1, 0), VoiceAddrSet(1, 1), VoiceAddrSet(1, 2), VoiceAddrSet(1, 3), VoiceAddrSet(1, 4), VoiceAddrSet(1, 5),
-		VoiceAddrSet(1, 6), VoiceAddrSet(1, 7), VoiceAddrSet(1, 8), VoiceAddrSet(1, 9), VoiceAddrSet(1, 10), VoiceAddrSet(1, 11),
-		VoiceAddrSet(1, 12), VoiceAddrSet(1, 13), VoiceAddrSet(1, 14), VoiceAddrSet(1, 15), VoiceAddrSet(1, 16), VoiceAddrSet(1, 17),
-		VoiceAddrSet(1, 18), VoiceAddrSet(1, 19), VoiceAddrSet(1, 20), VoiceAddrSet(1, 21), VoiceAddrSet(1, 22), VoiceAddrSet(1, 23),
+	VoiceAddrSet(1,  0), VoiceAddrSet(1,  1), VoiceAddrSet(1,  2), VoiceAddrSet(1,  3), VoiceAddrSet(1,  4), VoiceAddrSet(1,  5),
+	VoiceAddrSet(1,  6), VoiceAddrSet(1,  7), VoiceAddrSet(1,  8), VoiceAddrSet(1,  9), VoiceAddrSet(1, 10), VoiceAddrSet(1, 11),
+	VoiceAddrSet(1, 12), VoiceAddrSet(1, 13), VoiceAddrSet(1, 14), VoiceAddrSet(1, 15), VoiceAddrSet(1, 16), VoiceAddrSet(1, 17),
+	VoiceAddrSet(1, 18), VoiceAddrSet(1, 19), VoiceAddrSet(1, 20), VoiceAddrSet(1, 21), VoiceAddrSet(1, 22), VoiceAddrSet(1, 23),
 
-		CoreParamsPair(1, REG_A_ESA),
+	CoreParamsPair(1, REG_A_ESA),
 
-		ReverbPair(1, R_APF1_SIZE),   //       0x02E4		// Feedback Source A
-		ReverbPair(1, R_APF2_SIZE),   //       0x02E8		// Feedback Source B
-		ReverbPair(1, R_SAME_L_DST),  //    0x02EC
-		ReverbPair(1, R_SAME_R_DST),  //    0x02F0
-		ReverbPair(1, R_COMB1_L_SRC), //     0x02F4
-		ReverbPair(1, R_COMB1_R_SRC), //     0x02F8
-		ReverbPair(1, R_COMB2_L_SRC), //     0x02FC
-		ReverbPair(1, R_COMB2_R_SRC), //     0x0300
-		ReverbPair(1, R_SAME_L_SRC),  //     0x0304
-		ReverbPair(1, R_SAME_R_SRC),  //     0x0308
-		ReverbPair(1, R_DIFF_L_DST),  //    0x030C
-		ReverbPair(1, R_DIFF_R_DST),  //    0x0310
-		ReverbPair(1, R_COMB3_L_SRC), //     0x0314
-		ReverbPair(1, R_COMB3_R_SRC), //     0x0318
-		ReverbPair(1, R_COMB4_L_SRC), //     0x031C
-		ReverbPair(1, R_COMB4_R_SRC), //     0x0320
-		ReverbPair(1, R_DIFF_R_SRC),  //     0x0324
-		ReverbPair(1, R_DIFF_L_SRC),  //     0x0328
-		ReverbPair(1, R_APF1_L_DST),  //    0x032C
-		ReverbPair(1, R_APF1_R_DST),  //    0x0330
-		ReverbPair(1, R_APF2_L_DST),  //    0x0334
-		ReverbPair(1, R_APF2_R_DST),  //    0x0338
+	ReverbPair(1, R_APF1_SIZE),   // 0x02E4 // Feedback Source A
+	ReverbPair(1, R_APF2_SIZE),   // 0x02E8 // Feedback Source B
+	ReverbPair(1, R_SAME_L_DST),  // 0x02EC
+	ReverbPair(1, R_SAME_R_DST),  // 0x02F0
+	ReverbPair(1, R_COMB1_L_SRC), // 0x02F4
+	ReverbPair(1, R_COMB1_R_SRC), // 0x02F8
+	ReverbPair(1, R_COMB2_L_SRC), // 0x02FC
+	ReverbPair(1, R_COMB2_R_SRC), // 0x0300
+	ReverbPair(1, R_SAME_L_SRC),  // 0x0304
+	ReverbPair(1, R_SAME_R_SRC),  // 0x0308
+	ReverbPair(1, R_DIFF_L_DST),  // 0x030C
+	ReverbPair(1, R_DIFF_R_DST),  // 0x0310
+	ReverbPair(1, R_COMB3_L_SRC), // 0x0314
+	ReverbPair(1, R_COMB3_R_SRC), // 0x0318
+	ReverbPair(1, R_COMB4_L_SRC), // 0x031C
+	ReverbPair(1, R_COMB4_R_SRC), // 0x0320
+	ReverbPair(1, R_DIFF_R_SRC),  // 0x0324
+	ReverbPair(1, R_DIFF_L_SRC),  // 0x0328
+	ReverbPair(1, R_APF1_L_DST),  // 0x032C
+	ReverbPair(1, R_APF1_R_DST),  // 0x0330
+	ReverbPair(1, R_APF2_L_DST),  // 0x0334
+	ReverbPair(1, R_APF2_R_DST),  // 0x0338
 
-		RegWrite_Core<1, REG_A_EEA>, RegWrite_Null,
+	RegWrite_Core<1, REG_A_EEA>, RegWrite_Null,
 
-		CoreParamsPair(1, REG_S_ENDX), //       0x0340	// End Point passed flag
-		RegWrite_Core<1, REG_P_STATX>, //      0x0344 	// Status register?
+	CoreParamsPair(1, REG_S_ENDX), //       0x0340	// End Point passed flag
+	RegWrite_Core<1, REG_P_STATX>, //      0x0344 	// Status register?
 
-		REGRAW(0x746),
-		REGRAW(0x748), REGRAW(0x74A), REGRAW(0x74C), REGRAW(0x74E),
-		REGRAW(0x750), REGRAW(0x752), REGRAW(0x754), REGRAW(0x756),
-		REGRAW(0x758), REGRAW(0x75A), REGRAW(0x75C), REGRAW(0x75E),
+	REGRAW(0x746),
+	REGRAW(0x748), REGRAW(0x74A), REGRAW(0x74C), REGRAW(0x74E),
+	REGRAW(0x750), REGRAW(0x752), REGRAW(0x754), REGRAW(0x756),
+	REGRAW(0x758), REGRAW(0x75A), REGRAW(0x75C), REGRAW(0x75E),
 
-		// ------ -------
+	// ------ -------
 
-		RegWrite_CoreExt<0, REG_P_MVOLL>,  //     0x0760		// Master Volume Left
-		RegWrite_CoreExt<0, REG_P_MVOLR>,  //     0x0762		// Master Volume Right
-		RegWrite_CoreExt<0, REG_P_EVOLL>,  //     0x0764		// Effect Volume Left
-		RegWrite_CoreExt<0, REG_P_EVOLR>,  //     0x0766		// Effect Volume Right
-		RegWrite_CoreExt<0, REG_P_AVOLL>,  //     0x0768		// Core External Input Volume Left  (Only Core 1)
-		RegWrite_CoreExt<0, REG_P_AVOLR>,  //     0x076A		// Core External Input Volume Right (Only Core 1)
-		RegWrite_CoreExt<0, REG_P_BVOLL>,  //     0x076C 		// Sound Data Volume Left
-		RegWrite_CoreExt<0, REG_P_BVOLR>,  //     0x076E		// Sound Data Volume Right
-		RegWrite_CoreExt<0, REG_P_MVOLXL>, //     0x0770		// Current Master Volume Left
-		RegWrite_CoreExt<0, REG_P_MVOLXR>, //     0x0772		// Current Master Volume Right
+	RegWrite_CoreExt<0, REG_P_MVOLL>,  // 0x0760 // Master Volume Left
+	RegWrite_CoreExt<0, REG_P_MVOLR>,  // 0x0762 // Master Volume Right
+	RegWrite_CoreExt<0, REG_P_EVOLL>,  // 0x0764 // Effect Volume Left
+	RegWrite_CoreExt<0, REG_P_EVOLR>,  // 0x0766 // Effect Volume Right
+	RegWrite_CoreExt<0, REG_P_AVOLL>,  // 0x0768 // Core External Input Volume Left  (Only Core 1)
+	RegWrite_CoreExt<0, REG_P_AVOLR>,  // 0x076A // Core External Input Volume Right (Only Core 1)
+	RegWrite_CoreExt<0, REG_P_BVOLL>,  // 0x076C // Sound Data Volume Left
+	RegWrite_CoreExt<0, REG_P_BVOLR>,  // 0x076E // Sound Data Volume Right
+	RegWrite_CoreExt<0, REG_P_MVOLXL>, // 0x0770 // Current Master Volume Left
+	RegWrite_CoreExt<0, REG_P_MVOLXR>, // 0x0772 // Current Master Volume Right
 
-		RegWrite_CoreExt<0, R_IIR_VOL>,   //     0x0774		//IIR alpha (% used)
-		RegWrite_CoreExt<0, R_COMB1_VOL>, //     0x0776
-		RegWrite_CoreExt<0, R_COMB2_VOL>, //     0x0778
-		RegWrite_CoreExt<0, R_COMB3_VOL>, //     0x077A
-		RegWrite_CoreExt<0, R_COMB4_VOL>, //     0x077C
-		RegWrite_CoreExt<0, R_WALL_VOL>,  //     0x077E
-		RegWrite_CoreExt<0, R_APF1_VOL>,  //     0x0780		//feedback alpha (% used)
-		RegWrite_CoreExt<0, R_APF2_VOL>,  //     0x0782		//feedback
-		RegWrite_CoreExt<0, R_IN_COEF_L>, //     0x0784
-		RegWrite_CoreExt<0, R_IN_COEF_R>, //     0x0786
+	RegWrite_CoreExt<0, R_IIR_VOL>,   // 0x0774		//IIR alpha (% used)
+	RegWrite_CoreExt<0, R_COMB1_VOL>, // 0x0776
+	RegWrite_CoreExt<0, R_COMB2_VOL>, // 0x0778
+	RegWrite_CoreExt<0, R_COMB3_VOL>, // 0x077A
+	RegWrite_CoreExt<0, R_COMB4_VOL>, // 0x077C
+	RegWrite_CoreExt<0, R_WALL_VOL>,  // 0x077E
+	RegWrite_CoreExt<0, R_APF1_VOL>,  // 0x0780		//feedback alpha (% used)
+	RegWrite_CoreExt<0, R_APF2_VOL>,  // 0x0782		//feedback
+	RegWrite_CoreExt<0, R_IN_COEF_L>, // 0x0784
+	RegWrite_CoreExt<0, R_IN_COEF_R>, // 0x0786
 
-		// ------ -------
+	// ------ -------
 
-		RegWrite_CoreExt<1, REG_P_MVOLL>,  //     0x0788		// Master Volume Left
-		RegWrite_CoreExt<1, REG_P_MVOLR>,  //     0x078A		// Master Volume Right
-		RegWrite_CoreExt<1, REG_P_EVOLL>,  //     0x0764		// Effect Volume Left
-		RegWrite_CoreExt<1, REG_P_EVOLR>,  //     0x0766		// Effect Volume Right
-		RegWrite_CoreExt<1, REG_P_AVOLL>,  //     0x0768		// Core External Input Volume Left  (Only Core 1)
-		RegWrite_CoreExt<1, REG_P_AVOLR>,  //     0x076A		// Core External Input Volume Right (Only Core 1)
-		RegWrite_CoreExt<1, REG_P_BVOLL>,  //     0x076C		// Sound Data Volume Left
-		RegWrite_CoreExt<1, REG_P_BVOLR>,  //     0x076E		// Sound Data Volume Right
-		RegWrite_CoreExt<1, REG_P_MVOLXL>, //     0x0770		// Current Master Volume Left
-		RegWrite_CoreExt<1, REG_P_MVOLXR>, //     0x0772		// Current Master Volume Right
+	RegWrite_CoreExt<1, REG_P_MVOLL>,  // 0x0788 // Master Volume Left
+	RegWrite_CoreExt<1, REG_P_MVOLR>,  // 0x078A // Master Volume Right
+	RegWrite_CoreExt<1, REG_P_EVOLL>,  // 0x0764 // Effect Volume Left
+	RegWrite_CoreExt<1, REG_P_EVOLR>,  // 0x0766 // Effect Volume Right
+	RegWrite_CoreExt<1, REG_P_AVOLL>,  // 0x0768 // Core External Input Volume Left  (Only Core 1)
+	RegWrite_CoreExt<1, REG_P_AVOLR>,  // 0x076A // Core External Input Volume Right (Only Core 1)
+	RegWrite_CoreExt<1, REG_P_BVOLL>,  // 0x076C // Sound Data Volume Left
+	RegWrite_CoreExt<1, REG_P_BVOLR>,  // 0x076E // Sound Data Volume Right
+	RegWrite_CoreExt<1, REG_P_MVOLXL>, // 0x0770 // Current Master Volume Left
+	RegWrite_CoreExt<1, REG_P_MVOLXR>, // 0x0772 // Current Master Volume Right
 
-		RegWrite_CoreExt<1, R_IIR_VOL>,   //     0x0774		//IIR alpha (% used)
-		RegWrite_CoreExt<1, R_COMB1_VOL>, //     0x0776
-		RegWrite_CoreExt<1, R_COMB2_VOL>, //     0x0778
-		RegWrite_CoreExt<1, R_COMB3_VOL>, //     0x077A
-		RegWrite_CoreExt<1, R_COMB4_VOL>, //     0x077C
-		RegWrite_CoreExt<1, R_WALL_VOL>,  //     0x077E
-		RegWrite_CoreExt<1, R_APF1_VOL>,  //     0x0780		//feedback alpha (% used)
-		RegWrite_CoreExt<1, R_APF2_VOL>,  //     0x0782		//feedback
-		RegWrite_CoreExt<1, R_IN_COEF_L>, //     0x0784
-		RegWrite_CoreExt<1, R_IN_COEF_R>, //     0x0786
+	RegWrite_CoreExt<1, R_IIR_VOL>,   // 0x0774 //IIR alpha (% used)
+	RegWrite_CoreExt<1, R_COMB1_VOL>, // 0x0776
+	RegWrite_CoreExt<1, R_COMB2_VOL>, // 0x0778
+	RegWrite_CoreExt<1, R_COMB3_VOL>, // 0x077A
+	RegWrite_CoreExt<1, R_COMB4_VOL>, // 0x077C
+	RegWrite_CoreExt<1, R_WALL_VOL>,  // 0x077E
+	RegWrite_CoreExt<1, R_APF1_VOL>,  // 0x0780 //feedback alpha (% used)
+	RegWrite_CoreExt<1, R_APF2_VOL>,  // 0x0782 //feedback
+	RegWrite_CoreExt<1, R_IN_COEF_L>, // 0x0784
+	RegWrite_CoreExt<1, R_IN_COEF_R>, // 0x0786
 
-		REGRAW(0x7B0), REGRAW(0x7B2), REGRAW(0x7B4), REGRAW(0x7B6),
-		REGRAW(0x7B8), REGRAW(0x7BA), REGRAW(0x7BC), REGRAW(0x7BE),
+	REGRAW(0x7B0), REGRAW(0x7B2), REGRAW(0x7B4), REGRAW(0x7B6),
+	REGRAW(0x7B8), REGRAW(0x7BA), REGRAW(0x7BC), REGRAW(0x7BE),
 
-		//  SPDIF interface
+	//  SPDIF interface
 
-		RegWrite_SPDIF<SPDIF_OUT>,     //    0x07C0		// SPDIF Out: OFF/'PCM'/Bitstream/Bypass
-		RegWrite_SPDIF<SPDIF_IRQINFO>, //    0x07C2
-		REGRAW(0x7C4),
-		RegWrite_SPDIF<SPDIF_MODE>,  //    0x07C6
-		RegWrite_SPDIF<SPDIF_MEDIA>, //    0x07C8		// SPDIF Media: 'CD'/DVD
-		REGRAW(0x7CA),
-		RegWrite_SPDIF<SPDIF_PROTECT>, //	 0x07CC		// SPDIF Copy Protection
+	RegWrite_SPDIF<SPDIF_OUT>,     // 0x07C0 // SPDIF Out: OFF/'PCM'/Bitstream/Bypass
+	RegWrite_SPDIF<SPDIF_IRQINFO>, // 0x07C2
+	REGRAW(0x7C4),
+	RegWrite_SPDIF<SPDIF_MODE>,    // 0x07C6
+	RegWrite_SPDIF<SPDIF_MEDIA>,   // 0x07C8 // SPDIF Media: 'CD'/DVD
+	REGRAW(0x7CA),
+	RegWrite_SPDIF<SPDIF_PROTECT>, // 0x07CC // SPDIF Copy Protection
 
-		REGRAW(0x7CE),
-		REGRAW(0x7D0), REGRAW(0x7D2), REGRAW(0x7D4), REGRAW(0x7D6),
-		REGRAW(0x7D8), REGRAW(0x7DA), REGRAW(0x7DC), REGRAW(0x7DE),
-		REGRAW(0x7E0), REGRAW(0x7E2), REGRAW(0x7E4), REGRAW(0x7E6),
-		REGRAW(0x7E8), REGRAW(0x7EA), REGRAW(0x7EC), REGRAW(0x7EE),
-		REGRAW(0x7F0), REGRAW(0x7F2), REGRAW(0x7F4), REGRAW(0x7F6),
-		REGRAW(0x7F8), REGRAW(0x7FA), REGRAW(0x7FC), REGRAW(0x7FE),
+	REGRAW(0x7CE),
+	REGRAW(0x7D0), REGRAW(0x7D2), REGRAW(0x7D4), REGRAW(0x7D6),
+	REGRAW(0x7D8), REGRAW(0x7DA), REGRAW(0x7DC), REGRAW(0x7DE),
+	REGRAW(0x7E0), REGRAW(0x7E2), REGRAW(0x7E4), REGRAW(0x7E6),
+	REGRAW(0x7E8), REGRAW(0x7EA), REGRAW(0x7EC), REGRAW(0x7EE),
+	REGRAW(0x7F0), REGRAW(0x7F2), REGRAW(0x7F4), REGRAW(0x7F6),
+	REGRAW(0x7F8), REGRAW(0x7FA), REGRAW(0x7FC), REGRAW(0x7FE),
 
-		nullptr // should be at 0x400!  (we assert check it on startup)
+	nullptr // should be at 0x400!  (we assert check it on startup)
 };
 
+// clang-format on
 
 void SPU2_FastWrite(u32 rmem, u16 value)
 {
@@ -1988,13 +1990,13 @@ void StartVoices(int core, u32 value)
 
 			if (MsgKeyOnOff())
 				ConLog("* SPU2: KeyOn: C%dV%02d: SSA: %8x; M: %s%s%s%s; H: %04x; P: %04x V: %04x/%04x; ADSR: %04x%04x\n",
-					   core, vc, thisvc.StartA,
-					   (Cores[core].VoiceGates[vc].DryL) ? "+" : "-", (Cores[core].VoiceGates[vc].DryR) ? "+" : "-",
-					   (Cores[core].VoiceGates[vc].WetL) ? "+" : "-", (Cores[core].VoiceGates[vc].WetR) ? "+" : "-",
-					   *(u16*)GetMemPtr(thisvc.StartA),
-					   thisvc.Pitch,
-					   thisvc.Volume.Left.Value >> 16, thisvc.Volume.Right.Value >> 16,
-					   thisvc.ADSR.regADSR1, thisvc.ADSR.regADSR2);
+					core, vc, thisvc.StartA,
+					(Cores[core].VoiceGates[vc].DryL) ? "+" : "-", (Cores[core].VoiceGates[vc].DryR) ? "+" : "-",
+					(Cores[core].VoiceGates[vc].WetL) ? "+" : "-", (Cores[core].VoiceGates[vc].WetR) ? "+" : "-",
+					*(u16*)GetMemPtr(thisvc.StartA),
+					thisvc.Pitch,
+					thisvc.Volume.Left.Value >> 16, thisvc.Volume.Right.Value >> 16,
+					thisvc.ADSR.regADSR1, thisvc.ADSR.regADSR2);
 		}
 	}
 }

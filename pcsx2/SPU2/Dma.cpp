@@ -159,7 +159,7 @@ void V_Core::StartADMAWrite(u16* pMem, u32 sz)
 
 	if (MsgAutoDMA())
 		ConLog("* SPU2: DMA%c AutoDMA Transfer of %d bytes to %x (%02x %x %04x).OutPos %x\n",
-			   GetDmaIndexChar(), size << 1, ActiveTSA, DMABits, AutoDMACtrl, (~Regs.ATTR) & 0xffff, OutPos);
+			GetDmaIndexChar(), size << 1, ActiveTSA, DMABits, AutoDMACtrl, (~Regs.ATTR) & 0xffff, OutPos);
 
 	InputDataProgress = 0;
 	TADR = MADR + (size << 1);
@@ -297,7 +297,7 @@ void V_Core::FinishDMAwrite()
 		// Emulation Grayarea: Should addresses wrap around to zero, or wrap around to
 		// 0x2800?  Hard to know for sure (almost no games depend on this)
 		memcpy(GetMemPtr(0), DMAPtr, buff2end * 2);
-		TDA = (buff2end) & 0xfffff;
+		TDA = (buff2end)&0xfffff;
 
 		// Flag interrupt?  If IRQA occurs between start and dest, flag it.
 		// Important: Test both core IRQ settings for either DMA!
@@ -400,7 +400,7 @@ void V_Core::FinishDMAread()
 		// It starts at the beginning of memory and moves forward to buff2end
 		memcpy(DMARPtr, GetMemPtr(0), buff2end * 2);
 
-		TDA = (buff2end) & 0xfffff;
+		TDA = (buff2end)&0xfffff;
 
 		// Flag interrupt?  If IRQA occurs between start and dest, flag it.
 		// Important: Test both core IRQ settings for either DMA!

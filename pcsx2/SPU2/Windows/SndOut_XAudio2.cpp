@@ -126,7 +126,7 @@ private:
 
 			HRESULT hr;
 			if (FAILED(hr = pXAudio2->CreateSourceVoice(&pSourceVoice, (WAVEFORMATEX*)&wfx,
-														XAUDIO2_VOICE_NOSRC, 1.0f, this)))
+			                                            XAUDIO2_VOICE_NOSRC, 1.0f, this)))
 			{
 				throw Exception::XAudio2Error(hr, "XAudio2 CreateSourceVoice failure: ");
 			}
@@ -151,20 +151,13 @@ private:
 			LeaveCriticalSection(&cs);
 		}
 
-		STDMETHOD_(void, OnVoiceProcessingPassStart)
-		() {}
-		STDMETHOD_(void, OnVoiceProcessingPassStart)
-		(UINT32) {}
-		STDMETHOD_(void, OnVoiceProcessingPassEnd)
-		() {}
-		STDMETHOD_(void, OnStreamEnd)
-		() {}
-		STDMETHOD_(void, OnBufferStart)
-		(void*) {}
-		STDMETHOD_(void, OnLoopEnd)
-		(void*) {}
-		STDMETHOD_(void, OnVoiceError)
-		(THIS_ void* pBufferContext, HRESULT Error) {}
+		STDMETHOD_(void, OnVoiceProcessingPassStart)() {}
+		STDMETHOD_(void, OnVoiceProcessingPassStart)(UINT32) {}
+		STDMETHOD_(void, OnVoiceProcessingPassEnd)() {}
+		STDMETHOD_(void, OnStreamEnd)() {}
+		STDMETHOD_(void, OnBufferStart)(void*) {}
+		STDMETHOD_(void, OnLoopEnd)(void*) {}
+		STDMETHOD_(void, OnVoiceError)(THIS_ void* pBufferContext, HRESULT Error) {}
 	};
 
 	template <typename T>

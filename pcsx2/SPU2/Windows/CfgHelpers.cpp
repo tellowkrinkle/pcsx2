@@ -33,7 +33,7 @@ void SysMessage(const char* fmt, ...)
 	va_end(list);
 	swprintf_s(wtmp, L"%S", tmp);
 	MessageBox((!!gsWindowHandle) ? (HWND)gsWindowHandle : GetActiveWindow(), wtmp,
-			   L"SPU2 System Message", MB_OK | MB_SETFOREGROUND);
+		L"SPU2 System Message", MB_OK | MB_SETFOREGROUND);
 }
 
 void SysMessage(const wchar_t* fmt, ...)
@@ -44,7 +44,7 @@ void SysMessage(const wchar_t* fmt, ...)
 	wtmp.PrintfV(fmt, list);
 	va_end(list);
 	MessageBox((!!gsWindowHandle) ? (HWND)gsWindowHandle : GetActiveWindow(), wtmp,
-			   L"SPU2 System Message", MB_OK | MB_SETFOREGROUND);
+		L"SPU2 System Message", MB_OK | MB_SETFOREGROUND);
 }
 
 //////

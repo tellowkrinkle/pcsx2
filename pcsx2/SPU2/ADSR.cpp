@@ -110,8 +110,8 @@ bool V_ADSR::Calculate()
 					Phase++;
 				}
 			}
-			else
-			{ // increasing
+			else // increasing
+			{
 				if ((SustainMode & 4) && (Value >= 0x60000000))
 					Value += PsxRates[(SustainRate ^ 0x7f) - 0x18 + 32];
 				else
@@ -133,14 +133,14 @@ bool V_ADSR::Calculate()
 				Phase = 6;
 			break;
 
-		case 5:              // release
+		case 5: // release
 			if (ReleaseMode) // exponential
 			{
 				u32 off = InvExpOffsets[(Value >> 28) & 7];
 				Value -= PsxRates[((ReleaseRate ^ 0x1f) * 4) - 0x18 + off + 32];
 			}
-			else
-			{ // linear
+			else // linear
+			{
 				//Value-=PsxRates[((ReleaseRate^0x1f)*4)-0xc+32];
 				if (ReleaseRate != 0x1f)
 					Value -= (1 << (0x1f - ReleaseRate));

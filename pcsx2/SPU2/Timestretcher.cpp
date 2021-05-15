@@ -155,8 +155,8 @@ void SndBuffer::UpdateTempoChangeSoundTouch2()
 	float baseTargetFullness = (double)targetSamplesReservoir; ///(double)m_size;//0.05;
 
 	//state vars
-	static bool inside_hysteresis;      //=false;
-	static int hys_ok_count;            //=0;
+	static bool inside_hysteresis; //=false;
+	static int hys_ok_count; //=0;
 	static float dynamicTargetFullness; //=baseTargetFullness;
 	if (gRequestStretcherReset >= STRETCHER_RESET_THRESHOLD)
 	{
@@ -249,10 +249,10 @@ void SndBuffer::UpdateTempoChangeSoundTouch2()
 		wxDateTime unow = wxDateTime::UNow();
 		wxTimeSpan delta = unow.Subtract(last);
 
-		if (delta.GetMilliseconds() > 1000)
-		{ //report buffers state and tempo adjust every second
+		if (delta.GetMilliseconds() > 1000) // report buffers state and tempo adjust every second
+		{
 			ConLog("buffers: %4d ms (%3.0f%%), tempo: %f, comp: %2.3f, iters: %d, (N-IPS:%d -> avg:%d, minokc:%d, div:%d) reset:%d\n",
-				   (int)(data / 48), (double)(100.0 * bufferFullness / baseTargetFullness), (double)tempoAdjust, (double)(dynamicTargetFullness / baseTargetFullness), iters, (int)targetIPS, AVERAGING_WINDOW, hys_min_ok_count, compensationDivider, gRequestStretcherReset);
+				(int)(data / 48), (double)(100.0 * bufferFullness / baseTargetFullness), (double)tempoAdjust, (double)(dynamicTargetFullness / baseTargetFullness), iters, (int)targetIPS, AVERAGING_WINDOW, hys_min_ok_count, compensationDivider, gRequestStretcherReset);
 			last = unow;
 			iters = 0;
 		}
@@ -499,7 +499,7 @@ void SndBuffer::timeStretchWrite()
 
 	int tempProgress;
 	while (tempProgress = pSoundTouch->receiveSamples((float*)sndTempBuffer, SndOutPacketSize),
-		   tempProgress != 0)
+	       tempProgress != 0)
 	{
 		// Hint: It's assumed that pSoundTouch will return chunks of 128 bytes (it always does as
 		// long as the SSE optimizations are enabled), which means we can do our own SSE opts here.

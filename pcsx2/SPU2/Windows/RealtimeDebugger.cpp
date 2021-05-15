@@ -60,7 +60,7 @@ void UpdateDebugDialog()
 		if (!hf)
 		{
 			hf = CreateFont(12, 0, 0, 0, 0, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-							DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Lucida Console");
+				DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Lucida Console");
 		}
 
 		SelectObject(hdc, hf);

@@ -399,8 +399,8 @@ BOOL CALLBACK ConfigProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				case TB_THUMBPOSITION:
 				case TB_THUMBTRACK:
 					Clampify(curpos,
-							 (int)SendMessage(hwndDlg, TBM_GETRANGEMIN, 0, 0),
-							 (int)SendMessage(hwndDlg, TBM_GETRANGEMAX, 0, 0));
+						(int)SendMessage(hwndDlg, TBM_GETRANGEMIN, 0, 0),
+						(int)SendMessage(hwndDlg, TBM_GETRANGEMAX, 0, 0));
 
 					SendMessage((HWND)lParam, TBM_SETPOS, TRUE, curpos);
 

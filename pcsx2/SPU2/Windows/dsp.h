@@ -26,12 +26,12 @@
 
 typedef struct winampDSPModule
 {
-	char* description;      // description
-	HWND hwndParent;        // parent window (filled in by calling app)
+	char* description; // description
+	HWND hwndParent; // parent window (filled in by calling app)
 	HINSTANCE hDllInstance; // instance handle to this DLL (filled in by calling app)
 
 	void (*Config)(struct winampDSPModule* this_mod); // configuration dialog (if needed)
-	int (*Init)(struct winampDSPModule* this_mod);    // 0 on success, creates window, etc (if needed)
+	int (*Init)(struct winampDSPModule* this_mod); // 0 on success, creates window, etc (if needed)
 
 	// modify waveform samples: returns number of samples to actually write
 	// (typically numsamples, but no more than twice numsamples, and no less than half numsamples)
@@ -45,8 +45,8 @@ typedef struct winampDSPModule
 
 typedef struct
 {
-	int version;                        // DSP_HDRVER
-	char* description;                  // description of library
+	int version; // DSP_HDRVER
+	char* description; // description of library
 	winampDSPModule* (*getModule)(int); // module retrieval function
 } winampDSPHeader;
 
