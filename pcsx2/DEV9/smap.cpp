@@ -38,26 +38,26 @@ volatile bool fireIntR = false;
 std::mutex frame_counter_mutex;
 std::mutex reset_mutex;
 /*
-#define	SMAP_BASE			0xb0000000
-#define	SMAP_REG8(Offset)		(*(u8 volatile*)(SMAP_BASE+(Offset)))
-#define	SMAP_REG16(Offset)	(*(u16 volatile*)(SMAP_BASE+(Offset)))
-#define	SMAP_REG32(Offset)	(*(u32 volatile*)(SMAP_BASE+(Offset)))
+#define SMAP_BASE          0xb0000000
+#define SMAP_REG8(Offset)  (*(u8  volatile*)(SMAP_BASE + (Offset)))
+#define SMAP_REG16(Offset) (*(u16 volatile*)(SMAP_BASE + (Offset)))
+#define SMAP_REG32(Offset) (*(u32 volatile*)(SMAP_BASE + (Offset)))
 
 u32 EMAC3REG_READ(u32 u32Offset)
 {
-        u32	hi=SMAP_REG16(u32Offset);
-        u32	lo=SMAP_REG16(u32Offset+2);
-        return	(hi<<16)|lo;
+	u32	hi=SMAP_REG16(u32Offset);
+	u32	lo=SMAP_REG16(u32Offset+2);
+	return	(hi<<16)|lo;
 }
 
 
 void EMAC3REG_WRITE(u32 u32Offset,u32 u32V)
 {
-        SMAP_REG16(u32Offset)=((u32V>>16)&0xFFFF);
-        SMAP_REG16(u32Offset+2)=(u32V&0xFFFF);
+	SMAP_REG16(u32Offset)   = ((u32V >> 16) & 0xFFFF);
+	SMAP_REG16(u32Offset+2) = ( u32V        & 0xFFFF);
 }
-#define	SMAP_EMAC3_BASE	0x2000
-#define	SMAP_EMAC3_STA_CTRL		(SMAP_EMAC3_BASE+0x5C)
+#define SMAP_EMAC3_BASE     0x2000
+#define SMAP_EMAC3_STA_CTRL (SMAP_EMAC3_BASE+0x5C)
 void test()
 {
 	printf ("EMAC3R 0x%08X raw read 0x%08X\n",EMAC3REG_READ(SMAP_EMAC3_STA_CTRL),SMAP_REG32(SMAP_EMAC3_STA_CTRL));
@@ -617,23 +617,23 @@ smap_write16(u32 addr, u16 value)
 		/*
 		switch (addr & 0x7) 
 		{
-		case 0: // ctrl_stat
-			DevCon.WriteLn("DEV9: TX_CTRL_STAT[%d]: write %x", (addr - SMAP_BD_TX_BASE) / 8, value);
-			//hacky
-			dev9Ru16(addr) = value;
-			return;
-		case 2: // unknown
-			//DevCon.WriteLn("DEV9: TX_UNKNOWN[%d]: write %x", (addr - SMAP_BD_TX_BASE) / 8, value);
-			dev9Ru16(addr) = value;
-			return;
-		case 4: // length
-			DevCon.WriteLn("DEV9: TX_LENGTH[%d]: write %x", (addr - SMAP_BD_TX_BASE) / 8, value);
-			dev9Ru16(addr) = value;
-			return;
-		case 6: // pointer
-			DevCon.WriteLn("DEV9: TX_POINTER[%d]: write %x", (addr - SMAP_BD_TX_BASE) / 8, value);
-			dev9Ru16(addr) = value;
-			return;
+			case 0: // ctrl_stat
+				DevCon.WriteLn("DEV9: TX_CTRL_STAT[%d]: write %x", (addr - SMAP_BD_TX_BASE) / 8, value);
+				//hacky
+				dev9Ru16(addr) = value;
+				return;
+			case 2: // unknown
+				//DevCon.WriteLn("DEV9: TX_UNKNOWN[%d]: write %x", (addr - SMAP_BD_TX_BASE) / 8, value);
+				dev9Ru16(addr) = value;
+				return;
+			case 4: // length
+				DevCon.WriteLn("DEV9: TX_LENGTH[%d]: write %x", (addr - SMAP_BD_TX_BASE) / 8, value);
+				dev9Ru16(addr) = value;
+				return;
+			case 6: // pointer
+				DevCon.WriteLn("DEV9: TX_POINTER[%d]: write %x", (addr - SMAP_BD_TX_BASE) / 8, value);
+				dev9Ru16(addr) = value;
+				return;
 		}
 		*/
 		return;
@@ -647,31 +647,32 @@ smap_write16(u32 addr, u16 value)
 		/*
 		switch (addr & 0x7) 
 		{
-		case 0: // ctrl_stat
-			DevCon.WriteLn("DEV9: RX_CTRL_STAT[%d]: write %x", rx_index, value);
-			dev9Ru16(addr) = value;
-			if(value&0x8000)
-			{
-				DevCon.WriteLn("DEV9:  * * PACKET READ COMPLETE:   rd_ptr=%d, wr_ptr=%d", dev9Ru32(SMAP_R_RXFIFO_RD_PTR), dev9.rxfifo_wr_ptr);
-			}
-			return;
-		case 2: // unknown
-			//DevCon.WriteLn("DEV9: RX_UNKNOWN[%d]: write %x", rx_index, value);
-			dev9Ru16(addr) = value;
-			return;
-		case 4: // length
-			DevCon.WriteLn("DEV9: RX_LENGTH[%d]: write %x", rx_index, value);
-			dev9Ru16(addr) = value;
-			return;
-		case 6: // pointer
-			DevCon.WriteLn("DEV9: RX_POINTER[%d]: write %x", rx_index, value);
-			dev9Ru16(addr) = value;
-			return;
+			case 0: // ctrl_stat
+				DevCon.WriteLn("DEV9: RX_CTRL_STAT[%d]: write %x", rx_index, value);
+				dev9Ru16(addr) = value;
+				if(value&0x8000)
+				{
+					DevCon.WriteLn("DEV9:  * * PACKET READ COMPLETE:   rd_ptr=%d, wr_ptr=%d", dev9Ru32(SMAP_R_RXFIFO_RD_PTR), dev9.rxfifo_wr_ptr);
+				}
+				return;
+			case 2: // unknown
+				//DevCon.WriteLn("DEV9: RX_UNKNOWN[%d]: write %x", rx_index, value);
+				dev9Ru16(addr) = value;
+				return;
+			case 4: // length
+				DevCon.WriteLn("DEV9: RX_LENGTH[%d]: write %x", rx_index, value);
+				dev9Ru16(addr) = value;
+				return;
+			case 6: // pointer
+				DevCon.WriteLn("DEV9: RX_POINTER[%d]: write %x", rx_index, value);
+				dev9Ru16(addr) = value;
+				return;
 		}
 		*/
 		return;
 	}
 
+	// clang-format off
 	switch (addr)
 	{
 		case SMAP_R_INTR_CLR:
@@ -683,107 +684,103 @@ smap_write16(u32 addr, u16 value)
 			DevCon.WriteLn("DEV9: SMAP: SMAP_R_TXFIFO_WR_PTR 16bit write %x", value);
 			dev9Ru16(addr) = value;
 			return;
-#define EMAC3_L_WRITE(name)                                   \
-	case name:                                                \
-		DevCon.WriteLn("DEV9: SMAP: " #name " 16 bit write %x", value); \
-		dev9Ru16(addr) = value;                               \
-		return;
-	// clang-format off
-	//handle L writes
-	EMAC3_L_WRITE(SMAP_R_EMAC3_MODE0_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_MODE1_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_TxMODE0_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_TxMODE1_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_RxMODE_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_INTR_STAT_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_INTR_ENABLE_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_ADDR_HI_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_ADDR_LO_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_VLAN_TPID)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_PAUSE_TIMER_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_INDIVID_HASH1)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_INDIVID_HASH2)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_INDIVID_HASH3)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_INDIVID_HASH4)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_GROUP_HASH1)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_GROUP_HASH2)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_GROUP_HASH3)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_GROUP_HASH4)
+		#define EMAC3_L_WRITE(name) \
+			case name: \
+				DevCon.WriteLn("DEV9: SMAP: " #name " 16 bit write %x", value); \
+				dev9Ru16(addr) = value; \
+				return;
+		//handle L writes
+		EMAC3_L_WRITE(SMAP_R_EMAC3_MODE0_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_MODE1_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_TxMODE0_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_TxMODE1_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_RxMODE_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_INTR_STAT_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_INTR_ENABLE_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_ADDR_HI_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_ADDR_LO_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_VLAN_TPID)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_PAUSE_TIMER_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_INDIVID_HASH1)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_INDIVID_HASH2)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_INDIVID_HASH3)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_INDIVID_HASH4)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_GROUP_HASH1)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_GROUP_HASH2)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_GROUP_HASH3)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_GROUP_HASH4)
 
-	EMAC3_L_WRITE(SMAP_R_EMAC3_LAST_SA_HI)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_LAST_SA_LO)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_INTER_FRAME_GAP_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_STA_CTRL_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_TX_THRESHOLD_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_RX_WATERMARK_L)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_TX_OCTETS)
-	EMAC3_L_WRITE(SMAP_R_EMAC3_RX_OCTETS)
-	// clang-format on
+		EMAC3_L_WRITE(SMAP_R_EMAC3_LAST_SA_HI)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_LAST_SA_LO)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_INTER_FRAME_GAP_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_STA_CTRL_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_TX_THRESHOLD_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_RX_WATERMARK_L)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_TX_OCTETS)
+		EMAC3_L_WRITE(SMAP_R_EMAC3_RX_OCTETS)
 
-#define EMAC3_H_WRITE(name)                                   \
-	case name:                                                \
-		DevCon.WriteLn("DEV9: SMAP: " #name " 16 bit write %x", value); \
-		dev9Ru16(addr) = value;                               \
-		emac3_write(addr - 2);                                \
-		return;
-	// clang-format off
-	//handle H writes
-	EMAC3_H_WRITE(SMAP_R_EMAC3_MODE0_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_MODE1_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_TxMODE0_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_TxMODE1_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_RxMODE_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_INTR_STAT_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_INTR_ENABLE_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_ADDR_HI_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_ADDR_LO_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_VLAN_TPID + 2)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_PAUSE_TIMER_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_INDIVID_HASH1 + 2)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_INDIVID_HASH2 + 2)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_INDIVID_HASH3 + 2)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_INDIVID_HASH4 + 2)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_GROUP_HASH1 + 2)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_GROUP_HASH2 + 2)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_GROUP_HASH3 + 2)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_GROUP_HASH4 + 2)
+		#define EMAC3_H_WRITE(name) \
+			case name: \
+				DevCon.WriteLn("DEV9: SMAP: " #name " 16 bit write %x", value); \
+				dev9Ru16(addr) = value; \
+				emac3_write(addr - 2); \
+				return;
+		//handle H writes
+		EMAC3_H_WRITE(SMAP_R_EMAC3_MODE0_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_MODE1_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_TxMODE0_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_TxMODE1_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_RxMODE_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_INTR_STAT_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_INTR_ENABLE_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_ADDR_HI_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_ADDR_LO_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_VLAN_TPID + 2)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_PAUSE_TIMER_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_INDIVID_HASH1 + 2)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_INDIVID_HASH2 + 2)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_INDIVID_HASH3 + 2)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_INDIVID_HASH4 + 2)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_GROUP_HASH1 + 2)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_GROUP_HASH2 + 2)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_GROUP_HASH3 + 2)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_GROUP_HASH4 + 2)
 
-	EMAC3_H_WRITE(SMAP_R_EMAC3_LAST_SA_HI + 2)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_LAST_SA_LO + 2)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_INTER_FRAME_GAP_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_STA_CTRL_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_TX_THRESHOLD_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_RX_WATERMARK_H)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_TX_OCTETS + 2)
-	EMAC3_H_WRITE(SMAP_R_EMAC3_RX_OCTETS + 2)
-	// clang-format on
-			/*
-	case SMAP_R_EMAC3_MODE0_L:
-		DevCon.WriteLn("DEV9: SMAP: SMAP_R_EMAC3_MODE0 write %x", value);
-		dev9Ru16(addr) = value;
-		return;
-	case SMAP_R_EMAC3_TxMODE0_L:
-		DevCon.WriteLn("DEV9: SMAP: SMAP_R_EMAC3_TxMODE0_L 16bit write %x", value);
-		dev9Ru16(addr) = value;
-		return;
-	case SMAP_R_EMAC3_TxMODE1_L:
-		emu_printf("SMAP: SMAP_R_EMAC3_TxMODE1_L 16bit write %x\n", value);
-		dev9Ru16(addr) = value;
-		return;
+		EMAC3_H_WRITE(SMAP_R_EMAC3_LAST_SA_HI + 2)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_LAST_SA_LO + 2)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_INTER_FRAME_GAP_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_STA_CTRL_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_TX_THRESHOLD_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_RX_WATERMARK_H)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_TX_OCTETS + 2)
+		EMAC3_H_WRITE(SMAP_R_EMAC3_RX_OCTETS + 2)
+		/*
+		case SMAP_R_EMAC3_MODE0_L:
+			DevCon.WriteLn("DEV9: SMAP: SMAP_R_EMAC3_MODE0 write %x", value);
+			dev9Ru16(addr) = value;
+			return;
+		case SMAP_R_EMAC3_TxMODE0_L:
+			DevCon.WriteLn("DEV9: SMAP: SMAP_R_EMAC3_TxMODE0_L 16bit write %x", value);
+			dev9Ru16(addr) = value;
+			return;
+		case SMAP_R_EMAC3_TxMODE1_L:
+			emu_printf("SMAP: SMAP_R_EMAC3_TxMODE1_L 16bit write %x\n", value);
+			dev9Ru16(addr) = value;
+			return;
 
-	case SMAP_R_EMAC3_TxMODE0_H:
-		emu_printf("SMAP: SMAP_R_EMAC3_TxMODE0_H 16bit write %x\n", value);
-		dev9Ru16(addr) = value;
-		return;
-	
-	case SMAP_R_EMAC3_TxMODE1_H:
-		emu_printf("SMAP: SMAP_R_EMAC3_TxMODE1_H 16bit write %x\n", value);
-		dev9Ru16(addr) = value;
-		return;
-	case SMAP_R_EMAC3_STA_CTRL_H:
-		DevCon.WriteLn("DEV9: SMAP: SMAP_R_EMAC3_STA_CTRL_H 16bit write %x", value);
-		dev9Ru16(addr) = value;
-		return;
+		case SMAP_R_EMAC3_TxMODE0_H:
+			emu_printf("SMAP: SMAP_R_EMAC3_TxMODE0_H 16bit write %x\n", value);
+			dev9Ru16(addr) = value;
+			return;
+
+		case SMAP_R_EMAC3_TxMODE1_H:
+			emu_printf("SMAP: SMAP_R_EMAC3_TxMODE1_H 16bit write %x\n", value);
+			dev9Ru16(addr) = value;
+			return;
+		case SMAP_R_EMAC3_STA_CTRL_H:
+			DevCon.WriteLn("DEV9: SMAP: SMAP_R_EMAC3_STA_CTRL_H 16bit write %x", value);
+			dev9Ru16(addr) = value;
+			return;
 		*/
 
 		default:
@@ -791,6 +788,7 @@ smap_write16(u32 addr, u16 value)
 			dev9Ru16(addr) = value;
 			return;
 	}
+	// clang-format on
 }
 EXPORT_C_(void)
 smap_write32(u32 addr, u32 value)

@@ -110,13 +110,13 @@ bool IsTAPDevice(const TCHAR* guid)
 		{
 			len = sizeof(component_id);
 			status = RegQueryValueEx(unit_key, component_id_string, nullptr, &data_type,
-									 (LPBYTE)component_id, &len);
+				(LPBYTE)component_id, &len);
 
 			if (!(status != ERROR_SUCCESS || data_type != REG_SZ))
 			{
 				len = sizeof(net_cfg_instance_id);
 				status = RegQueryValueEx(unit_key, net_cfg_instance_id_string, nullptr, &data_type,
-										 (LPBYTE)net_cfg_instance_id, &len);
+					(LPBYTE)net_cfg_instance_id, &len);
 
 				if (status == ERROR_SUCCESS && data_type == REG_SZ)
 				{
@@ -147,13 +147,13 @@ std::vector<AdapterEntry> TAPAdapter::GetAdapters()
 	DWORD cSubKeys = 0;
 
 	status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, NETWORK_CONNECTIONS_KEY, 0, KEY_READ | KEY_QUERY_VALUE,
-						  &control_net_key);
+		&control_net_key);
 
 	if (status != ERROR_SUCCESS)
 		return tap_nic;
 
 	status = RegQueryInfoKey(control_net_key, nullptr, nullptr, nullptr, &cSubKeys, nullptr, nullptr,
-							 nullptr, nullptr, nullptr, nullptr, nullptr);
+		nullptr, nullptr, nullptr, nullptr, nullptr);
 
 	if (status != ERROR_SUCCESS)
 		return tap_nic;
@@ -174,7 +174,7 @@ std::vector<AdapterEntry> TAPAdapter::GetAdapters()
 			continue;
 
 		_sntprintf(connection_string, sizeof(connection_string), _T("%s\\%s\\Connection"),
-				   NETWORK_CONNECTIONS_KEY, enum_name);
+			NETWORK_CONNECTIONS_KEY, enum_name);
 
 		status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, connection_string, 0, KEY_READ, &connection_key);
 
@@ -182,7 +182,7 @@ std::vector<AdapterEntry> TAPAdapter::GetAdapters()
 		{
 			len = sizeof(name_data);
 			status = RegQueryValueEx(connection_key, name_string, nullptr, &name_type, (LPBYTE)name_data,
-									 &len);
+				&len);
 
 			if (status != ERROR_SUCCESS || name_type != REG_SZ)
 			{
@@ -214,8 +214,8 @@ static int TAPGetMACAddress(HANDLE handle, u8* addr)
 	DWORD len = 0;
 
 	return DeviceIoControl(handle, TAP_IOCTL_GET_MAC,
-						   addr, 6,
-						   addr, 6, &len, NULL);
+		addr, 6,
+		addr, 6, &len, NULL);
 }
 
 //Set the connection status
@@ -224,8 +224,8 @@ static int TAPSetStatus(HANDLE handle, int status)
 	DWORD len = 0;
 
 	return DeviceIoControl(handle, TAP_IOCTL_SET_MEDIA_STATUS,
-						   &status, sizeof(status),
-						   &status, sizeof(status), &len, NULL);
+		&status, sizeof(status),
+		&status, sizeof(status), &len, NULL);
 }
 //Open the TAP adapter and set the connection to enabled :)
 HANDLE TAPOpen(const char* device_guid)
@@ -241,9 +241,9 @@ HANDLE TAPOpen(const char* device_guid)
 	LONG version_len;
 
 	_snprintf(device_path, sizeof(device_path), "%s%s%s",
-			  USERMODEDEVICEDIR,
-			  device_guid,
-			  TAPSUFFIX);
+		USERMODEDEVICEDIR,
+		device_guid,
+		TAPSUFFIX);
 
 	HANDLE handle = CreateFileA(
 		device_path,
@@ -260,8 +260,8 @@ HANDLE TAPOpen(const char* device_guid)
 	}
 
 	BOOL bret = DeviceIoControl(handle, TAP_IOCTL_GET_VERSION,
-								&version, sizeof(version),
-								&version, sizeof(version), (LPDWORD)&version_len, NULL);
+		&version, sizeof(version),
+		&version, sizeof(version), (LPDWORD)&version_len, NULL);
 
 	if (bret == FALSE)
 	{
@@ -603,10 +603,10 @@ bool TAPAdapter::recv(NetPacket* pkt)
 {
 	DWORD read_size;
 	BOOL result = ReadFile(htap,
-						   pkt->buffer,
-						   sizeof(pkt->buffer),
-						   &read_size,
-						   &read);
+		pkt->buffer,
+		sizeof(pkt->buffer),
+		&read_size,
+		&read);
 
 	if (!result)
 	{
@@ -640,10 +640,10 @@ bool TAPAdapter::send(NetPacket* pkt)
 
 	DWORD writen;
 	BOOL result = WriteFile(htap,
-							pkt->buffer,
-							pkt->size,
-							&writen,
-							&write);
+		pkt->buffer,
+		pkt->size,
+		&writen,
+		&write);
 
 	if (!result)
 	{

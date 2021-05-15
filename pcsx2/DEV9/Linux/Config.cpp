@@ -44,66 +44,66 @@ void SaveConf()
 	xmlDocSetRootElement(doc, root_node);
 
 	xmlNewChild(root_node, NULL, BAD_CAST "Eth",
-				BAD_CAST config.Eth);
+		BAD_CAST config.Eth);
 
 	sprintf(buff, "%d", (int)config.EthApi);
 	xmlNewChild(root_node, NULL, BAD_CAST "EthApi",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	sprintf(buff, "%d", config.InterceptDHCP);
 	xmlNewChild(root_node, NULL, BAD_CAST "InterceptDHCP",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	inet_ntop(AF_INET, &config.PS2IP, buff, 256);
 	xmlNewChild(root_node, NULL, BAD_CAST "PS2IP",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	inet_ntop(AF_INET, &config.Mask, buff, 256);
 	xmlNewChild(root_node, NULL, BAD_CAST "Subnet",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	sprintf(buff, "%d", config.AutoMask);
 	xmlNewChild(root_node, NULL, BAD_CAST "AutoSubnet",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	inet_ntop(AF_INET, &config.Gateway, buff, 256);
 	xmlNewChild(root_node, NULL, BAD_CAST "Gateway",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	sprintf(buff, "%d", config.AutoGateway);
 	xmlNewChild(root_node, NULL, BAD_CAST "AutoGateway",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	inet_ntop(AF_INET, &config.DNS1, buff, 256);
 	xmlNewChild(root_node, NULL, BAD_CAST "DNS1",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	sprintf(buff, "%d", config.AutoDNS1);
 	xmlNewChild(root_node, NULL, BAD_CAST "AutoDNS1",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	inet_ntop(AF_INET, &config.DNS2, buff, 256);
 	xmlNewChild(root_node, NULL, BAD_CAST "DNS2",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	sprintf(buff, "%d", config.AutoDNS2);
 	xmlNewChild(root_node, NULL, BAD_CAST "AutoDNS2",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	xmlNewChild(root_node, NULL, BAD_CAST "Hdd",
-				BAD_CAST config.Hdd);
+		BAD_CAST config.Hdd);
 
 	sprintf(buff, "%d", config.HddSize);
 	xmlNewChild(root_node, NULL, BAD_CAST "HddSize",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	sprintf(buff, "%d", config.ethEnable);
 	xmlNewChild(root_node, NULL, BAD_CAST "ethEnable",
-				BAD_CAST buff);
+		BAD_CAST buff);
 
 	sprintf(buff, "%d", config.hddEnable);
 	xmlNewChild(root_node, NULL, BAD_CAST "hddEnable",
-				BAD_CAST buff);
+		BAD_CAST buff);
 	/*
      * Dumping document to stdio or file
      */
