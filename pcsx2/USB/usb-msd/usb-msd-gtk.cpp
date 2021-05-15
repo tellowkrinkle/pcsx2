@@ -36,11 +36,11 @@ namespace usb_msd
 
 		entry = (GtkWidget*)data;
 		dialog = gtk_file_chooser_dialog_new("Open File",
-											 NULL,
-											 GTK_FILE_CHOOSER_ACTION_OPEN,
-											 GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-											 GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
-											 NULL);
+			NULL,
+			GTK_FILE_CHOOSER_ACTION_OPEN,
+			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+			GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+			NULL);
 
 		//XXX check access? Dialog seems to default to "Recently used" etc.
 		//Or set to empty string anyway? Then it seems to default to some sort of "working dir"

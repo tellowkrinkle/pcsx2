@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// clang-format off
+
 /*
  * This file is auto-generated from keymaps.csv on 2018-12-22 15:48
  * To re-generate, run:

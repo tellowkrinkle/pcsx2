@@ -421,8 +421,8 @@ static inline int ohci_put_ed(OHCIState* ohci, uint32_t addr, struct ohci_ed* ed
      * Since just ed->head is changed by HC, just write back this
      */
 	return put_dwords(addr + ED_WBACK_OFFSET,
-					  (uint32_t*)((char*)ed + ED_WBACK_OFFSET),
-					  ED_WBACK_SIZE >> 2);
+		(uint32_t*)((char*)ed + ED_WBACK_OFFSET),
+		ED_WBACK_SIZE >> 2);
 }
 
 static inline int ohci_put_td(OHCIState* ohci, uint32_t addr, struct ohci_td* td)
@@ -437,11 +437,11 @@ static inline int ohci_put_iso_td(OHCIState* ohci, uint32_t addr, struct ohci_is
 }
 
 static inline int ohci_put_hcca(OHCIState* ohci,
-								struct ohci_hcca* hcca)
+	struct ohci_hcca* hcca)
 {
 	cpu_physical_memory_write(ohci->hcca + HCCA_WRITEBACK_OFFSET,
-							  (uint8_t*)hcca + HCCA_WRITEBACK_OFFSET,
-							  HCCA_WRITEBACK_SIZE);
+		(uint8_t*)hcca + HCCA_WRITEBACK_OFFSET,
+		HCCA_WRITEBACK_SIZE);
 	return 1;
 }
 
@@ -466,7 +466,7 @@ static int ohci_copy_td(OHCIState* ohci, struct ohci_td* td, uint8_t* buf, uint3
 
 /* Read/Write the contents of an ISO TD from/to main memory.  */
 static int ohci_copy_iso_td(OHCIState* ohci, uint32_t start_addr, uint32_t end_addr,
-							uint8_t* buf, uint32_t len, int write)
+	uint8_t* buf, uint32_t len, int write)
 {
 	uint32_t ptr, n;
 
@@ -498,7 +498,7 @@ static void ohci_async_complete_packet(USBPort* port, USBPacket* packet)
 #define USUB(a, b) ((int16_t)((uint16_t)(a) - (uint16_t)(b)))
 
 static int ohci_service_iso_td(OHCIState* ohci, struct ohci_ed* ed,
-							   int completion)
+	int completion)
 {
 	int dir;
 	uint32_t len = 0;
@@ -610,7 +610,7 @@ static int ohci_service_iso_td(OHCIState* ohci, struct ohci_ed* ed,
 
 	if (!(OHCI_BM(start_offset, TD_PSW_CC) & 0xe) ||
 		((relative_frame_number < frame_count) &&
-		 !(OHCI_BM(next_offset, TD_PSW_CC) & 0xe)))
+			!(OHCI_BM(next_offset, TD_PSW_CC) & 0xe)))
 	{
 		//trace_usb_ohci_iso_td_bad_cc_not_accessed(start_offset, next_offset);
 		return 1;
@@ -675,7 +675,7 @@ static int ohci_service_iso_td(OHCIState* ohci, struct ohci_ed* ed,
 	if (len && dir != OHCI_TD_DIR_IN)
 	{
 		if (ohci_copy_iso_td(ohci, start_addr, end_addr, ohci->usb_buf, len,
-							 DMA_DIRECTION_TO_DEVICE))
+				DMA_DIRECTION_TO_DEVICE))
 		{
 			ohci_die(ohci);
 			return 1;
@@ -719,20 +719,20 @@ static int ohci_service_iso_td(OHCIState* ohci, struct ohci_ed* ed,
 	{
 		/* IN transfer succeeded */
 		if (ohci_copy_iso_td(ohci, start_addr, end_addr, ohci->usb_buf, ret,
-							 DMA_DIRECTION_FROM_DEVICE))
+				DMA_DIRECTION_FROM_DEVICE))
 		{
 			ohci_die(ohci);
 			return 1;
 		}
 		OHCI_SET_BM(iso_td.offset[relative_frame_number], TD_PSW_CC,
-					OHCI_CC_NOERROR);
+			OHCI_CC_NOERROR);
 		OHCI_SET_BM(iso_td.offset[relative_frame_number], TD_PSW_SIZE, ret);
 	}
 	else if (dir == OHCI_TD_DIR_OUT && (ret == (int)len))
 	{
 		/* OUT transfer succeeded */
 		OHCI_SET_BM(iso_td.offset[relative_frame_number], TD_PSW_CC,
-					OHCI_CC_NOERROR);
+			OHCI_CC_NOERROR);
 		OHCI_SET_BM(iso_td.offset[relative_frame_number], TD_PSW_SIZE, 0);
 	}
 	else
@@ -741,15 +741,15 @@ static int ohci_service_iso_td(OHCIState* ohci, struct ohci_ed* ed,
 		{
 			//trace_usb_ohci_iso_td_data_overrun(ret, len);
 			OHCI_SET_BM(iso_td.offset[relative_frame_number], TD_PSW_CC,
-						OHCI_CC_DATAOVERRUN);
+				OHCI_CC_DATAOVERRUN);
 			OHCI_SET_BM(iso_td.offset[relative_frame_number], TD_PSW_SIZE,
-						len);
+				len);
 		}
 		else if (ret >= 0)
 		{
 			//trace_usb_ohci_iso_td_data_underrun(ret);
 			OHCI_SET_BM(iso_td.offset[relative_frame_number], TD_PSW_CC,
-						OHCI_CC_DATAUNDERRUN);
+				OHCI_CC_DATAUNDERRUN);
 		}
 		else
 		{
@@ -758,22 +758,22 @@ static int ohci_service_iso_td(OHCIState* ohci, struct ohci_ed* ed,
 				case USB_RET_IOERROR:
 				case USB_RET_NODEV:
 					OHCI_SET_BM(iso_td.offset[relative_frame_number], TD_PSW_CC,
-								OHCI_CC_DEVICENOTRESPONDING);
+						OHCI_CC_DEVICENOTRESPONDING);
 					OHCI_SET_BM(iso_td.offset[relative_frame_number], TD_PSW_SIZE,
-								0);
+						0);
 					break;
 				case USB_RET_NAK:
 				case USB_RET_STALL:
 					//trace_usb_ohci_iso_td_nak(ret);
 					OHCI_SET_BM(iso_td.offset[relative_frame_number], TD_PSW_CC,
-								OHCI_CC_STALL);
+						OHCI_CC_STALL);
 					OHCI_SET_BM(iso_td.offset[relative_frame_number], TD_PSW_SIZE,
-								0);
+						0);
 					break;
 				default:
 					//trace_usb_ohci_iso_td_bad_response(ret);
 					OHCI_SET_BM(iso_td.offset[relative_frame_number], TD_PSW_CC,
-								OHCI_CC_UNDEXPETEDPID);
+						OHCI_CC_UNDEXPETEDPID);
 					break;
 			}
 		}
@@ -805,7 +805,7 @@ static int ohci_service_td(OHCIState* ohci, struct ohci_ed* ed)
 {
 	int dir;
 	uint32_t len = 0, pktlen = 0;
-	[[maybe_unused]]const char* str = NULL;
+	[[maybe_unused]] const char* str = NULL;
 	int pid;
 	int ret;
 	int i;
@@ -894,7 +894,7 @@ static int ohci_service_td(OHCIState* ohci, struct ohci_ed* ed)
 			if (!completion)
 			{
 				if (ohci_copy_td(ohci, &td, ohci->usb_buf, pktlen,
-								 DMA_DIRECTION_TO_DEVICE))
+						DMA_DIRECTION_TO_DEVICE))
 				{
 					ohci_die(ohci);
 				}
@@ -932,7 +932,7 @@ static int ohci_service_td(OHCIState* ohci, struct ohci_ed* ed)
 		}
 		ep = usb_ep_get(dev, pid, OHCI_BM(ed->flags, ED_EN));
 		usb_packet_setup(&ohci->usb_packet, pid, ep, 0, addr, !flag_r,
-						 OHCI_BM(td.flags, TD_DI) == 0);
+			OHCI_BM(td.flags, TD_DI) == 0);
 		usb_packet_addbuf(&ohci->usb_packet, ohci->usb_buf, pktlen);
 		usb_handle_packet(dev, &ohci->usb_packet);
 		//trace_usb_ohci_td_packet_status(ohci->usb_packet.status);
@@ -958,7 +958,7 @@ static int ohci_service_td(OHCIState* ohci, struct ohci_ed* ed)
 		if (dir == OHCI_TD_DIR_IN)
 		{
 			if (ohci_copy_td(ohci, &td, ohci->usb_buf, ret,
-							 DMA_DIRECTION_FROM_DEVICE))
+					DMA_DIRECTION_FROM_DEVICE))
 			{
 				ohci_die(ohci);
 			}
@@ -1096,7 +1096,7 @@ static int ohci_service_ed_list(OHCIState* ohci, uint32_t head, int completion)
 				usb_cancel_packet(&ohci->usb_packet);
 				ohci->async_td = 0;
 				usb_device_ep_stopped(ohci->usb_packet.ep->dev,
-									  ohci->usb_packet.ep);
+					ohci->usb_packet.ep);
 			}
 			continue;
 		}

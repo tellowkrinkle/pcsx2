@@ -126,7 +126,6 @@ static void deviceChanged(GtkComboBox* widget, gpointer data)
 		conf.Port[1] = s;
 	else
 		conf.Port[0] = s;
-
 }
 
 static void apiChanged(GtkComboBox* widget, gpointer data)
@@ -185,7 +184,7 @@ static void configureApi(GtkWidget* widget, gpointer data)
 	if (dev)
 	{
 		GtkWidget* dlg = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "dlg"));
-		[[maybe_unused]]int res = dev->Configure(port, api, dlg);
+		[[maybe_unused]] int res = dev->Configure(port, api, dlg);
 	}
 }
 
@@ -225,7 +224,7 @@ void USBconfigure()
 {
 	ScopedCoreThreadPause paused_core;
 
-    USBsetSettingsDir();
+	USBsetSettingsDir();
 	RegisterDevice::Register();
 	LoadConfig();
 	SettingsCB settingsCB[2];

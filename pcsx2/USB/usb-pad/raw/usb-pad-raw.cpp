@@ -56,7 +56,7 @@ namespace usb_pad
 
 			while (pad->mUsbHandle != INVALID_HANDLE_VALUE)
 			{
-				if (GetOverlappedResult(pad->mUsbHandle, &pad->mOLRead, &read, FALSE))                                                                   // TODO check if previous read finally completed after WaitForSingleObject timed out
+				if (GetOverlappedResult(pad->mUsbHandle, &pad->mOLRead, &read, FALSE)) // TODO check if previous read finally completed after WaitForSingleObject timed out
 					ReadFile(pad->mUsbHandle, report.data(), std::min(pad->mCaps.InputReportByteLength, (USHORT)report.size()), nullptr, &pad->mOLRead); // Seems to only read data when input changes and not current state overall
 
 				if (WaitForSingleObject(pad->mOLRead.hEvent, 1000) == WAIT_OBJECT_0)
@@ -375,14 +375,14 @@ namespace usb_pad
 				{
 					if (PLY_IS_MAPPED(j, btn))
 					{
-						PS2WheelTypes wt = (PS2WheelTypes) subtype;
+						PS2WheelTypes wt = (PS2WheelTypes)subtype;
 						if (PLY_GET_VALUE(j, mapping->btnMap[i]) == pRawInput->data.keyboard.VKey)
 						{
 							uint32_t wtbtn = convert_wt_btn(wt, i);
 							if (pRawInput->data.keyboard.Flags & RI_KEY_BREAK)
 								mapping->data[j].buttons &= ~(1 << wtbtn); //unset
-							else                                           /* if(pRawInput->data.keyboard.Flags == RI_KEY_MAKE) */
-								mapping->data[j].buttons |= (1 << wtbtn);  //set
+							else /* if(pRawInput->data.keyboard.Flags == RI_KEY_MAKE) */
+								mapping->data[j].buttons |= (1 << wtbtn); //set
 						}
 					}
 				}
@@ -435,7 +435,7 @@ namespace usb_pad
 			LoadSetting(mDevType, mPort, APINAME, N_WHEEL_PT, mDoPassthrough);
 
 			mUsbHandle = CreateFileW(path.c_str(), GENERIC_READ | GENERIC_WRITE,
-									 FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
+				FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
 
 			if (mUsbHandle != INVALID_HANDLE_VALUE)
 			{

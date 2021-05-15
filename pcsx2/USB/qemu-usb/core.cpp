@@ -148,8 +148,8 @@ static void do_token_setup(USBDevice* s, USBPacket* p)
 	if (s->setup_len > (int32_t)sizeof(s->data_buf))
 	{
 		Console.Warning(
-				"usb_generic_handle_packet: ctrl buffer too small (%d > %zu)\n",
-				s->setup_len, sizeof(s->data_buf));
+			"usb_generic_handle_packet: ctrl buffer too small (%d > %zu)\n",
+			s->setup_len, sizeof(s->data_buf));
 		p->status = USB_RET_STALL;
 		return;
 	}
@@ -161,7 +161,7 @@ static void do_token_setup(USBDevice* s, USBPacket* p)
 	if (s->setup_buf[0] & USB_DIR_IN)
 	{
 		usb_device_handle_control(s, p, request, value, index,
-								  s->setup_len, s->data_buf);
+			s->setup_len, s->data_buf);
 		if (p->status == USB_RET_ASYNC)
 		{
 			s->setup_state = SETUP_STATE_SETUP;
@@ -204,7 +204,7 @@ static void do_token_in(USBDevice* s, USBPacket* p)
 			if (!(s->setup_buf[0] & USB_DIR_IN))
 			{
 				usb_device_handle_control(s, p, request, value, index,
-										  s->setup_len, s->data_buf);
+					s->setup_len, s->data_buf);
 				if (p->status == USB_RET_ASYNC)
 				{
 					return;
@@ -302,8 +302,8 @@ static void do_parameter(USBDevice* s, USBPacket* p)
 	if (s->setup_len > (int32_t)sizeof(s->data_buf))
 	{
 		Console.Warning(
-				"usb_generic_handle_packet: ctrl buffer too small (%d > %zu)\n",
-				s->setup_len, sizeof(s->data_buf));
+			"usb_generic_handle_packet: ctrl buffer too small (%d > %zu)\n",
+			s->setup_len, sizeof(s->data_buf));
 		p->status = USB_RET_STALL;
 		return;
 	}
@@ -314,7 +314,7 @@ static void do_parameter(USBDevice* s, USBPacket* p)
 	}
 
 	usb_device_handle_control(s, p, request, value, index,
-							  s->setup_len, s->data_buf);
+		s->setup_len, s->data_buf);
 	if (p->status == USB_RET_ASYNC)
 	{
 		return;
@@ -617,8 +617,8 @@ void usb_packet_set_state(USBPacket* p, USBPacketState state)
 }
 
 void usb_packet_setup(USBPacket* p, int pid,
-					  USBEndpoint* ep, unsigned int stream,
-					  uint64_t id, bool short_not_ok, bool int_req)
+	USBEndpoint* ep, unsigned int stream,
+	uint64_t id, bool short_not_ok, bool int_req)
 {
 	assert(!usb_packet_is_inflight(p));
 	assert(p->iov.iov != NULL);
@@ -745,7 +745,7 @@ void usb_ep_dump(USBDevice* dev)
 	int ifnum, ep, first;
 
 	Console.Warning("Device \"%s\", config %d\n",
-			dev->product_desc, dev->configuration);
+		dev->product_desc, dev->configuration);
 	for (ifnum = 0; ifnum < 16; ifnum++)
 	{
 		first = 1;
@@ -758,11 +758,11 @@ void usb_ep_dump(USBDevice* dev)
 				{
 					first = 0;
 					Console.Warning("  Interface %d, alternative %d\n",
-							ifnum, dev->altsetting[ifnum]);
+						ifnum, dev->altsetting[ifnum]);
 				}
 				Console.Warning("    Endpoint %d, IN, %s, %d max\n", ep,
-						tname[dev->ep_in[ep].type],
-						dev->ep_in[ep].max_packet_size);
+					tname[dev->ep_in[ep].type],
+					dev->ep_in[ep].max_packet_size);
 			}
 			if (dev->ep_out[ep].type != USB_ENDPOINT_XFER_INVALID &&
 				dev->ep_out[ep].ifnum == ifnum)
@@ -771,11 +771,11 @@ void usb_ep_dump(USBDevice* dev)
 				{
 					first = 0;
 					Console.Warning("  Interface %d, alternative %d\n",
-							ifnum, dev->altsetting[ifnum]);
+						ifnum, dev->altsetting[ifnum]);
 				}
 				Console.Warning("    Endpoint %d, OUT, %s, %d max\n", ep,
-						tname[dev->ep_out[ep].type],
-						dev->ep_out[ep].max_packet_size);
+					tname[dev->ep_out[ep].type],
+					dev->ep_out[ep].max_packet_size);
 			}
 		}
 	}
@@ -819,7 +819,7 @@ void usb_ep_set_ifnum(USBDevice* dev, int pid, int ep, uint8_t ifnum)
 }
 
 void usb_ep_set_max_packet_size(USBDevice* dev, int pid, int ep,
-								uint16_t raw)
+	uint16_t raw)
 {
 	struct USBEndpoint* uep = usb_ep_get(dev, pid, ep);
 	int size, microframes;
@@ -863,7 +863,7 @@ void usb_ep_set_halted(USBDevice* dev, int pid, int ep, bool halted)
 }
 
 USBPacket* usb_ep_find_packet_by_id(USBDevice* dev, int pid, int ep,
-									uint64_t id)
+	uint64_t id)
 {
 	struct USBEndpoint* uep = usb_ep_get(dev, pid, ep);
 	USBPacket* p;

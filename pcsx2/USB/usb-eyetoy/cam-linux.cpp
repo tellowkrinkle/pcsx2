@@ -264,8 +264,8 @@ namespace usb_eyetoy
 				while (xioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frmsize) >= 0)
 				{
 					Console.Warning("Camera: supported format[%d] '%s' : %dx%d",
-							fmtd.index, fmtd.description,
-							frmsize.discrete.width, frmsize.discrete.height);
+						fmtd.index, fmtd.description,
+						frmsize.discrete.width, frmsize.discrete.height);
 					frmsize.index++;
 				}
 				fmtd.index++;
@@ -285,7 +285,7 @@ namespace usb_eyetoy
 			}
 			pixelformat = fmt.fmt.pix.pixelformat;
 			Console.Warning("Camera: selected format: res=%dx%d, fmt=%c%c%c%c", fmt.fmt.pix.width, fmt.fmt.pix.height,
-					pixelformat, pixelformat >> 8, pixelformat >> 16, pixelformat >> 24);
+				pixelformat, pixelformat >> 8, pixelformat >> 16, pixelformat >> 24);
 
 			struct v4l2_requestbuffers req;
 			CLEAR(req);

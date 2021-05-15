@@ -88,7 +88,7 @@ void* my_g_malloc0(size_t n_bytes)
  * Returns: a pointer to the allocated memory
  */
 void* my_g_malloc_n(size_t n_blocks,
-					size_t n_block_bytes)
+	size_t n_block_bytes)
 {
 	if (SIZE_OVERFLOWS(n_blocks, n_block_bytes))
 	{
@@ -113,7 +113,7 @@ void* my_g_malloc_n(size_t n_blocks,
  * Returns: the new address of the allocated memory
  */
 void* my_g_realloc(void* mem,
-				   size_t n_bytes)
+	size_t n_bytes)
 {
 	void* newmem;
 
@@ -149,8 +149,8 @@ void* my_g_realloc(void* mem,
  * Returns: the new address of the allocated memory
  */
 void* my_g_realloc_n(void* mem,
-					 size_t n_blocks,
-					 size_t n_block_bytes)
+	size_t n_blocks,
+	size_t n_block_bytes)
 {
 	if (SIZE_OVERFLOWS(n_blocks, n_block_bytes))
 	{

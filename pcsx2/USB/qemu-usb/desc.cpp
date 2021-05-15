@@ -22,7 +22,7 @@
 /* ------------------------------------------------------------------ */
 
 int usb_desc_device(const USBDescID* id, const USBDescDevice* dev,
-					bool msos, uint8_t* dest, size_t len)
+	bool msos, uint8_t* dest, size_t len)
 {
 	uint8_t bLength = 0x12;
 	USBDescriptor* d = (USBDescriptor*)dest;
@@ -71,7 +71,7 @@ int usb_desc_device(const USBDescID* id, const USBDescDevice* dev,
 }
 
 int usb_desc_device_qualifier(const USBDescDevice* dev,
-							  uint8_t* dest, size_t len)
+	uint8_t* dest, size_t len)
 {
 	uint8_t bLength = 0x0a;
 	USBDescriptor* d = (USBDescriptor*)dest;
@@ -97,7 +97,7 @@ int usb_desc_device_qualifier(const USBDescDevice* dev,
 }
 
 int usb_desc_config(const USBDescConfig& conf, int flags,
-					uint8_t* dest, size_t len)
+	uint8_t* dest, size_t len)
 {
 	uint8_t bLength = 0x09;
 	uint16_t wTotalLength = 0;
@@ -123,8 +123,8 @@ int usb_desc_config(const USBDescConfig& conf, int flags,
 	for (auto& i : conf.if_groups)
 	{
 		rc = usb_desc_iface_group(i, flags,
-								  dest + wTotalLength,
-								  len - wTotalLength);
+			dest + wTotalLength,
+			len - wTotalLength);
 		if (rc < 0)
 		{
 			return rc;
@@ -136,7 +136,7 @@ int usb_desc_config(const USBDescConfig& conf, int flags,
 	for (auto& i : conf.ifs)
 	{
 		rc = usb_desc_iface(i, flags,
-							dest + wTotalLength, len - wTotalLength);
+			dest + wTotalLength, len - wTotalLength);
 		if (rc < 0)
 		{
 			return rc;
@@ -150,7 +150,7 @@ int usb_desc_config(const USBDescConfig& conf, int flags,
 }
 
 int usb_desc_iface_group(const USBDescIfaceAssoc& iad, int flags,
-						 uint8_t* dest, size_t len)
+	uint8_t* dest, size_t len)
 {
 	int pos = 0;
 
@@ -187,7 +187,7 @@ int usb_desc_iface_group(const USBDescIfaceAssoc& iad, int flags,
 }
 
 int usb_desc_iface(const USBDescIface& iface, int flags,
-				   uint8_t* dest, size_t len)
+	uint8_t* dest, size_t len)
 {
 	uint8_t bLength = 0x09;
 	int rc, pos = 0;
@@ -234,7 +234,7 @@ int usb_desc_iface(const USBDescIface& iface, int flags,
 }
 
 int usb_desc_endpoint(const USBDescEndpoint& ep, int flags,
-					  uint8_t* dest, size_t len)
+	uint8_t* dest, size_t len)
 {
 	uint8_t bLength = ep.is_audio ? 0x09 : 0x07;
 	uint8_t extralen = ep.extra ? ep.extra[0] : 0;
@@ -386,7 +386,7 @@ static int usb_desc_bos(const USBDesc* desc, uint8_t* dest, size_t len)
 	if (desc->high != NULL)
 	{
 		rc = usb_desc_cap_usb2_ext(desc, dest + wTotalLength,
-								   len - wTotalLength);
+			len - wTotalLength);
 		if (rc < 0)
 		{
 			return rc;
@@ -398,7 +398,7 @@ static int usb_desc_bos(const USBDesc* desc, uint8_t* dest, size_t len)
 	if (desc->super != NULL)
 	{
 		rc = usb_desc_cap_super(desc, dest + wTotalLength,
-								len - wTotalLength);
+			len - wTotalLength);
 		if (rc < 0)
 		{
 			return rc;
@@ -562,21 +562,21 @@ static void usb_desc_ep_init(USBDevice* dev)
 		for (e = 0; e < iface->bNumEndpoints; e++)
 		{
 			pid = (iface->eps[e].bEndpointAddress & USB_DIR_IN) ?
-					  USB_TOKEN_IN :
-					  USB_TOKEN_OUT;
+                      USB_TOKEN_IN :
+                      USB_TOKEN_OUT;
 			ep = iface->eps[e].bEndpointAddress & 0x0f;
 			usb_ep_set_type(dev, pid, ep, iface->eps[e].bmAttributes & 0x03);
 			usb_ep_set_ifnum(dev, pid, ep, iface->bInterfaceNumber);
 			usb_ep_set_max_packet_size(dev, pid, ep,
-									   iface->eps[e].wMaxPacketSize);
+				iface->eps[e].wMaxPacketSize);
 			usb_ep_set_max_streams(dev, pid, ep,
-								   iface->eps[e].bmAttributes_super);
+				iface->eps[e].bmAttributes_super);
 		}
 	}
 }
 
 static const USBDescIface* usb_desc_find_interface(USBDevice* dev,
-												   int nif, int alt)
+	int nif, int alt)
 {
 	if (!dev->config)
 	{
@@ -751,7 +751,7 @@ int usb_desc_string(USBDevice* dev, int index, uint8_t* dest, size_t len)
 }
 
 int usb_desc_get_descriptor(USBDevice* dev, USBPacket* p,
-							int value, uint8_t* dest, size_t len)
+	int value, uint8_t* dest, size_t len)
 {
 	bool msos = (dev->flags & (1 << USB_DEV_FLAG_MSOS_DESC_IN_USE));
 	const USBDesc* desc = usb_device_get_usb_desc(dev);
@@ -786,7 +786,7 @@ int usb_desc_get_descriptor(USBDevice* dev, USBPacket* p,
 			if (index < dev->device->bNumConfigurations)
 			{
 				ret = usb_desc_config(dev->device->confs[index], flags,
-									  buf, sizeof(buf));
+					buf, sizeof(buf));
 			}
 			//trace_usb_desc_config(dev->addr, index, len, ret);
 			break;
@@ -806,7 +806,7 @@ int usb_desc_get_descriptor(USBDevice* dev, USBPacket* p,
 			if (other_dev != NULL && index < other_dev->bNumConfigurations)
 			{
 				ret = usb_desc_config(other_dev->confs[index], flags,
-									  buf, sizeof(buf));
+					buf, sizeof(buf));
 				buf[0x01] = USB_DT_OTHER_SPEED_CONFIG;
 			}
 			//trace_usb_desc_other_speed_config(dev->addr, index, len, ret);
@@ -838,7 +838,7 @@ int usb_desc_get_descriptor(USBDevice* dev, USBPacket* p,
 }
 
 int usb_desc_handle_control(USBDevice* dev, USBPacket* p,
-							int request, int value, int index, int length, uint8_t* data)
+	int request, int value, int index, int length, uint8_t* data)
 {
 	assert(usb_device_get_usb_desc(dev) != NULL);
 	int ret = -1;
@@ -872,8 +872,8 @@ int usb_desc_handle_control(USBDevice* dev, USBPacket* p,
 		case DeviceRequest | USB_REQ_GET_STATUS:
 		{
 			const USBDescConfig* config = dev->config ?
-											  dev->config :
-											  &dev->device->confs[0];
+                                              dev->config :
+                                              &dev->device->confs[0];
 
 			data[0] = 0;
 			/*

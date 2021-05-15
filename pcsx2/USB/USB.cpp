@@ -494,7 +494,6 @@ s32 USBfreeze(int mode, freezeData* data)
 				}
 			}
 		}
-
 	}
 	//TODO straight copying of structs can break cross-platform/cross-compiler save states 'cause padding 'n' stuff
 	else if (mode == FREEZE_SAVE)

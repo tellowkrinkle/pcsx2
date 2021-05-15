@@ -94,9 +94,9 @@ namespace usb_msd
 	{
 		Win32Handles handles = *(Win32Handles*)data;
 		return DialogBoxParam(handles.hInst,
-							  MAKEINTRESOURCE(IDD_DLGMSD_USB),
-							  handles.hWnd,
-							  (DLGPROC)MsdDlgProc, port);
+			MAKEINTRESOURCE(IDD_DLGMSD_USB),
+			handles.hWnd,
+			(DLGPROC)MsdDlgProc, port);
 	}
 
 } // namespace usb_msd

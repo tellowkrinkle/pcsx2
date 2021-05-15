@@ -18,21 +18,21 @@
 #include <dinput.h>
 #include "dx.h"
 
-#define SAFE_DELETE(p)  \
-	{                   \
-		if (p)          \
-		{               \
+#define SAFE_DELETE(p) \
+	{ \
+		if (p) \
+		{ \
 			delete (p); \
 			(p) = NULL; \
-		}               \
+		} \
 	}
-#define SAFE_RELEASE(p)     \
-	{                       \
-		if (p)              \
-		{                   \
+#define SAFE_RELEASE(p) \
+	{ \
+		if (p) \
+		{ \
 			(p)->Release(); \
-			(p) = NULL;     \
-		}                   \
+			(p) = NULL; \
+		} \
 	}
 
 //dialog window stuff
@@ -340,8 +340,8 @@ namespace usb_pad
 		void RemoveInputMap(int port, int cid)
 		{
 			g_Controls[port].erase(cid); //FIXME ini doesn't clear old entries duh
-										 // override with MT_NONE instead
-										 //g_Controls[port][cid].type = MT_NONE;
+				// override with MT_NONE instead
+				//g_Controls[port][cid].type = MT_NONE;
 		}
 
 		bool GetInputMap(int port, int cid, InputMapped& im)
@@ -431,7 +431,7 @@ namespace usb_pad
 
 		bool UpdateFFBSettings(int port, LPDIRECTINPUTDEVICE8 device)
 		{
-			DIPROPDWORD prop { sizeof(prop), sizeof(prop.diph) };
+			DIPROPDWORD prop{sizeof(prop), sizeof(prop.diph)};
 			prop.diph.dwObj = 0;
 			prop.diph.dwHow = DIPH_DEVICE;
 			prop.dwData = std::clamp(GAINZ[port][0], 0, DI_FFNOMINALMAX);
@@ -439,7 +439,7 @@ namespace usb_pad
 		}
 
 		BOOL CALLBACK EnumJoysticksCallback(const DIDEVICEINSTANCE* pdidInstance,
-											VOID* pContext)
+			VOID* pContext)
 		{
 			HRESULT hr;
 
@@ -453,7 +453,7 @@ namespace usb_pad
 		}
 
 		BOOL CALLBACK EnumObjectsCallback(const DIDEVICEOBJECTINSTANCE* pdidoi,
-										  VOID* pContext)
+			VOID* pContext)
 		{
 			HRESULT hr;
 			LPDIRECTINPUTDEVICE8 pWheel = (LPDIRECTINPUTDEVICE8)pContext;
@@ -461,7 +461,7 @@ namespace usb_pad
 			// enumerated axis in order to scale min/max values.
 			if (pdidoi->dwType & DIDFT_AXIS)
 			{
-				DIPROPRANGE diprg { sizeof(diprg), sizeof(diprg.diph) };
+				DIPROPRANGE diprg{sizeof(diprg), sizeof(diprg.diph)};
 				diprg.diph.dwHow = DIPH_BYID;
 				diprg.diph.dwObj = pdidoi->dwType; // Specify the enumerated axis
 				diprg.lMin = 0;
@@ -614,7 +614,7 @@ namespace usb_pad
 			if (!device)
 				return;
 			//disable the auto-centering spring.
-			DIPROPDWORD dipdw { sizeof(dipdw), sizeof(dipdw.diph) };
+			DIPROPDWORD dipdw{sizeof(dipdw), sizeof(dipdw.diph)};
 			dipdw.diph.dwObj = 0;
 			dipdw.diph.dwHow = DIPH_DEVICE;
 			dipdw.dwData = onoff ? DIPROPAUTOCENTER_ON : DIPROPAUTOCENTER_OFF;
@@ -660,7 +660,7 @@ namespace usb_pad
 
 			if (g_pEffectRamp[port])
 				g_pEffectRamp[port]->SetParameters(&effRamp,
-												   DIEP_TYPESPECIFICPARAMS | DIEP_START | DIEP_DURATION);
+					DIEP_TYPESPECIFICPARAMS | DIEP_START | DIEP_DURATION);
 		}
 
 		void DisableRamp(int port)
@@ -821,7 +821,7 @@ namespace usb_pad
 			{
 				// Create a DInput object
 				if (FAILED(hr = DirectInput8Create(GetModuleHandle(NULL), DIRECTINPUT_VERSION,
-												   IID_IDirectInput8, (VOID**)&g_pDI, NULL)))
+							   IID_IDirectInput8, (VOID**)&g_pDI, NULL)))
 					return hr;
 
 				//Create Keyboard
@@ -854,7 +854,7 @@ namespace usb_pad
 					auto device = joy->GetDevice();
 					device->SetDataFormat(&c_dfDIJoystick2);
 
-					DIDEVCAPS diCaps { sizeof(diCaps) };
+					DIDEVCAPS diCaps{sizeof(diCaps)};
 					device->GetCapabilities(&diCaps);
 
 					if (diCaps.dwFlags & DIDC_FORCEFEEDBACK)
@@ -908,7 +908,7 @@ namespace usb_pad
 				return false;
 
 			auto device = g_pJoysticks[im.index]->GetDevice();
-			DIDEVCAPS diCaps { sizeof(diCaps) };
+			DIDEVCAPS diCaps{sizeof(diCaps)};
 			device->GetCapabilities(&diCaps);
 
 			//has ffb?

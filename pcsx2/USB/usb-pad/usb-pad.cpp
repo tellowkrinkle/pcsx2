@@ -100,7 +100,6 @@ namespace usb_pad
 				*(ptrB++) = ' ';
 		}
 		*ptrB = '\0';
-
 	}
 
 #else
@@ -211,7 +210,7 @@ namespace usb_pad
 	}
 
 	static void pad_handle_control(USBDevice* dev, USBPacket* p, int request, int value,
-								   int index, int length, uint8_t* data)
+		int index, int length, uint8_t* data)
 	{
 		PADState* s = (PADState*)dev;
 		int ret = 0;
@@ -363,7 +362,7 @@ namespace usb_pad
 				w->hi = 0x00;
 				w->hi |= data.throttle << 8;
 				w->hi |= data.brake << 16; //axis_rz
-				w->hi |= 0x11 << 24;       //enables wheel and pedals?
+				w->hi |= 0x11 << 24; //enables wheel and pedals?
 
 				//PrintBits(w, sizeof(*w));
 
@@ -378,11 +377,11 @@ namespace usb_pad
 
 				w->hi = 0x00;
 				//w->hi |= 0 << 9; //bit 9 must be 0
-				w->hi |= (1 | (data.throttle * 0x3F) / 0xFF) << 10;          //axis_z
-				w->hi |= 1 << 16;                                            //bit 16 must be 1
+				w->hi |= (1 | (data.throttle * 0x3F) / 0xFF) << 10; //axis_z
+				w->hi |= 1 << 16; //bit 16 must be 1
 				w->hi |= ((0x3F - (data.brake * 0x3F) / 0xFF) & 0x3F) << 17; //axis_rz
-				w->hi |= 1 << 23;                                            //bit 23 must be 1
-				w->hi |= 0x11 << 24;                                         //enables wheel and pedals?
+				w->hi |= 1 << 23; //bit 23 must be 1
+				w->hi |= 0x11 << 24; //enables wheel and pedals?
 
 				//PrintBits(w, sizeof(*w));
 
@@ -404,9 +403,9 @@ namespace usb_pad
 				buf[0] = data.steering & 0xFF;
 				buf[1] = data.throttle & 0xFF;
 				buf[2] = data.brake & 0xFF;
-				buf[3] = data.hatswitch & 0x0F;       // 4bits?
+				buf[3] = data.hatswitch & 0x0F; // 4bits?
 				buf[3] |= (data.buttons & 0x0F) << 4; // 4 bits // TODO Or does it start at buf[4]?
-				buf[4] = (data.buttons >> 4) & 0x3F;  // 10 - 4 = 6 bits
+				buf[4] = (data.buttons >> 4) & 0x3F; // 10 - 4 = 6 bits
 				break;
 
 			default:

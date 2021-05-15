@@ -121,6 +121,7 @@ namespace usb_hid
 		"USB JIS Mini Keyboard",
 	};
 
+	// clang-format off
 
 	/* mostly the same values as the Bochs USB Keyboard device */
 	static const uint8_t kbd_dev_desc[] = {
@@ -154,22 +155,22 @@ namespace usb_hid
 		0x01,       /*  u8  bConfigurationValue; */
 		0x04,       /*  u8  iConfiguration; */
 		0xa0,       /*  u8  bmAttributes; 
-                 Bit 7: must be set,
-                     6: Self-powered,
-                     5: Remote wakeup,
-                     4..0: resvd */
+		             Bit 7: must be set,
+		                 6: Self-powered,
+		                 5: Remote wakeup,
+		                 4..0: resvd */
 		50,         /*  u8  MaxPower; */
 
 		/* USB 1.1:
-     * USB 2.0, single TT organization (mandatory):
-     *  one interface, protocol 0
-     *
-     * USB 2.0, multiple TT organization (optional):
-     *  two interfaces, protocols 1 (like single TT)
-     *  and 2 (multiple TT mode) ... config is
-     *  sometimes settable
-     *  NOT IMPLEMENTED
-     */
+		 * USB 2.0, single TT organization (mandatory):
+		 *  one interface, protocol 0
+		 *
+		 * USB 2.0, multiple TT organization (optional):
+		 *  two interfaces, protocols 1 (like single TT)
+		 *  and 2 (multiple TT mode) ... config is
+		 *  sometimes settable
+		 *  NOT IMPLEMENTED
+		 */
 
 		/* one interface */
 		0x09, /*  u8  if_bLength; */
@@ -230,22 +231,22 @@ namespace usb_hid
 		0x01,       /*  u8  bConfigurationValue; */
 		0x04,       /*  u8  iConfiguration; */
 		0xa0,       /*  u8  bmAttributes; 
-                 Bit 7: must be set,
-                     6: Self-powered,
-                     5: Remote wakeup,
-                     4..0: resvd */
+		             Bit 7: must be set,
+		                 6: Self-powered,
+		                 5: Remote wakeup,
+		                 4..0: resvd */
 		50,         /*  u8  MaxPower; */
 
 		/* USB 1.1:
-     * USB 2.0, single TT organization (mandatory):
-     *  one interface, protocol 0
-     *
-     * USB 2.0, multiple TT organization (optional):
-     *  two interfaces, protocols 1 (like single TT)
-     *  and 2 (multiple TT mode) ... config is
-     *  sometimes settable
-     *  NOT IMPLEMENTED
-     */
+		 * USB 2.0, single TT organization (mandatory):
+		 *  one interface, protocol 0
+		 *
+		 * USB 2.0, multiple TT organization (optional):
+		 *  two interfaces, protocols 1 (like single TT)
+		 *  and 2 (multiple TT mode) ... config is
+		 *  sometimes settable
+		 *  NOT IMPLEMENTED
+		 */
 
 		/* one interface */
 		0x09, /*  u8  if_bLength; */
@@ -285,22 +286,22 @@ namespace usb_hid
 		0x01,       /*  u8  bConfigurationValue; */
 		0x04,       /*  u8  iConfiguration; */
 		0xa0,       /*  u8  bmAttributes; 
-                 Bit 7: must be set,
-                     6: Self-powered,
-                     5: Remote wakeup,
-                     4..0: resvd */
+		             Bit 7: must be set,
+		                 6: Self-powered,
+		                 5: Remote wakeup,
+		                 4..0: resvd */
 		50,         /*  u8  MaxPower; */
 
 		/* USB 1.1:
-     * USB 2.0, single TT organization (mandatory):
-     *  one interface, protocol 0
-     *
-     * USB 2.0, multiple TT organization (optional):
-     *  two interfaces, protocols 1 (like single TT)
-     *  and 2 (multiple TT mode) ... config is
-     *  sometimes settable
-     *  NOT IMPLEMENTED
-     */
+		 * USB 2.0, single TT organization (mandatory):
+		 *  one interface, protocol 0
+		 *
+		 * USB 2.0, multiple TT organization (optional):
+		 *  two interfaces, protocols 1 (like single TT)
+		 *  and 2 (multiple TT mode) ... config is
+		 *  sometimes settable
+		 *  NOT IMPLEMENTED
+		 */
 
 		/* one interface */
 		0x09, /*  u8  if_bLength; */
@@ -535,6 +536,8 @@ namespace usb_hid
 		// 68 bytes
 	};
 
+	// clang-format on
+
 	static void usb_hid_changed(HIDState* hs)
 	{
 		UsbHIDState* us = CONTAINER_OF(hs, UsbHIDState, f.hid);
@@ -550,7 +553,7 @@ namespace usb_hid
 	}
 
 	static void usb_hid_handle_control(USBDevice* dev, USBPacket* p,
-									   int request, int value, int index, int length, uint8_t* data)
+		int request, int value, int index, int length, uint8_t* data)
 	{
 		UsbHIDState* us = reinterpret_cast<UsbHIDState*>(dev);
 		HIDState* hs = &us->f.hid;
@@ -573,13 +576,13 @@ namespace usb_hid
 						if (hs->kind == HID_MOUSE)
 						{
 							memcpy(data, qemu_mouse_hid_report_descriptor,
-								   sizeof(qemu_mouse_hid_report_descriptor));
+								sizeof(qemu_mouse_hid_report_descriptor));
 							p->actual_length = sizeof(qemu_mouse_hid_report_descriptor);
 						}
 						else if (hs->kind == HID_TABLET)
 						{
 							memcpy(data, qemu_tablet_hid_report_descriptor,
-								   sizeof(qemu_tablet_hid_report_descriptor));
+								sizeof(qemu_tablet_hid_report_descriptor));
 							p->actual_length = sizeof(qemu_tablet_hid_report_descriptor);
 						}
 						else if (hs->kind == HID_KEYBOARD)

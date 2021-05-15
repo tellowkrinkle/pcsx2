@@ -31,7 +31,10 @@ namespace usb_pad
 
 #define EVDEV_DIR "/dev/input/by-id/"
 
-		const std::array<const char*, 525> key_to_str = {
+		// clang-format off
+
+		const std::array<const char*, 525> key_to_str =
+		{
 			"RESERVED",         /* linux:0 (KEY_RESERVED) */
 			"ESC",              /* linux:1 (KEY_ESC) */
 			"1",                /* linux:2 (KEY_1) */
@@ -559,6 +562,8 @@ namespace usb_pad
 			"RFKILL",           /* linux:524 (KEY_RFKILL) */
 		};
 
+		// clang-format on
+
 		static bool GetEventName(const char* dev_type, int map, int event, const char** name)
 		{
 			if (!name)
@@ -593,7 +598,9 @@ namespace usb_pad
 			};
 			AxisValue axisVal[ABS_MAX + 1]{};
 			unsigned long absbit[NBITS(ABS_MAX)]{};
-			struct axis_correct abs_correct[ABS_MAX]{};
+			struct axis_correct abs_correct[ABS_MAX]
+			{
+			};
 
 			inverted = false;
 

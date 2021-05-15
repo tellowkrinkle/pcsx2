@@ -83,7 +83,7 @@ PACK(
 				uint8_t wMaxPacketSize_lo;
 				uint8_t wMaxPacketSize_hi;
 				uint8_t bInterval;
-				uint8_t bRefresh;      /* only audio ep */
+				uint8_t bRefresh; /* only audio ep */
 				uint8_t bSynchAddress; /* only audio ep */
 			} endpoint;
 			struct
@@ -253,17 +253,17 @@ static inline uint8_t usb_hi(uint16_t val)
 
 /* generate usb packages from structs */
 int usb_desc_device(const USBDescID* id, const USBDescDevice* dev,
-					bool msos, uint8_t* dest, size_t len);
+	bool msos, uint8_t* dest, size_t len);
 int usb_desc_device_qualifier(const USBDescDevice* dev,
-							  uint8_t* dest, size_t len);
+	uint8_t* dest, size_t len);
 int usb_desc_config(const USBDescConfig& conf, int flags,
-					uint8_t* dest, size_t len);
+	uint8_t* dest, size_t len);
 int usb_desc_iface_group(const USBDescIfaceAssoc& iad, int flags,
-						 uint8_t* dest, size_t len);
+	uint8_t* dest, size_t len);
 int usb_desc_iface(const USBDescIface& iface, int flags,
-				   uint8_t* dest, size_t len);
+	uint8_t* dest, size_t len);
 int usb_desc_endpoint(const USBDescEndpoint& ep, int flags,
-					  uint8_t* dest, size_t len);
+	uint8_t* dest, size_t len);
 int usb_desc_other(const USBDescOther& desc, uint8_t* dest, size_t len);
 //int usb_desc_msos(const USBDesc *desc, USBPacket *p,
 //                  int index, uint8_t *dest, size_t len);
@@ -275,9 +275,9 @@ void usb_desc_init(USBDevice* dev);
 void usb_desc_attach(USBDevice* dev);
 int usb_desc_string(USBDevice* dev, int index, uint8_t* dest, size_t len);
 int usb_desc_get_descriptor(USBDevice* dev, USBPacket* p,
-							int value, uint8_t* dest, size_t len);
+	int value, uint8_t* dest, size_t len);
 int usb_desc_handle_control(USBDevice* dev, USBPacket* p,
-							int request, int value, int index, int length, uint8_t* data);
+	int request, int value, int index, int length, uint8_t* data);
 
 int usb_desc_set_config(USBDevice* dev, int value);
 int usb_desc_set_interface(USBDevice* dev, int index, int value);

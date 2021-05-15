@@ -474,8 +474,8 @@ static void hid_keyboard_event(HIDState* hs, InputEvent* evt)
 	InputKeyEvent* key = &evt->u.key;
 
 	count = qemu_input_key_value_to_scancode(&key->key,
-											 key->down,
-											 scancodes);
+		key->down,
+		scancodes);
 	if (hs->n + count > QUEUE_LENGTH)
 	{
 		//trace_hid_kbd_queue_full();

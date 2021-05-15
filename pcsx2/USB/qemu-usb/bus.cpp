@@ -77,7 +77,7 @@ void usb_device_handle_reset(USBDevice* dev)
 }
 
 void usb_device_handle_control(USBDevice* dev, USBPacket* p, int request,
-							   int value, int index, int length, uint8_t* data)
+	int value, int index, int length, uint8_t* data)
 {
 	USBDeviceClass* klass = USB_DEVICE_GET_CLASS(dev);
 	if (klass->handle_control)
@@ -112,7 +112,7 @@ const USBDesc* usb_device_get_usb_desc(USBDevice* dev)
 }
 
 void usb_device_set_interface(USBDevice* dev, int intf,
-							  int alt_old, int alt_new)
+	int alt_old, int alt_new)
 {
 	USBDeviceClass* klass = USB_DEVICE_GET_CLASS(dev);
 	if (klass->set_interface)
@@ -140,7 +140,7 @@ void usb_device_ep_stopped(USBDevice* dev, USBEndpoint* ep)
 }
 
 int usb_device_alloc_streams(USBDevice* dev, USBEndpoint** eps, int nr_eps,
-							 int streams)
+	int streams)
 {
 	USBDeviceClass* klass = USB_DEVICE_GET_CLASS(dev);
 	if (klass->alloc_streams)

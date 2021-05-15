@@ -46,6 +46,8 @@ namespace usb_msd
 #define MassStorageReset 0xff
 #define GetMaxLun 0xfe
 
+	// clang-format off
+
 	enum USBMSDMode : int8_t
 	{
 		USB_MSDM_CBW,     /* Command Block.  */
@@ -127,10 +129,10 @@ namespace usb_msd
 		0x01,       /*  u8  bConfigurationValue; */
 		0x00,       /*  u8  iConfiguration; */
 		0xc0,       /*  u8  bmAttributes;
-                 Bit 7: must be set,
-                     6: Self-powered,
-                     5: Remote wakeup,
-                     4..0: resvd */
+		             Bit 7: must be set,
+		                 6: Self-powered,
+		                 5: Remote wakeup,
+		                 4..0: resvd */
 		0x00,       /*  u8  MaxPower; */
 
 		/* one interface */
@@ -236,132 +238,134 @@ namespace usb_msd
  *      SCSI opcodes
  */
 
-#define TEST_UNIT_READY 0x00
-#define REZERO_UNIT 0x01
-#define REQUEST_SENSE 0x03
-#define FORMAT_UNIT 0x04
-#define READ_BLOCK_LIMITS 0x05
-#define REASSIGN_BLOCKS 0x07
-#define READ_6 0x08
-#define WRITE_6 0x0a
-#define SEEK_6 0x0b
-#define READ_REVERSE 0x0f
-#define WRITE_FILEMARKS 0x10
-#define SPACE 0x11
-#define INQUIRY 0x12
+#define TEST_UNIT_READY       0x00
+#define REZERO_UNIT           0x01
+#define REQUEST_SENSE         0x03
+#define FORMAT_UNIT           0x04
+#define READ_BLOCK_LIMITS     0x05
+#define REASSIGN_BLOCKS       0x07
+#define READ_6                0x08
+#define WRITE_6               0x0a
+#define SEEK_6                0x0b
+#define READ_REVERSE          0x0f
+#define WRITE_FILEMARKS       0x10
+#define SPACE                 0x11
+#define INQUIRY               0x12
 #define RECOVER_BUFFERED_DATA 0x14
-#define MODE_SELECT 0x15
-#define RESERVE 0x16
-#define RELEASE 0x17
-#define COPY 0x18
-#define ERASE 0x19
-#define MODE_SENSE 0x1a
-#define START_STOP 0x1b
-#define RECEIVE_DIAGNOSTIC 0x1c
-#define SEND_DIAGNOSTIC 0x1d
-#define ALLOW_MEDIUM_REMOVAL 0x1e
+#define MODE_SELECT           0x15
+#define RESERVE               0x16
+#define RELEASE               0x17
+#define COPY                  0x18
+#define ERASE                 0x19
+#define MODE_SENSE            0x1a
+#define START_STOP            0x1b
+#define RECEIVE_DIAGNOSTIC    0x1c
+#define SEND_DIAGNOSTIC       0x1d
+#define ALLOW_MEDIUM_REMOVAL  0x1e
 
-#define SET_WINDOW 0x24
-#define READ_CAPACITY_10 0x25
-#define READ_10 0x28
-#define WRITE_10 0x2a
-#define SEEK_10 0x2b
-#define WRITE_VERIFY 0x2e
-#define VERIFY 0x2f
-#define SEARCH_HIGH 0x30
-#define SEARCH_EQUAL 0x31
-#define SEARCH_LOW 0x32
-#define SET_LIMITS 0x33
-#define PRE_FETCH 0x34
-#define READ_POSITION 0x34
-#define SYNCHRONIZE_CACHE 0x35
-#define LOCK_UNLOCK_CACHE 0x36
-#define READ_DEFECT_DATA 0x37
-#define MEDIUM_SCAN 0x38
-#define COMPARE 0x39
-#define COPY_VERIFY 0x3a
-#define WRITE_BUFFER 0x3b
-#define READ_BUFFER 0x3c
-#define UPDATE_BLOCK 0x3d
-#define READ_LONG 0x3e
-#define WRITE_LONG 0x3f
-#define CHANGE_DEFINITION 0x40
-#define WRITE_SAME 0x41
-#define READ_TOC 0x43
-#define LOG_SELECT 0x4c
-#define LOG_SENSE 0x4d
-#define MODE_SELECT_10 0x55
-#define RESERVE_10 0x56
-#define RELEASE_10 0x57
-#define MODE_SENSE_10 0x5a
-#define PERSISTENT_RESERVE_IN 0x5e
+#define SET_WINDOW             0x24
+#define READ_CAPACITY_10       0x25
+#define READ_10                0x28
+#define WRITE_10               0x2a
+#define SEEK_10                0x2b
+#define WRITE_VERIFY           0x2e
+#define VERIFY                 0x2f
+#define SEARCH_HIGH            0x30
+#define SEARCH_EQUAL           0x31
+#define SEARCH_LOW             0x32
+#define SET_LIMITS             0x33
+#define PRE_FETCH              0x34
+#define READ_POSITION          0x34
+#define SYNCHRONIZE_CACHE      0x35
+#define LOCK_UNLOCK_CACHE      0x36
+#define READ_DEFECT_DATA       0x37
+#define MEDIUM_SCAN            0x38
+#define COMPARE                0x39
+#define COPY_VERIFY            0x3a
+#define WRITE_BUFFER           0x3b
+#define READ_BUFFER            0x3c
+#define UPDATE_BLOCK           0x3d
+#define READ_LONG              0x3e
+#define WRITE_LONG             0x3f
+#define CHANGE_DEFINITION      0x40
+#define WRITE_SAME             0x41
+#define READ_TOC               0x43
+#define LOG_SELECT             0x4c
+#define LOG_SENSE              0x4d
+#define MODE_SELECT_10         0x55
+#define RESERVE_10             0x56
+#define RELEASE_10             0x57
+#define MODE_SENSE_10          0x5a
+#define PERSISTENT_RESERVE_IN  0x5e
 #define PERSISTENT_RESERVE_OUT 0x5f
-#define MAINTENANCE_IN 0xa3
-#define MAINTENANCE_OUT 0xa4
-#define MOVE_MEDIUM 0xa5
-#define READ_12 0xa8
-#define WRITE_12 0xaa
-#define WRITE_VERIFY_12 0xae
-#define SEARCH_HIGH_12 0xb0
-#define SEARCH_EQUAL_12 0xb1
-#define SEARCH_LOW_12 0xb2
-#define READ_ELEMENT_STATUS 0xb8
-#define SEND_VOLUME_TAG 0xb6
-#define WRITE_LONG_2 0xea
+#define MAINTENANCE_IN         0xa3
+#define MAINTENANCE_OUT        0xa4
+#define MOVE_MEDIUM            0xa5
+#define READ_12                0xa8
+#define WRITE_12               0xaa
+#define WRITE_VERIFY_12        0xae
+#define SEARCH_HIGH_12         0xb0
+#define SEARCH_EQUAL_12        0xb1
+#define SEARCH_LOW_12          0xb2
+#define READ_ELEMENT_STATUS    0xb8
+#define SEND_VOLUME_TAG        0xb6
+#define WRITE_LONG_2           0xea
 
 /* from hw/scsi-generic.c */
-#define REWIND 0x01
+#define REWIND                 0x01
 #define REPORT_DENSITY_SUPPORT 0x44
-#define GET_CONFIGURATION 0x46
-#define READ_16 0x88
-#define WRITE_16 0x8a
-#define WRITE_VERIFY_16 0x8e
-#define SERVICE_ACTION_IN 0x9e
-#define REPORT_LUNS 0xa0
-#define LOAD_UNLOAD 0xa6
-#define SET_CD_SPEED 0xbb
-#define BLANK 0xa1
+#define GET_CONFIGURATION      0x46
+#define READ_16                0x88
+#define WRITE_16               0x8a
+#define WRITE_VERIFY_16        0x8e
+#define SERVICE_ACTION_IN      0x9e
+#define REPORT_LUNS            0xa0
+#define LOAD_UNLOAD            0xa6
+#define SET_CD_SPEED           0xbb
+#define BLANK                  0xa1
 
-	/*
+/*
  *  Status codes
  */
 
-#define GOOD 0x00
-#define CHECK_CONDITION 0x01
-#define CONDITION_GOOD 0x02
-#define BUSY 0x04
-#define INTERMEDIATE_GOOD 0x08
-#define INTERMEDIATE_C_GOOD 0x0a
+#define GOOD                 0x00
+#define CHECK_CONDITION      0x01
+#define CONDITION_GOOD       0x02
+#define BUSY                 0x04
+#define INTERMEDIATE_GOOD    0x08
+#define INTERMEDIATE_C_GOOD  0x0a
 #define RESERVATION_CONFLICT 0x0c
-#define COMMAND_TERMINATED 0x11
-#define QUEUE_FULL 0x14
+#define COMMAND_TERMINATED   0x11
+#define QUEUE_FULL           0x14
 
-#define STATUS_MASK 0x3e
+#define STATUS_MASK          0x3e
 
-	/*
+/*
  *  SENSE KEYS
  */
 
-#define NO_SENSE 0x00
+#define NO_SENSE        0x00
 #define RECOVERED_ERROR 0x01
-#define NOT_READY 0x02
-#define MEDIUM_ERROR 0x03
-#define HARDWARE_ERROR 0x04
+#define NOT_READY       0x02
+#define MEDIUM_ERROR    0x03
+#define HARDWARE_ERROR  0x04
 #define ILLEGAL_REQUEST 0x05
-#define UNIT_ATTENTION 0x06
-#define DATA_PROTECT 0x07
-#define BLANK_CHECK 0x08
-#define COPY_ABORTED 0x0a
+#define UNIT_ATTENTION  0x06
+#define DATA_PROTECT    0x07
+#define BLANK_CHECK     0x08
+#define COPY_ABORTED    0x0a
 #define ABORTED_COMMAND 0x0b
 #define VOLUME_OVERFLOW 0x0d
-#define MISCOMPARE 0x0e
+#define MISCOMPARE      0x0e
 /* Additional sense codes */
 #define INVALID_COMMAND_OPERATION 0x20
 
 /* CSW status codes */
 #define COMMAND_PASSED 0x00 // GOOD
 #define COMMAND_FAILED 0x01
-#define PHASE_ERROR 0x02
+#define PHASE_ERROR    0x02
+
+	// clang-format on
 
 	typedef struct SCSISense
 	{
@@ -372,7 +376,7 @@ namespace usb_msd
 
 #define SENSE_CODE(x) sense_code_##x
 
-	/*
+/*
  * Predefined sense codes
  */
 
@@ -381,11 +385,11 @@ namespace usb_msd
 		NO_SENSE, 0x00, 0x00};
 
 	/* LUN not ready, Manual intervention required */
-	[[maybe_unused]]const struct SCSISense sense_code_LUN_NOT_READY = {
+	[[maybe_unused]] const struct SCSISense sense_code_LUN_NOT_READY = {
 		NOT_READY, 0x04, 0x03};
 
 	/* LUN not ready, Medium not present */
-	[[maybe_unused]]const struct SCSISense sense_code_NO_MEDIUM = {
+	[[maybe_unused]] const struct SCSISense sense_code_NO_MEDIUM = {
 		NOT_READY, 0x3a, 0x00};
 
 	const struct SCSISense sense_code_UNKNOWN_ERROR = {
@@ -463,8 +467,8 @@ namespace usb_msd
 		//s->f.sense_buf[5] = 0x00;
 		//s->f.sense_buf[6] = 0x00; //LSB
 		s->f.sense_buf[7] = sense.asc ? 0x0a : 0x00; //Additional sense length (10 bytes if any)
-		s->f.sense_buf[12] = sense.asc;              //Additional sense code
-		s->f.sense_buf[13] = sense.ascq;             //Additional sense code qualifier
+		s->f.sense_buf[12] = sense.asc; //Additional sense code
+		s->f.sense_buf[13] = sense.ascq; //Additional sense code qualifier
 	}
 
 	static void usb_msd_send_status(MSDState* s, USBPacket* p)
@@ -482,8 +486,8 @@ namespace usb_msd
 		USBPacket* p = s->packet;
 
 		/* Set s->packet to NULL before calling usb_packet_complete
-       because another request may be issued before
-       usb_packet_complete returns.  */
+		   because another request may be issued before
+		   usb_packet_complete returns.  */
 		s->packet = NULL;
 		usb_packet_complete(&s->dev, p);
 	}
@@ -521,7 +525,7 @@ namespace usb_msd
 			if (s->f.data_len == 0 && s->f.mode == USB_MSDM_DATAOUT)
 			{
 				/* A deferred packet with no write data remaining must be
-               the status read packet.  */
+				   the status read packet.  */
 				usb_msd_send_status(s, p);
 				s->f.mode = USB_MSDM_CBW;
 			}
@@ -627,18 +631,18 @@ namespace usb_msd
 				break;
 			case REQUEST_SENSE: //device shall keep old sense data
 				memcpy(s->f.buf, s->f.sense_buf,
-					   /* XXX the UFI device shall return only the number of bytes requested, as is */
-					   cbw->cmd[4] < sizeof(s->f.sense_buf) ? (size_t)cbw->cmd[4] : sizeof(s->f.sense_buf));
+					/* XXX the UFI device shall return only the number of bytes requested, as is */
+					cbw->cmd[4] < sizeof(s->f.sense_buf) ? (size_t)cbw->cmd[4] : sizeof(s->f.sense_buf));
 				break;
 			case INQUIRY:
 				memset(s->f.buf, 0, sizeof(s->f.buf));
-				s->f.buf[0] = 0;      //SCSI Peripheral Device Type: 0x0 - direct access device, 0x1f - unknown/no device
+				s->f.buf[0] = 0; //SCSI Peripheral Device Type: 0x0 - direct access device, 0x1f - unknown/no device
 				s->f.buf[1] = 1 << 7; //removable
-				s->f.buf[3] = 1;      //UFI response data format
+				s->f.buf[3] = 1; //UFI response data format
 				//inq data len can be zero
-				strncpy((char*)&s->f.buf[8], "QEMU", 8);        //8 bytes vendor
+				strncpy((char*)&s->f.buf[8], "QEMU", 8); //8 bytes vendor
 				strncpy((char*)&s->f.buf[16], "USB Drive", 16); //16 bytes product
-				strncpy((char*)&s->f.buf[32], "1.00", 4);       //4 bytes product revision
+				strncpy((char*)&s->f.buf[32], "1.00", 4); //4 bytes product revision
 				break;
 
 			case READ_CAPACITY_10:
@@ -748,7 +752,7 @@ namespace usb_msd
 	}
 
 	static void usb_msd_handle_control(USBDevice* dev, USBPacket* p, int request, int value,
-									   int index, int length, uint8_t* data)
+		int index, int length, uint8_t* data)
 	{
 		MSDState* s = (MSDState*)dev;
 		int ret = 0;
@@ -820,7 +824,7 @@ namespace usb_msd
 						if (le32_to_cpu(cbw.sig) != 0x43425355)
 						{
 							Console.Warning("usb-msd: Bad signature %08x\n",
-									le32_to_cpu(cbw.sig));
+								le32_to_cpu(cbw.sig));
 							goto fail;
 						}
 						if (cbw.lun != 0)

@@ -26,7 +26,7 @@
 #include <cassert>
 
 size_t iov_from_buf_full(const struct iovec* iov, unsigned int iov_cnt,
-						 size_t offset, const void* buf, size_t bytes)
+	size_t offset, const void* buf, size_t bytes)
 {
 	size_t done;
 	unsigned int i;
@@ -49,7 +49,7 @@ size_t iov_from_buf_full(const struct iovec* iov, unsigned int iov_cnt,
 }
 
 size_t iov_to_buf_full(const struct iovec* iov, const unsigned int iov_cnt,
-					   size_t offset, void* buf, size_t bytes)
+	size_t offset, void* buf, size_t bytes)
 {
 	size_t done;
 	unsigned int i;
@@ -72,7 +72,7 @@ size_t iov_to_buf_full(const struct iovec* iov, const unsigned int iov_cnt,
 }
 
 size_t iov_memset(const struct iovec* iov, const unsigned int iov_cnt,
-				  size_t offset, int fillc, size_t bytes)
+	size_t offset, int fillc, size_t bytes)
 {
 	size_t done;
 	unsigned int i;
@@ -108,8 +108,8 @@ size_t iov_size(const struct iovec* iov, const unsigned int iov_cnt)
 }
 
 unsigned iov_copy(struct iovec* dst_iov, unsigned int dst_iov_cnt,
-				  const struct iovec* iov, unsigned int iov_cnt,
-				  size_t offset, size_t bytes)
+	const struct iovec* iov, unsigned int iov_cnt,
+	size_t offset, size_t bytes)
 {
 	size_t len;
 	unsigned int i, j;
@@ -181,8 +181,8 @@ void qemu_iovec_add(QEMUIOVector* qiov, void* base, size_t len)
  * Only vector pointers are processed, not the actual data buffers.
  */
 size_t qemu_iovec_concat_iov(QEMUIOVector* dst,
-							 struct iovec* src_iov, unsigned int src_cnt,
-							 size_t soffset, size_t sbytes)
+	struct iovec* src_iov, unsigned int src_cnt,
+	size_t soffset, size_t sbytes)
 {
 	unsigned int i;
 	size_t done;
@@ -222,7 +222,7 @@ size_t qemu_iovec_concat_iov(QEMUIOVector* dst,
  * Only vector pointers are processed, not the actual data buffers.
  */
 void qemu_iovec_concat(QEMUIOVector* dst,
-					   QEMUIOVector* src, size_t soffset, size_t sbytes)
+	QEMUIOVector* src, size_t soffset, size_t sbytes)
 {
 	qemu_iovec_concat_iov(dst, src->iov, src->niov, soffset, sbytes);
 }
@@ -267,19 +267,19 @@ void qemu_iovec_reset(QEMUIOVector* qiov)
 }
 
 size_t qemu_iovec_to_buf(QEMUIOVector* qiov, size_t offset,
-						 void* buf, size_t bytes)
+	void* buf, size_t bytes)
 {
 	return iov_to_buf(qiov->iov, qiov->niov, offset, buf, bytes);
 }
 
 size_t qemu_iovec_from_buf(QEMUIOVector* qiov, size_t offset,
-						   const void* buf, size_t bytes)
+	const void* buf, size_t bytes)
 {
 	return iov_from_buf(qiov->iov, qiov->niov, offset, buf, bytes);
 }
 
 size_t qemu_iovec_memset(QEMUIOVector* qiov, size_t offset,
-						 int fillc, size_t bytes)
+	int fillc, size_t bytes)
 {
 	return iov_memset(qiov->iov, qiov->niov, offset, fillc, bytes);
 }
@@ -358,7 +358,7 @@ static int sortelem_cmp_src_index(const void* a, const void* b)
 }
 
 size_t iov_discard_front(struct iovec** iov, unsigned int* iov_cnt,
-						 size_t bytes)
+	size_t bytes)
 {
 	size_t total = 0;
 	struct iovec* cur;
@@ -383,7 +383,7 @@ size_t iov_discard_front(struct iovec** iov, unsigned int* iov_cnt,
 }
 
 size_t iov_discard_back(struct iovec* iov, unsigned int* iov_cnt,
-						size_t bytes)
+	size_t bytes)
 {
 	size_t total = 0;
 	struct iovec* cur;

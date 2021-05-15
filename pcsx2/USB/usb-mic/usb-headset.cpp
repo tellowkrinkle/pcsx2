@@ -79,7 +79,7 @@ namespace usb_mic
 				bool mute;
 				uint8_t vol[2];
 			} mixer; //TODO
-		} f;         //freezable
+		} f; //freezable
 
 		std::vector<int16_t> in_buffer;
 		std::vector<int16_t> out_buffer;
@@ -97,7 +97,10 @@ namespace usb_mic
 		return RegisterAudioDevice::instance().Proxy(name)->Name();
 	}
 
-	static const uint8_t headset_dev_descriptor[] = {
+	// clang-format off
+
+	static const uint8_t headset_dev_descriptor[] =
+	{
 		/* bLength             */ 0x12,          //(18)
 		/* bDescriptorType     */ 0x01,          //(1)
 		/* bcdUSB              */ WBVAL(0x0110), //(272)
@@ -114,8 +117,8 @@ namespace usb_mic
 		/* bNumConfigurations  */ 0x01,          //(1)
 	};
 
-	static const uint8_t headset_config_descriptor[] = {
-
+	static const uint8_t headset_config_descriptor[] =
+	{
 		/* Configuration 1 */
 		USB_CONFIGURATION_DESC_SIZE,       /* bLength */
 		USB_CONFIGURATION_DESCRIPTOR_TYPE, /* bDescriptorType */
@@ -444,11 +447,15 @@ namespace usb_mic
 		0 /* bLength */
 	};
 
-	static const USBDescStrings desc_strings = {
+	static const USBDescStrings desc_strings =
+	{
 		"",
 		"Logitech", // Atleast SOCOM II checks this (liblgaud?)
 		"Logitech USB Headset",
-		"00000000"};
+		"00000000"
+	};
+
+	// clang-format on
 
 	static void headset_handle_reset(USBDevice* dev)
 	{
@@ -468,8 +475,8 @@ namespace usb_mic
 	// feature unit 5 (0x0600): microphone
 
 	static int usb_audio_get_control(HeadsetState* s, uint8_t attrib,
-									 uint16_t cscn, uint16_t idif,
-									 int length, uint8_t* data)
+		uint16_t cscn, uint16_t idif,
+		int length, uint8_t* data)
 	{
 		uint8_t cs = cscn >> 8;
 		const uint8_t cn = cscn - 1; /* -1 for the non-present master control */
@@ -571,8 +578,8 @@ namespace usb_mic
 				}
 				break;
 			case ATTRIB_ID(AUDIO_BASS_BOOST_CONTROL, AUDIO_REQUEST_GET_CUR, 0x0100): //??? SOCOM II when in stereo, but there is no bass control defined in descriptor...
-																					 //if (cn < 2) { //asks with cn == 2, meaning both channels? -1 is 'master'
-				data[0] = 0;                                                         //bool
+				//if (cn < 2) { //asks with cn == 2, meaning both channels? -1 is 'master'
+				data[0] = 0; //bool
 				ret = 1;
 				//}
 				break;
@@ -582,8 +589,8 @@ namespace usb_mic
 	}
 
 	static int usb_audio_set_control(HeadsetState* s, uint8_t attrib,
-									 uint16_t cscn, uint16_t idif,
-									 int length, uint8_t* data)
+		uint16_t cscn, uint16_t idif,
+		int length, uint8_t* data)
 	{
 		uint8_t cs = cscn >> 8;
 		const uint8_t cn = cscn - 1; /* -1 for the non-present master control */
@@ -656,8 +663,8 @@ namespace usb_mic
 	}
 
 	static int usb_audio_ep_control(HeadsetState* s, uint8_t attrib,
-									uint16_t cscn, uint16_t ep,
-									int length, uint8_t* data)
+		uint16_t cscn, uint16_t ep,
+		int length, uint8_t* data)
 	{
 		uint8_t cs = cscn >> 8;
 		[[maybe_unused]] const uint8_t cn = cscn - 1; /* -1 for the non-present master control */
@@ -702,7 +709,7 @@ namespace usb_mic
 	}
 
 	static void headset_handle_control(USBDevice* dev, USBPacket* p, int request, int value,
-									   int index, int length, uint8_t* data)
+		int index, int length, uint8_t* data)
 	{
 		HeadsetState* s = (HeadsetState*)dev;
 		int ret = 0;
@@ -724,7 +731,7 @@ namespace usb_mic
 			case ClassInterfaceRequest | AUDIO_REQUEST_GET_MAX:
 			case ClassInterfaceRequest | AUDIO_REQUEST_GET_RES:
 				ret = usb_audio_get_control(s, request & 0xff, value, index,
-											length, data);
+					length, data);
 				if (ret < 0)
 				{
 					//if (s->debug) {
@@ -740,7 +747,7 @@ namespace usb_mic
 			case ClassInterfaceOutRequest | AUDIO_REQUEST_SET_MAX:
 			case ClassInterfaceOutRequest | AUDIO_REQUEST_SET_RES:
 				ret = usb_audio_set_control(s, request & 0xff, value, index,
-											length, data);
+					length, data);
 				if (ret < 0)
 				{
 					//if (s->debug) {
@@ -759,7 +766,7 @@ namespace usb_mic
 			case ClassEndpointOutRequest | AUDIO_REQUEST_SET_MAX:
 			case ClassEndpointOutRequest | AUDIO_REQUEST_SET_RES:
 				ret = usb_audio_ep_control(s, request & 0xff, value, index,
-										   length, data);
+					length, data);
 				if (ret < 0)
 					goto fail;
 				break;
@@ -1030,7 +1037,7 @@ namespace usb_mic
 		// set defaults
 		s->f.out.vol[0] = 240; /* 0 dB */
 		s->f.out.vol[1] = 240; /* 0 dB */
-		s->f.in.vol = 240;     /* 0 dB */
+		s->f.in.vol = 240; /* 0 dB */
 		s->f.out.srate = 48000;
 		s->f.in.srate = 48000;
 

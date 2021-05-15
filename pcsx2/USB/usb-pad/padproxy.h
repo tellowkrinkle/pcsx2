@@ -54,8 +54,8 @@ namespace usb_pad
 		PadProxy(const PadProxy&) = delete;
 
 	public:
-		PadProxy() {  }
-		~PadProxy() {  }
+		PadProxy() {}
+		~PadProxy() {}
 		Pad* CreateObject(int port, const char* dev_type) const
 		{
 			try

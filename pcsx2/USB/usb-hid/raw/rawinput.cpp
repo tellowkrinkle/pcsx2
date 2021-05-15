@@ -24,20 +24,20 @@ namespace usb_hid
 	namespace raw
 	{
 
-#define CHECK(exp)      \
-	do                  \
-	{                   \
-		if (!(exp))     \
+#define CHECK(exp) \
+	do \
+	{ \
+		if (!(exp)) \
 			goto Error; \
 	} while (0)
-#define SAFE_FREE(p)    \
-	do                  \
-	{                   \
-		if (p)          \
-		{               \
-			free(p);    \
+#define SAFE_FREE(p) \
+	do \
+	{ \
+		if (p) \
+		{ \
+			free(p); \
 			(p) = NULL; \
-		}               \
+		} \
 	} while (0)
 
 		// VKEY from https://docs.microsoft.com/en-us/windows/desktop/inputdev/virtual-key-codes

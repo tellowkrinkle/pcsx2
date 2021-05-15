@@ -103,8 +103,8 @@ namespace usb_pad
 		static int warned = 0;
 		int caps = 0;
 		DevCon.WriteLn("FFB %02X, %02X, %02X, %02X : %02X, %02X, %02X, %02X\n",
-				   ffdata->cmdslot, ffdata->type, ffdata->u.params[0], ffdata->u.params[1],
-				   ffdata->u.params[2], ffdata->u.params[3], ffdata->u.params[4], ffdata->padd0);
+			ffdata->cmdslot, ffdata->type, ffdata->u.params[0], ffdata->u.params[1],
+			ffdata->u.params[2], ffdata->u.params[3], ffdata->u.params[4], ffdata->padd0);
 
 		if (ffdata->cmdslot != CMD_EXTENDED_CMD)
 		{
@@ -173,7 +173,7 @@ namespace usb_pad
 									if (warned == 0)
 									{
 										DevCon.WriteLn("variable force cannot be converted to constant force (l1=%hhu, t1=%hhu, s1=%hhu, d1=%hhu\n",
-												   ffdata->u.variable.l1, ffdata->u.variable.t1, ffdata->u.variable.s1, ffdata->u.variable.d1);
+											ffdata->u.variable.l1, ffdata->u.variable.t1, ffdata->u.variable.s1, ffdata->u.variable.d1);
 										warned = 1;
 									}
 								}
@@ -189,7 +189,7 @@ namespace usb_pad
 									if (warned == 0)
 									{
 										DevCon.WriteLn("variable force cannot be converted to constant force (l2=%hhu, t2=%hhu, s2=%hhu, d2=%hhu\n",
-												   ffdata->u.variable.l2, ffdata->u.variable.t2, ffdata->u.variable.s2, ffdata->u.variable.d2);
+											ffdata->u.variable.l2, ffdata->u.variable.t2, ffdata->u.variable.s2, ffdata->u.variable.d2);
 										warned = 1;
 									}
 								}
@@ -302,7 +302,7 @@ namespace usb_pad
 			{
 			}
 			DevCon.WriteLn("CMD_EXTENDED: unhandled cmd 0x%02X%02X%02X\n",
-					   ffdata->type, ffdata->u.params[0], ffdata->u.params[1]);
+				ffdata->type, ffdata->u.params[0], ffdata->u.params[1]);
 		}
 	}
 

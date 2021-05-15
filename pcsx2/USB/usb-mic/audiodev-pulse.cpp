@@ -126,12 +126,12 @@ namespace usb_mic
 					case 0:
 						if (dir == AUDIODIR_SOURCE)
 							pa_op = pa_context_get_source_info_list(pa_ctx,
-																	pa_sourcelist_cb,
-																	&list);
+								pa_sourcelist_cb,
+								&list);
 						else
 							pa_op = pa_context_get_sink_info_list(pa_ctx,
-																  pa_sinklist_cb,
-																  &list);
+								pa_sinklist_cb,
+								&list);
 						state++;
 						break;
 					case 1:
@@ -251,16 +251,16 @@ namespace usb_mic
 			{
 				GtkWidget* label = gtk_label_new(labels_buff[i]);
 				gtk_table_attach(GTK_TABLE(table), label,
-								 0, 1,
-								 0 + i, 1 + i,
-								 GTK_SHRINK, GTK_SHRINK, 5, 1);
+					0, 1,
+					0 + i, 1 + i,
+					GTK_SHRINK, GTK_SHRINK, 5, 1);
 
 				//scales[i] = gtk_scale_new_with_range (GTK_ORIENTATION_HORIZONTAL, 1, 1000, 1);
 				scales[i] = gtk_hscale_new_with_range(1, 1000, 1);
 				gtk_table_attach(GTK_TABLE(table), scales[i],
-								 1, 2,
-								 0 + i, 1 + i,
-								 opt, opt, 5, 1);
+					1, 2,
+					0 + i, 1 + i,
+					opt, opt, 5, 1);
 
 				int32_t var;
 				if (LoadSetting(dev_type, port, APINAME, buff_var_name[i], var))
@@ -334,14 +334,12 @@ namespace usb_mic
 			if (mPAready == 3 && dur >= 1000)
 			{
 				mLastGetBuffer = now;
-				[[maybe_unused]]
-				int ret = pa_context_connect(mPContext,
-											 mServer,
-											 PA_CONTEXT_NOFLAGS,
-											 NULL);
+				[[maybe_unused]] int ret = pa_context_connect(mPContext,
+					mServer,
+					PA_CONTEXT_NOFLAGS,
+					NULL);
 
 				//TODO reconnect stream as well?
-
 			}
 			else
 				mLastGetBuffer = now;
@@ -378,9 +376,9 @@ namespace usb_mic
 			{
 				mLastGetBuffer = now;
 				int ret = pa_context_connect(mPContext,
-											 mServer,
-											 PA_CONTEXT_NOFLAGS,
-											 NULL);
+					mServer,
+					PA_CONTEXT_NOFLAGS,
+					NULL);
 
 				//TODO reconnect stream as well?
 
@@ -464,7 +462,7 @@ namespace usb_mic
 			if (mStream)
 			{
 				pa_threaded_mainloop_lock(mPMainLoop);
-				[[maybe_unused]]int ret = pa_stream_disconnect(mStream);
+				[[maybe_unused]] int ret = pa_stream_disconnect(mStream);
 				pa_stream_unref(mStream);
 				mStream = nullptr;
 				pa_threaded_mainloop_unlock(mPMainLoop);
@@ -497,17 +495,17 @@ namespace usb_mic
 			mPContext = pa_context_new(mlapi, "USB");
 
 			pa_context_set_state_callback(mPContext,
-										  context_state_cb,
-										  this);
+				context_state_cb,
+				this);
 
 			// Lock the mainloop so that it does not run and crash before the context is ready
 			pa_threaded_mainloop_lock(mPMainLoop);
 			pa_threaded_mainloop_start(mPMainLoop);
 
 			ret = pa_context_connect(mPContext,
-									 mServer,
-									 PA_CONTEXT_NOFLAGS,
-									 NULL);
+				mServer,
+				PA_CONTEXT_NOFLAGS,
+				NULL);
 
 			if (ret != PA_OK)
 				goto unlock_and_fail;
@@ -523,9 +521,9 @@ namespace usb_mic
 			}
 
 			mStream = pa_stream_new(mPContext,
-									"USB-pulse",
-									&mSSpec,
-									NULL);
+				"USB-pulse",
+				&mSSpec,
+				NULL);
 
 			if (!mStream)
 				goto unlock_and_fail;
@@ -545,36 +543,37 @@ namespace usb_mic
 			if (mAudioDir == AUDIODIR_SOURCE)
 			{
 				pa_stream_set_read_callback(mStream,
-											stream_read_cb,
-											this);
+					stream_read_cb,
+					this);
 
 				ret = pa_stream_connect_record(mStream,
-											   mDeviceName.c_str(),
-											   &buffer_attr,
-											   PA_STREAM_ADJUST_LATENCY);
+					mDeviceName.c_str(),
+					&buffer_attr,
+					PA_STREAM_ADJUST_LATENCY);
 			}
 			else
 			{
 				pa_stream_set_write_callback(mStream,
-											 stream_write_cb,
-											 this);
+					stream_write_cb,
+					this);
 
 				buffer_attr.maxlength = pa_bytes_per_second(&mSSpec);
 				buffer_attr.prebuf = 0; // Don't stop on underrun but then
-										// stream also only starts manually with uncorking.
+				                        // stream also only starts manually with uncorking.
 				buffer_attr.tlength = pa_usec_to_bytes(mBuffering * 1000, &mSSpec);
-				pa_stream_flags_t flags = (pa_stream_flags_t)(PA_STREAM_INTERPOLATE_TIMING |
-															  PA_STREAM_NOT_MONOTONIC |
-															  PA_STREAM_AUTO_TIMING_UPDATE |
-															  //PA_STREAM_VARIABLE_RATE |
-															  PA_STREAM_ADJUST_LATENCY);
+				pa_stream_flags_t flags = (pa_stream_flags_t)(
+					PA_STREAM_INTERPOLATE_TIMING |
+					PA_STREAM_NOT_MONOTONIC |
+					PA_STREAM_AUTO_TIMING_UPDATE |
+					//PA_STREAM_VARIABLE_RATE |
+					PA_STREAM_ADJUST_LATENCY);
 
 				ret = pa_stream_connect_playback(mStream,
-												 mDeviceName.c_str(),
-												 &buffer_attr,
-												 flags,
-												 nullptr,
-												 nullptr);
+					mDeviceName.c_str(),
+					&buffer_attr,
+					flags,
+					nullptr,
+					nullptr);
 			}
 
 			if (ret != PA_OK)

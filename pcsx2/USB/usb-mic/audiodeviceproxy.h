@@ -64,7 +64,7 @@ namespace usb_mic
 			: AudioDeviceProxyBase(name)
 		{
 		} //Why can't it automagically, ugh
-		~AudioDeviceProxy() { }
+		~AudioDeviceProxy() {}
 
 		AudioDevice* CreateObject(int port, const char* dev_type, int mic, AudioDir dir) const
 		{

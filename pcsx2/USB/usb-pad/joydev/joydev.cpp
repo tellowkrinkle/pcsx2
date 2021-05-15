@@ -337,9 +337,9 @@ namespace usb_pad
 
 			std::string joypath;
 			/*if (!LoadSetting(mDevType, mPort, APINAME, N_JOYSTICK, joypath))
-	{
-		return 1;
-	}*/
+			{
+				return 1;
+			}*/
 
 			EnumerateDevices(device_list);
 
@@ -394,16 +394,17 @@ namespace usb_pad
 					if (ioctl(device.cfg.fd, JSIOCGAXES, &(count)) >= 0)
 					{
 						for (int i = 0; i < count; ++i)
-
-						for (int k = 0; k < count; k++)
 						{
-							for (int i = JOY_STEERING; i < JOY_MAPS_COUNT; i++)
+							for (int k = 0; k < count; k++)
 							{
-								if (k == device.cfg.controls[i])
+								for (int i = JOY_STEERING; i < JOY_MAPS_COUNT; i++)
 								{
-									device.axis_map[k] = 0x80 | i;
-									if (i == JOY_STEERING)
-										has_steering = true;
+									if (k == device.cfg.controls[i])
+									{
+										device.axis_map[k] = 0x80 | i;
+										if (i == JOY_STEERING)
+											has_steering = true;
+									}
 								}
 							}
 						}

@@ -23,13 +23,17 @@
 namespace usb_pad
 {
 
-	static const USBDescStrings desc_strings = {
+	// clang-format off
+
+	static const USBDescStrings desc_strings =
+	{
 		"",
 		"ASCII CORPORATION",
 		"ASCII Mic/Joy-stick",
 	};
 
-	static const uint8_t dev_descriptor[] = {
+	static const uint8_t dev_descriptor[] =
+	{
 		/* bLength             */ 0x12, //(18)
 		/* bDescriptorType     */ 0x01, //(1)
 		/* bcdUSB              */ WBVAL(0x0110),
@@ -46,7 +50,8 @@ namespace usb_pad
 		/* bNumConfigurations  */ 0x01,
 	};
 
-	static const uint8_t hid_report_descriptor[] = {
+	static const uint8_t hid_report_descriptor[] =
+	{
 		0x05, 0x01,       // Usage Page (Generic Desktop Ctrls)
 		0x09, 0x04,       // Usage (Joystick)
 		0xA1, 0x01,       // Collection (Application)
@@ -98,7 +103,8 @@ namespace usb_pad
 		// 98 bytes
 	};
 
-	static const uint8_t config_descriptor[] = {
+	static const uint8_t config_descriptor[] =
+	{
 		0x09,       // bLength
 		0x02,       // bDescriptorType (Configuration)
 		0x86, 0x00, // wTotalLength 134
@@ -234,6 +240,8 @@ namespace usb_pad
 		// 134 bytes
 	};
 
+	// clang-format on
+
 	std::list<std::string> SeamicDevice::ListAPIs()
 	{
 		return RegisterPad::instance().Names();
@@ -310,7 +318,7 @@ namespace usb_pad
 	}
 
 	static void pad_handle_control(USBDevice* dev, USBPacket* p, int request, int value,
-								   int index, int length, uint8_t* data)
+		int index, int length, uint8_t* data)
 	{
 		int ret = 0;
 
@@ -408,7 +416,7 @@ namespace usb_pad
 #ifdef _WIN32
 		if (!LoadSetting(nullptr, port, usb_mic::SingstarDevice::TypeName(), N_DEVICE_API, tmp))
 			return nullptr;
-		api = wstr_to_str(tmp);	
+		api = wstr_to_str(tmp);
 #else
 		if (!LoadSetting(nullptr, port, usb_mic::SingstarDevice::TypeName(), N_DEVICE_API, api))
 			return nullptr;

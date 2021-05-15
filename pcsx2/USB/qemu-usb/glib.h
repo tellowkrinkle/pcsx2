@@ -30,10 +30,10 @@
 void* my_g_malloc0(size_t n_bytes);
 void* my_g_malloc(size_t n_bytes);
 void* my_g_malloc_n(size_t n_blocks,
-					size_t n_block_bytes);
+	size_t n_block_bytes);
 void* my_g_realloc_n(void* mem,
-					 size_t n_blocks,
-					 size_t n_block_bytes);
+	size_t n_blocks,
+	size_t n_block_bytes);
 
 #define my_g_free free
 

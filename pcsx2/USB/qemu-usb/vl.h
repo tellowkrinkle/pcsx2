@@ -62,16 +62,16 @@
 /* vl.c */
 uint64_t muldiv64(uint64_t a, uint32_t b, uint32_t c);
 int cpu_physical_memory_rw(uint32_t addr, uint8_t* buf,
-						   size_t len, int is_write);
+	size_t len, int is_write);
 
 inline int cpu_physical_memory_read(uint32_t addr,
-									uint8_t* buf, size_t len)
+	uint8_t* buf, size_t len)
 {
 	return cpu_physical_memory_rw(addr, buf, len, 0);
 }
 
 inline int cpu_physical_memory_write(uint32_t addr,
-									 const uint8_t* buf, size_t len)
+	const uint8_t* buf, size_t len)
 {
 	return cpu_physical_memory_rw(addr, (uint8_t*)buf, len, 1);
 }

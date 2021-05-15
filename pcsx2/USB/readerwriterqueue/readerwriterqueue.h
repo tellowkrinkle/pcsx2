@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <new>
 #include <cstdint>
-#include <cstdlib>                            // For malloc/free/abort & size_t
+#include <cstdlib> // For malloc/free/abort & size_t
 #if __cplusplus > 199711L || _MSC_VER >= 1700 // C++11 or VS2012
 #include <chrono>
 #endif
@@ -696,14 +696,14 @@ namespace moodycamel
 		{
 			// Avoid false-sharing by putting highly contended variables on their own cache lines
 			weak_atomic<size_t> front; // (Atomic) Elements are read from here
-			size_t localTail;          // An uncontended shadow copy of tail, owned by the consumer
+			size_t localTail; // An uncontended shadow copy of tail, owned by the consumer
 
 			char cachelineFiller0[MOODYCAMEL_CACHE_LINE_SIZE - sizeof(weak_atomic<size_t>) - sizeof(size_t)];
 			weak_atomic<size_t> tail; // (Atomic) Elements are enqueued here
 			size_t localFront;
 
 			char cachelineFiller1[MOODYCAMEL_CACHE_LINE_SIZE - sizeof(weak_atomic<size_t>) - sizeof(size_t)]; // next isn't very contended, but we don't want it on the same cache line as tail (which is)
-			weak_atomic<Block*> next;                                                                         // (Atomic)
+			weak_atomic<Block*> next; // (Atomic)
 
 			char* data; // Contents (on heap) are aligned to T's alignment
 

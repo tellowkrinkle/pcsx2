@@ -23,25 +23,25 @@
 // http://stackoverflow.com/questions/3534535/whats-a-time-efficient-algorithm-to-copy-unaligned-bit-arrays
 //
 
-#define PREPARE_FIRST_COPY()                                                                             \
-	do                                                                                                   \
-	{                                                                                                    \
-		if (src_len >= (CHAR_BIT - dst_offset_modulo))                                                   \
-		{                                                                                                \
-			*dst &= reverse_mask[dst_offset_modulo];                                                     \
-			src_len -= CHAR_BIT - dst_offset_modulo;                                                     \
-		}                                                                                                \
-		else                                                                                             \
-		{                                                                                                \
+#define PREPARE_FIRST_COPY() \
+	do \
+	{ \
+		if (src_len >= (CHAR_BIT - dst_offset_modulo)) \
+		{ \
+			*dst &= reverse_mask[dst_offset_modulo]; \
+			src_len -= CHAR_BIT - dst_offset_modulo; \
+		} \
+		else \
+		{ \
 			*dst &= reverse_mask[dst_offset_modulo] | reverse_mask_xor[dst_offset_modulo + src_len + 1]; \
-			c &= reverse_mask[dst_offset_modulo + src_len];                                              \
-			src_len = 0;                                                                                 \
-		}                                                                                                \
+			c &= reverse_mask[dst_offset_modulo + src_len]; \
+			src_len = 0; \
+		} \
 	} while (0)
 
 //But copies bits in reverse?
 void bitarray_copy(const uint8_t* src_org, int src_offset, int src_len,
-				   uint8_t* dst_org, int dst_offset)
+	uint8_t* dst_org, int dst_offset)
 {
 	static const unsigned char mask[] =
 		{0x55, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff};

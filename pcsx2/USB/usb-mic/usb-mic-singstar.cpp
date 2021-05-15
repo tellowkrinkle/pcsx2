@@ -47,14 +47,16 @@ static FILE* file = NULL;
 namespace usb_mic
 {
 
+	// clang-format off
+
 	/*
- * A USB audio device supports an arbitrary number of alternate
- * interface settings for each interface.  Each corresponds to a block
- * diagram of parameterized blocks.  This can thus refer to things like
- * number of channels, data rates, or in fact completely different
- * block diagrams.  Alternative setting 0 is always the null block diagram,
- * which is used by a disabled device.
- */
+	 * A USB audio device supports an arbitrary number of alternate
+	 * interface settings for each interface.  Each corresponds to a block
+	 * diagram of parameterized blocks.  This can thus refer to things like
+	 * number of channels, data rates, or in fact completely different
+	 * block diagrams.  Alternative setting 0 is always the null block diagram,
+	 * which is used by a disabled device.
+	 */
 	enum usb_audio_altset : int8_t
 	{
 		ALTSET_OFF = 0x00, /* No endpoint */
@@ -81,7 +83,7 @@ namespace usb_mic
 			bool mute;
 			uint8_t vol[2];
 			uint32_t srate[2]; //TODO can it have different rates?
-		} f;                   //freezable
+		} f; //freezable
 
 		/* properties */
 		uint32_t debug;
@@ -97,7 +99,8 @@ namespace usb_mic
 	};
 
 	/* descriptor dumped from a real singstar MIC adapter */
-	static const uint8_t singstar_mic_dev_descriptor[] = {
+	static const uint8_t singstar_mic_dev_descriptor[] =
+	{
 		/* bLength             */ 0x12,          //(18)
 		/* bDescriptorType     */ 0x01,          //(1)
 		/* bcdUSB              */ WBVAL(0x0110), //(272)
@@ -115,8 +118,8 @@ namespace usb_mic
 
 	};
 
-	static const uint8_t singstar_mic_config_descriptor[] = {
-
+	static const uint8_t singstar_mic_config_descriptor[] =
+	{
 		/* Configuration 1 */
 		0x09,                              /* bLength */
 		USB_CONFIGURATION_DESCRIPTOR_TYPE, /* bDescriptorType */
@@ -300,6 +303,7 @@ namespace usb_mic
 		0 /* bLength */
 	};
 
+	// clang-format on
 
 	static void singstar_mic_handle_reset(USBDevice* dev)
 	{
@@ -316,8 +320,8 @@ namespace usb_mic
 
 	//0x0300 - feature bUnitID 0x03
 	static int usb_audio_get_control(SINGSTARMICState* s, uint8_t attrib,
-									 uint16_t cscn, uint16_t idif,
-									 int length, uint8_t* data)
+		uint16_t cscn, uint16_t idif,
+		int length, uint8_t* data)
 	{
 		uint8_t cs = cscn >> 8;
 		uint8_t cn = cscn - 1; /* -1 for the non-present master control */
@@ -376,8 +380,8 @@ namespace usb_mic
 	}
 
 	static int usb_audio_set_control(SINGSTARMICState* s, uint8_t attrib,
-									 uint16_t cscn, uint16_t idif,
-									 int length, uint8_t* data)
+		uint16_t cscn, uint16_t idif,
+		int length, uint8_t* data)
 	{
 		uint8_t cs = cscn >> 8;
 		uint8_t cn = cscn - 1; /* -1 for the non-present master control */
@@ -425,8 +429,8 @@ namespace usb_mic
 	}
 
 	static int usb_audio_ep_control(SINGSTARMICState* s, uint8_t attrib,
-									uint16_t cscn, uint16_t ep,
-									int length, uint8_t* data)
+		uint16_t cscn, uint16_t ep,
+		int length, uint8_t* data)
 	{
 		uint8_t cs = cscn >> 8;
 		uint8_t cn = cscn - 1; /* -1 for the non-present master control */
@@ -452,7 +456,6 @@ namespace usb_mic
 
 					if (s->audsrc[1])
 						s->audsrc[1]->SetResampling(s->f.srate[1]);
-
 				}
 				else if (cn < 2)
 				{
@@ -475,7 +478,7 @@ namespace usb_mic
 	}
 
 	static void singstar_mic_set_interface(USBDevice* dev, int intf,
-										   int alt_old, int alt_new)
+		int alt_old, int alt_new)
 	{
 		SINGSTARMICState* s = (SINGSTARMICState*)dev;
 		s->f.intf = alt_new;
@@ -490,7 +493,7 @@ namespace usb_mic
 	}
 
 	static void singstar_mic_handle_control(USBDevice* dev, USBPacket* p, int request, int value,
-											int index, int length, uint8_t* data)
+		int index, int length, uint8_t* data)
 	{
 		SINGSTARMICState* s = (SINGSTARMICState*)dev;
 		int ret = 0;
@@ -512,7 +515,7 @@ namespace usb_mic
 			case ClassInterfaceRequest | AUDIO_REQUEST_GET_MAX:
 			case ClassInterfaceRequest | AUDIO_REQUEST_GET_RES:
 				ret = usb_audio_get_control(s, request & 0xff, value, index,
-											length, data);
+					length, data);
 				if (ret < 0)
 				{
 					//if (s->debug) {
@@ -528,7 +531,7 @@ namespace usb_mic
 			case ClassInterfaceOutRequest | AUDIO_REQUEST_SET_MAX:
 			case ClassInterfaceOutRequest | AUDIO_REQUEST_SET_RES:
 				ret = usb_audio_set_control(s, request & 0xff, value, index,
-											length, data);
+					length, data);
 				if (ret < 0)
 				{
 					//if (s->debug) {
@@ -547,7 +550,7 @@ namespace usb_mic
 			case ClassEndpointOutRequest | AUDIO_REQUEST_SET_MAX:
 			case ClassEndpointOutRequest | AUDIO_REQUEST_SET_RES:
 				ret = usb_audio_ep_control(s, request & 0xff, value, index,
-										   length, data);
+					length, data);
 				if (ret < 0)
 					goto fail;
 				break;

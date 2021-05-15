@@ -21,8 +21,10 @@
 
 namespace usb_mic
 {
+	// clang-format off
 
-	static const uint8_t logitech_mic_dev_descriptor[] = {
+	static const uint8_t logitech_mic_dev_descriptor[] =
+	{
 		/* bLength             */ 0x12,          //(18)
 		/* bDescriptorType     */ 0x01,          //(1)
 		/* bcdUSB              */ WBVAL(0x0110), //(272)
@@ -40,8 +42,8 @@ namespace usb_mic
 
 	};
 
-	static const uint8_t logitech_mic_config_descriptor[] = {
-
+	static const uint8_t logitech_mic_config_descriptor[] =
+	{
 		/* Configuration 1 */
 		0x09,                              /* bLength */
 		USB_CONFIGURATION_DESCRIPTOR_TYPE, /* bDescriptorType */
@@ -225,11 +227,14 @@ namespace usb_mic
 		0 /* bLength */
 	};
 
-	static const USBDescStrings lt_desc_strings = {
+	static const USBDescStrings lt_desc_strings =
+	{
 		"",
 		"Logitech",
 		"USBMIC",
 	};
+
+	// clang-format on
 
 	//Minified state
 	typedef struct SINGSTARMICMINIState

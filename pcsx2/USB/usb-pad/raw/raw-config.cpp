@@ -291,7 +291,7 @@ namespace usb_pad
 				}
 
 				usbHandle = CreateFile(didData->DevicePath, GENERIC_READ | GENERIC_WRITE,
-									   FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
+					FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
 
 				if (usbHandle == INVALID_HANDLE_VALUE)
 				{

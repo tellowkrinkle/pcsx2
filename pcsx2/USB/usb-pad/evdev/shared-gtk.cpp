@@ -194,22 +194,22 @@ namespace usb_pad
 						std::string name = ss.str();
 
 						gtk_list_store_set(cfg->store, &iter,
-										   COL_NAME, it.first.c_str(),
-										   COL_PS2, name.c_str(),
-										   COL_PC, pc_name,
-										   COL_COLUMN_WIDTH, 50,
-										   COL_BINDING, i,
-										   -1);
+							COL_NAME, it.first.c_str(),
+							COL_PS2, name.c_str(),
+							COL_PC, pc_name,
+							COL_COLUMN_WIDTH, 50,
+							COL_BINDING, i,
+							-1);
 					}
 					else
 					{
 						gtk_list_store_set(cfg->store, &iter,
-										   COL_NAME, it.first.c_str(),
-										   COL_PS2, JoystickMapNames[i],
-										   COL_PC, pc_name,
-										   COL_COLUMN_WIDTH, 50,
-										   COL_BINDING, i,
-										   -1);
+							COL_NAME, it.first.c_str(),
+							COL_PS2, JoystickMapNames[i],
+							COL_PC, pc_name,
+							COL_COLUMN_WIDTH, 50,
+							COL_BINDING, i,
+							-1);
 					}
 				}
 			}
@@ -252,9 +252,9 @@ namespace usb_pad
 				if (cfg->cb->poll(cfg->jsconf, dev_name, is_axis, value, inverted, initial))
 				{
 					auto it = std::find_if(cfg->jsconf.begin(), cfg->jsconf.end(),
-										   [&dev_name](MappingPair& i) -> bool {
-											   return i.first == dev_name;
-										   });
+						[&dev_name](MappingPair& i) -> bool {
+							return i.first == dev_name;
+						});
 
 					if (it != cfg->jsconf.end() && type < (int)it->second.controls.size())
 					{
@@ -291,9 +291,9 @@ namespace usb_pad
 				if (cfg->cb->poll(cfg->jsconf, dev_name, false, value, inverted, initial))
 				{
 					auto it = std::find_if(cfg->jsconf.begin(), cfg->jsconf.end(),
-										   [&dev_name](MappingPair& i) -> bool {
-											   return i.first == dev_name;
-										   });
+						[&dev_name](MappingPair& i) -> bool {
+							return i.first == dev_name;
+						});
 
 					if (it != cfg->jsconf.end() && type < (int)it->second.controls.size())
 					{
@@ -307,7 +307,7 @@ namespace usb_pad
 
 		// save references to row paths, automatically updated when store changes
 		static void view_selected_foreach_func(GtkTreeModel* model,
-											   GtkTreePath* path, GtkTreeIter* iter, gpointer userdata)
+			GtkTreePath* path, GtkTreeIter* iter, gpointer userdata)
 		{
 			GList** rr_list = (GList**)userdata;
 			GtkTreeRowReference* rowref;
@@ -316,7 +316,7 @@ namespace usb_pad
 		}
 
 		static void view_remove_binding(GtkTreeModel* model,
-										GtkTreeIter* iter, ConfigData* cfg)
+			GtkTreeIter* iter, ConfigData* cfg)
 		{
 			gchar* dev_name;
 			int binding;
@@ -325,9 +325,9 @@ namespace usb_pad
 
 			auto& js = cfg->jsconf;
 			auto it = std::find_if(js.begin(), js.end(),
-								   [&dev_name](MappingPair i) {
-									   return i.first == dev_name;
-								   });
+				[&dev_name](MappingPair i) {
+					return i.first == dev_name;
+				});
 			if (it != js.end())
 			{
 				it->second.controls[binding] = (uint16_t)-1;
@@ -408,7 +408,7 @@ namespace usb_pad
 			cfg.js_iter = cfg.joysticks.end();
 			cfg.label = gtk_label_new("");
 			cfg.store = gtk_list_store_new(NUM_COLS,
-										   G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT);
+				G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT);
 			cfg.cb = &apicbs;
 			cfg.dev_type = dev_type;
 
@@ -469,11 +469,11 @@ namespace usb_pad
 			GtkCellRenderer* render = gtk_cell_renderer_text_new();
 
 			gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(treeview),
-														-1, "Name", render, "text", COL_NAME, "width", COL_COLUMN_WIDTH, NULL);
+				-1, "Name", render, "text", COL_NAME, "width", COL_COLUMN_WIDTH, NULL);
 			gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(treeview),
-														-1, "PS2", render, "text", COL_PS2, NULL);
+				-1, "PS2", render, "text", COL_PS2, NULL);
 			gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(treeview),
-														-1, "PC", render, "text", COL_PC, NULL);
+				-1, "PC", render, "text", COL_PC, NULL);
 
 			gtk_tree_view_set_tooltip_column(GTK_TREE_VIEW(treeview), 0);
 
@@ -489,7 +489,7 @@ namespace usb_pad
 			//gtk_scrolled_window_set_min_content_width(GTK_SCROLLED_WINDOW(scwin), 200);
 			gtk_widget_set_size_request(GTK_WIDGET(scwin), 200, 100);
 			gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scwin), GTK_POLICY_AUTOMATIC,
-										   GTK_POLICY_ALWAYS);
+				GTK_POLICY_ALWAYS);
 			gtk_box_pack_start(GTK_BOX(left_vbox), scwin, TRUE, TRUE, 5);
 
 			button = gtk_button_new_with_label("Clear binding");
@@ -555,9 +555,9 @@ namespace usb_pad
 					g_object_set_data(G_OBJECT(button), CFG, &cfg);
 
 					gtk_table_attach(GTK_TABLE(table), button,
-									 0 + button_pos[i].x, 1 + button_pos[i].x,
-									 0 + button_pos[i].y, 1 + button_pos[i].y,
-									 opt, opt, 5, 1);
+						0 + button_pos[i].x, 1 + button_pos[i].x,
+						0 + button_pos[i].y, 1 + button_pos[i].y,
+						opt, opt, 5, 1);
 				}
 
 				GtkWidget* hbox = gtk_hbox_new(false, 5);
@@ -610,25 +610,25 @@ namespace usb_pad
 				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(chk_btn), (gboolean)ff_enabled[i]);
 				g_signal_connect(G_OBJECT(chk_btn), "toggled", G_CALLBACK(checkbox_toggled), reinterpret_cast<gboolean*>(&ff_enabled[i]));
 				gtk_table_attach(GTK_TABLE(table), chk_btn,
-								 2, 3,
-								 0 + i, 1 + i,
-								 GTK_FILL, GTK_SHRINK, 5, 1);
+					2, 3,
+					0 + i, 1 + i,
+					GTK_FILL, GTK_SHRINK, 5, 1);
 
 				GtkWidget* label = gtk_label_new(labels_buff[i][1]);
 				gtk_misc_set_alignment(GTK_MISC(label), 1.0f, 0.5f);
 				gtk_table_attach(GTK_TABLE(table), label,
-								 0, 1,
-								 0 + i, 1 + i,
-								 GTK_FILL, GTK_SHRINK, 5, 1);
+					0, 1,
+					0 + i, 1 + i,
+					GTK_FILL, GTK_SHRINK, 5, 1);
 
 				//ff_scales[i] = gtk_scale_new_with_range (GTK_ORIENTATION_HORIZONTAL, 1, 100, 1);
 				ff_scales[i] = gtk_hscale_new_with_range(0, 100, 1);
 				for (int v = 0; v <= 100; v += 10)
 					gtk_scale_add_mark(GTK_SCALE(ff_scales[i]), v, GTK_POS_BOTTOM, nullptr);
 				gtk_table_attach(GTK_TABLE(table), ff_scales[i],
-								 1, 2,
-								 0 + i, 1 + i,
-								 opt, opt, 5, 1);
+					1, 2,
+					0 + i, 1 + i,
+					opt, opt, 5, 1);
 
 				int32_t var;
 				if (LoadSetting(dev_type, port, apiname, ff_var_name[i][1], var))
@@ -742,7 +742,7 @@ namespace usb_pad
 			cfg.js_iter = cfg.joysticks.end();
 			cfg.label = gtk_label_new("");
 			cfg.store = gtk_list_store_new(NUM_COLS,
-										   G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT);
+				G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT);
 			cfg.cb = &apicbs;
 			cfg.dev_type = dev_type;
 
@@ -794,11 +794,11 @@ namespace usb_pad
 			GtkCellRenderer* render = gtk_cell_renderer_text_new();
 
 			gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(treeview),
-														-1, "Name", render, "text", COL_NAME, "width", COL_COLUMN_WIDTH, NULL);
+				-1, "Name", render, "text", COL_NAME, "width", COL_COLUMN_WIDTH, NULL);
 			gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(treeview),
-														-1, "PS2", render, "text", COL_PS2, NULL);
+				-1, "PS2", render, "text", COL_PS2, NULL);
 			gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(treeview),
-														-1, "PC", render, "text", COL_PC, NULL);
+				-1, "PC", render, "text", COL_PC, NULL);
 
 			gtk_tree_view_set_tooltip_column(GTK_TREE_VIEW(treeview), 0);
 
@@ -813,7 +813,7 @@ namespace usb_pad
 			gtk_container_add(GTK_CONTAINER(scwin), treeview);
 			gtk_widget_set_size_request(GTK_WIDGET(scwin), 200, 100);
 			gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scwin), GTK_POLICY_AUTOMATIC,
-										   GTK_POLICY_ALWAYS);
+				GTK_POLICY_ALWAYS);
 			gtk_box_pack_start(GTK_BOX(left_vbox), scwin, TRUE, TRUE, 5);
 
 			button = gtk_button_new_with_label("Clear binding");
@@ -883,19 +883,19 @@ namespace usb_pad
 						g_object_set_data(G_OBJECT(button), CFG, &cfg);
 
 						gtk_table_attach(GTK_TABLE(table), button,
-										 j, 1 + j,
-										 i + 1, 2 + i,
-										 opt, opt, 5, 1);
+							j, 1 + j,
+							i + 1, 2 + i,
+							opt, opt, 5, 1);
 					}
 
 					gtk_table_attach(GTK_TABLE(table), gtk_label_new("Player 1"),
-									 0, 1, 0, 1, opt, opt, 5, 1);
+						0, 1, 0, 1, opt, opt, 5, 1);
 					gtk_table_attach(GTK_TABLE(table), gtk_label_new("Player 2"),
-									 1, 2, 0, 1, opt, opt, 5, 1);
+						1, 2, 0, 1, opt, opt, 5, 1);
 					gtk_table_attach(GTK_TABLE(table), gtk_label_new("Player 3"),
-									 2, 3, 0, 1, opt, opt, 5, 1);
+						2, 3, 0, 1, opt, opt, 5, 1);
 					gtk_table_attach(GTK_TABLE(table), gtk_label_new("Player 4"),
-									 3, 4, 0, 1, opt, opt, 5, 1);
+						3, 4, 0, 1, opt, opt, 5, 1);
 				}
 
 				GtkWidget* hbox = gtk_hbox_new(false, 5);

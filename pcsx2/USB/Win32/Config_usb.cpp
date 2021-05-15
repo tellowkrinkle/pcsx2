@@ -262,11 +262,11 @@ BOOL CALLBACK ConfigureDlgProcUSB(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lPar
 void USBconfigure()
 {
 	ScopedCoreThreadPause paused_core;
-    USBsetSettingsDir();
+	USBsetSettingsDir();
 	RegisterDevice::Register();
 	DialogBox(hInstUSB,
-			  MAKEINTRESOURCE(IDD_CONFIG_USB),
-			  GetActiveWindow(),
-			  (DLGPROC)ConfigureDlgProcUSB);
+		MAKEINTRESOURCE(IDD_CONFIG_USB),
+		GetActiveWindow(),
+		(DLGPROC)ConfigureDlgProcUSB);
 	paused_core.AllowResume();
 }

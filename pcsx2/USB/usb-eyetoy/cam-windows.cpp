@@ -211,9 +211,9 @@ namespace usb_eyetoy
 							AM_MEDIA_TYPE* pmtConfig;
 							hr = pSourceConfig->GetStreamCaps(iFormat, &pmtConfig, (BYTE*)&scc);
 							Console.Warning("Camera: GetStreamCaps min=%dx%d max=%dx%d, fmt=%x",
-									scc.MinOutputSize.cx, scc.MinOutputSize.cy,
-									scc.MaxOutputSize.cx, scc.MaxOutputSize.cy,
-									pmtConfig->subtype);
+								scc.MinOutputSize.cx, scc.MinOutputSize.cy,
+								scc.MaxOutputSize.cx, scc.MaxOutputSize.cy,
+								pmtConfig->subtype);
 
 							if (SUCCEEDED(hr))
 							{
@@ -544,9 +544,9 @@ namespace usb_eyetoy
 		{
 			Win32Handles handles = *(Win32Handles*)data;
 			return DialogBoxParam(handles.hInst,
-								  MAKEINTRESOURCE(IDD_DLG_EYETOY_USB),
-								  handles.hWnd,
-								  (DLGPROC)DirectShowDlgProc, port);
+				MAKEINTRESOURCE(IDD_DLG_EYETOY_USB),
+				handles.hWnd,
+				(DLGPROC)DirectShowDlgProc, port);
 		};
 
 	} // namespace windows_api

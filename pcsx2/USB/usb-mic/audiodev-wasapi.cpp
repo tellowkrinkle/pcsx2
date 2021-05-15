@@ -26,10 +26,10 @@
 #include "../Win32/resource_usb.h"
 
 #define SafeRelease(x) \
-	if (x)             \
-	{                  \
-		x->Release();  \
-		x = NULL;      \
+	if (x) \
+	{ \
+		x->Release(); \
+		x = NULL; \
 	}
 #define ConvertMSTo100NanoSec(ms) (ms * 1000 * 10) //1000 microseconds, then 10 "100nanosecond" segments
 
@@ -62,7 +62,7 @@ namespace usb_mic
 
 			if (currentTime.QuadPart < lastQPCTime)
 
-			lastQPCTime = currentTime.QuadPart;
+				lastQPCTime = currentTime.QuadPart;
 
 			LONGLONG timeVal = currentTime.QuadPart;
 			timeVal *= 1000;
@@ -277,7 +277,7 @@ namespace usb_mic
 			{
 				if (!mDeviceLost)
 					Console.WriteLn("MMAudioDevice::Reinitialize(): Could not get audio %s client, result = %08lX\n",
-							   (mAudioDir == AUDIODIR_SOURCE ? TEXT("capture") : TEXT("render")), err);
+						(mAudioDir == AUDIODIR_SOURCE ? TEXT("capture") : TEXT("render")), err);
 				CoTaskMemFree(pwfx);
 				return false;
 			}
@@ -541,7 +541,7 @@ namespace usb_mic
 					{
 						size_t samples = std::min(src->mInBuffer.peek_read<short>(), read);
 						src_short_to_float_array(src->mInBuffer.front<short>(),
-												 buffer.data(), samples);
+							buffer.data(), samples);
 
 						//XXX May get AUDCLNT_E_BUFFER_TOO_LARGE
 						hr = src->mmRender->GetBuffer(numFramesAvailable, &pData);
@@ -610,7 +610,7 @@ namespace usb_mic
 		uint32_t MMAudioDevice::GetBuffer(int16_t* outBuf, uint32_t outFrames)
 		{
 			if (!mQuit && (mThread == INVALID_HANDLE_VALUE ||
-						   WaitForSingleObject(mThread, 0) == WAIT_OBJECT_0)) //Thread got killed prematurely
+							  WaitForSingleObject(mThread, 0) == WAIT_OBJECT_0)) //Thread got killed prematurely
 			{
 				mThread = (HANDLE)_beginthreadex(NULL, 0, MMAudioDevice::CaptureThread, this, 0, NULL);
 			}
@@ -656,7 +656,7 @@ namespace usb_mic
 		uint32_t MMAudioDevice::SetBuffer(int16_t* inBuf, uint32_t inFrames)
 		{
 			if (!mQuit && (mThread == INVALID_HANDLE_VALUE ||
-						   WaitForSingleObject(mThread, 0) == WAIT_OBJECT_0)) //Thread got killed prematurely
+							  WaitForSingleObject(mThread, 0) == WAIT_OBJECT_0)) //Thread got killed prematurely
 			{
 				mThread = (HANDLE)_beginthreadex(NULL, 0, MMAudioDevice::RenderThread, this, 0, NULL);
 			}
@@ -838,9 +838,9 @@ namespace usb_mic
 			settings.dev_type = dev_type;
 
 			return (int)DialogBoxParam(h.hInst,
-									   MAKEINTRESOURCE(IDD_DLGWASAPI_USB),
-									   h.hWnd,
-									   (DLGPROC)WASAPIDlgProc, (LPARAM)&settings);
+				MAKEINTRESOURCE(IDD_DLGWASAPI_USB),
+				h.hWnd,
+				(DLGPROC)WASAPIDlgProc, (LPARAM)&settings);
 		}
 
 		static void RefreshInputAudioList(HWND hW, LRESULT idx, WASAPISettings* settings)

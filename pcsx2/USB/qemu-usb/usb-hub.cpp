@@ -41,72 +41,75 @@ typedef struct USBHubState
 	USBHubPort ports[MAX_PORTS];
 } USBHubState;
 
-#define ClearHubFeature (0x2000 | USB_REQ_CLEAR_FEATURE)
+// clang-format off
+
+#define ClearHubFeature  (0x2000 | USB_REQ_CLEAR_FEATURE)
 #define ClearPortFeature (0x2300 | USB_REQ_CLEAR_FEATURE)
 #define GetHubDescriptor (0xa000 | USB_REQ_GET_DESCRIPTOR)
-#define GetHubStatus (0xa000 | USB_REQ_GET_STATUS)
-#define GetPortStatus (0xa300 | USB_REQ_GET_STATUS)
-#define SetHubFeature (0x2000 | USB_REQ_SET_FEATURE)
-#define SetPortFeature (0x2300 | USB_REQ_SET_FEATURE)
+#define GetHubStatus     (0xa000 | USB_REQ_GET_STATUS)
+#define GetPortStatus    (0xa300 | USB_REQ_GET_STATUS)
+#define SetHubFeature    (0x2000 | USB_REQ_SET_FEATURE)
+#define SetPortFeature   (0x2300 | USB_REQ_SET_FEATURE)
 
-#define PORT_STAT_CONNECTION 0x0001
-#define PORT_STAT_ENABLE 0x0002
-#define PORT_STAT_SUSPEND 0x0004
+#define PORT_STAT_CONNECTION  0x0001
+#define PORT_STAT_ENABLE      0x0002
+#define PORT_STAT_SUSPEND     0x0004
 #define PORT_STAT_OVERCURRENT 0x0008
-#define PORT_STAT_RESET 0x0010
-#define PORT_STAT_POWER 0x0100
-#define PORT_STAT_LOW_SPEED 0x0200
-#define PORT_STAT_HIGH_SPEED 0x0400
-#define PORT_STAT_TEST 0x0800
-#define PORT_STAT_INDICATOR 0x1000
+#define PORT_STAT_RESET       0x0010
+#define PORT_STAT_POWER       0x0100
+#define PORT_STAT_LOW_SPEED   0x0200
+#define PORT_STAT_HIGH_SPEED  0x0400
+#define PORT_STAT_TEST        0x0800
+#define PORT_STAT_INDICATOR   0x1000
 
-#define PORT_STAT_C_CONNECTION 0x0001
-#define PORT_STAT_C_ENABLE 0x0002
-#define PORT_STAT_C_SUSPEND 0x0004
+#define PORT_STAT_C_CONNECTION  0x0001
+#define PORT_STAT_C_ENABLE      0x0002
+#define PORT_STAT_C_SUSPEND     0x0004
 #define PORT_STAT_C_OVERCURRENT 0x0008
-#define PORT_STAT_C_RESET 0x0010
+#define PORT_STAT_C_RESET       0x0010
 
-#define PORT_CONNECTION 0
-#define PORT_ENABLE 1
-#define PORT_SUSPEND 2
-#define PORT_OVERCURRENT 3
-#define PORT_RESET 4
-#define PORT_POWER 8
-#define PORT_LOWSPEED 9
-#define PORT_HIGHSPEED 10
-#define PORT_C_CONNECTION 16
-#define PORT_C_ENABLE 17
-#define PORT_C_SUSPEND 18
+#define PORT_CONNECTION     0
+#define PORT_ENABLE         1
+#define PORT_SUSPEND        2
+#define PORT_OVERCURRENT    3
+#define PORT_RESET          4
+#define PORT_POWER          8
+#define PORT_LOWSPEED       9
+#define PORT_HIGHSPEED     10
+#define PORT_C_CONNECTION  16
+#define PORT_C_ENABLE      17
+#define PORT_C_SUSPEND     18
 #define PORT_C_OVERCURRENT 19
-#define PORT_C_RESET 20
-#define PORT_TEST 21
-#define PORT_INDICATOR 22
+#define PORT_C_RESET       20
+#define PORT_TEST          21
+#define PORT_INDICATOR     22
 
 /* same as Linux kernel root hubs */
 
-static const uint8_t qemu_hub_dev_descriptor[] = {
+static const uint8_t qemu_hub_dev_descriptor[] =
+{
 	0x12,       /*  u8 bLength; */
 	0x01,       /*  u8 bDescriptorType; Device */
 	0x10, 0x01, /*  u16 bcdUSB; v1.1 */
 
-	0x09, /*  u8  bDeviceClass; HUB_CLASSCODE */
-	0x00, /*  u8  bDeviceSubClass; */
-	0x00, /*  u8  bDeviceProtocol; [ low/full speeds only ] */
-	0x08, /*  u8  bMaxPacketSize0; 8 Bytes */
+	0x09,       /*  u8  bDeviceClass; HUB_CLASSCODE */
+	0x00,       /*  u8  bDeviceSubClass; */
+	0x00,       /*  u8  bDeviceProtocol; [ low/full speeds only ] */
+	0x08,       /*  u8  bMaxPacketSize0; 8 Bytes */
 
 	0x00, 0x00, /*  u16 idVendor; */
 	0x00, 0x00, /*  u16 idProduct; */
 	0x01, 0x01, /*  u16 bcdDevice */
 
-	0x03, /*  u8  iManufacturer; */
-	0x02, /*  u8  iProduct; */
-	0x01, /*  u8  iSerialNumber; */
-	0x01  /*  u8  bNumConfigurations; */
+	0x03,       /*  u8  iManufacturer; */
+	0x02,       /*  u8  iProduct; */
+	0x01,       /*  u8  iSerialNumber; */
+	0x01,       /*  u8  bNumConfigurations; */
 };
 
 /* XXX: patch interrupt size */
-static const uint8_t qemu_hub_config_descriptor[] = {
-
+static const uint8_t qemu_hub_config_descriptor[] =
+{
 	/* one configuration */
 	0x09,       /*  u8  bLength; */
 	0x02,       /*  u8  bDescriptorType; Configuration */
@@ -114,11 +117,11 @@ static const uint8_t qemu_hub_config_descriptor[] = {
 	0x01,       /*  u8  bNumInterfaces; (1) */
 	0x01,       /*  u8  bConfigurationValue; */
 	0x00,       /*  u8  iConfiguration; */
-	0xc0,       /*  u8  bmAttributes; 
-				 Bit 7: must be set,
-				     6: Self-powered,
-				     5: Remote wakeup,
-				     4..0: resvd */
+	0xc0,       /*  u8  bmAttributes;
+	             Bit 7: must be set,
+	                 6: Self-powered,
+	                 5: Remote wakeup,
+	                 4..0: resvd */
 	0x00,       /*  u8  MaxPower; */
 
 	/* USB 1.1:
@@ -149,21 +152,23 @@ static const uint8_t qemu_hub_config_descriptor[] = {
 	0x81,       /*  u8  ep_bEndpointAddress; IN Endpoint 1 */
 	0x03,       /*  u8  ep_bmAttributes; Interrupt */
 	0x02, 0x00, /*  u16 ep_wMaxPacketSize; 1 + (MAX_ROOT_PORTS / 8) */
-	0xff        /*  u8  ep_bInterval; (255ms -- usb 2.0 spec) */
+	0xff,       /*  u8  ep_bInterval; (255ms -- usb 2.0 spec) */
 };
 
 static const uint8_t qemu_hub_hub_descriptor[] =
-	{
-		0x00, /*  u8  bLength; patched in later */
-		0x29, /*  u8  bDescriptorType; Hub-descriptor */
-		0x00, /*  u8  bNbrPorts; (patched later) */
-		0x0a, /* u16  wHubCharacteristics; */
-		0x00, /*   (per-port OC, no power switching) */
-		0x01, /*  u8  bPwrOn2pwrGood; 2ms */
-		0x00  /*  u8  bHubContrCurrent; 0 mA */
+{
+	0x00, /*  u8  bLength; patched in later */
+	0x29, /*  u8  bDescriptorType; Hub-descriptor */
+	0x00, /*  u8  bNbrPorts; (patched later) */
+	0x0a, /* u16  wHubCharacteristics; */
+	0x00, /*   (per-port OC, no power switching) */
+	0x01, /*  u8  bPwrOn2pwrGood; 2ms */
+	0x00, /*  u8  bHubContrCurrent; 0 mA */
 
-		/* DeviceRemovable and PortPwrCtrlMask patched in later */
+	/* DeviceRemovable and PortPwrCtrlMask patched in later */
 };
+
+// clang-format on
 
 static void usb_hub_attach(USBPort* port1, USBDevice* dev)
 {
@@ -183,8 +188,7 @@ static void usb_hub_attach(USBPort* port1, USBDevice* dev)
 			port->wPortStatus &= ~PORT_STAT_LOW_SPEED;
 		port->port.dev = dev;
 		/* send the attach message */
-		dev->handle_packet(dev,
-						   USB_MSG_ATTACH, 0, 0, NULL, 0);
+		dev->handle_packet(dev, USB_MSG_ATTACH, 0, 0, NULL, 0);
 	}
 	else
 	{
@@ -199,8 +203,7 @@ static void usb_hub_attach(USBPort* port1, USBDevice* dev)
 				port->wPortChange |= PORT_STAT_C_ENABLE;
 			}
 			/* send the detach message */
-			dev->handle_packet(dev,
-							   USB_MSG_DETACH, 0, 0, NULL, 0);
+			dev->handle_packet(dev, USB_MSG_DETACH, 0, 0, NULL, 0);
 			port->port.dev = NULL;
 		}
 	}
@@ -212,7 +215,7 @@ static void usb_hub_handle_reset(USBDevice* dev)
 }
 
 static int usb_hub_handle_control(USBDevice* dev, int request, int value,
-								  int index, int length, uint8_t* data)
+	int index, int length, uint8_t* data)
 {
 	USBHubState* s = (USBHubState*)dev;
 	int ret;
@@ -263,15 +266,15 @@ static int usb_hub_handle_control(USBDevice* dev, int request, int value,
 			{
 				case USB_DT_DEVICE:
 					memcpy(data, qemu_hub_dev_descriptor,
-						   sizeof(qemu_hub_dev_descriptor));
+						sizeof(qemu_hub_dev_descriptor));
 					ret = sizeof(qemu_hub_dev_descriptor);
 					break;
 				case USB_DT_CONFIG:
 					memcpy(data, qemu_hub_config_descriptor,
-						   sizeof(qemu_hub_config_descriptor));
+						sizeof(qemu_hub_config_descriptor));
 
 					/* status change endpoint size based on number
-             * of ports */
+					 * of ports */
 					data[22] = (s->nb_ports + 1 + 7) / 8;
 
 					ret = sizeof(qemu_hub_config_descriptor);
@@ -371,8 +374,7 @@ static int usb_hub_handle_control(USBDevice* dev, int request, int value,
 				case PORT_RESET:
 					if (dev)
 					{
-						dev->handle_packet(dev,
-										   USB_MSG_RESET, 0, 0, NULL, 0);
+						dev->handle_packet(dev, USB_MSG_RESET, 0, 0, NULL, 0);
 						port->wPortChange |= PORT_STAT_C_RESET;
 						/* set enable bit */
 						port->wPortStatus |= PORT_STAT_ENABLE;
@@ -428,7 +430,7 @@ static int usb_hub_handle_control(USBDevice* dev, int request, int value,
 		{
 			unsigned int n, limit, var_hub_size = 0;
 			memcpy(data, qemu_hub_hub_descriptor,
-				   sizeof(qemu_hub_hub_descriptor));
+				sizeof(qemu_hub_hub_descriptor));
 			data[2] = s->nb_ports;
 
 			/* fill DeviceRemovable bits */
@@ -460,7 +462,7 @@ static int usb_hub_handle_control(USBDevice* dev, int request, int value,
 }
 
 static int usb_hub_handle_data(USBDevice* dev, int pid,
-							   uint8_t devep, uint8_t* data, int len)
+	uint8_t devep, uint8_t* data, int len)
 {
 	USBHubState* s = (USBHubState*)dev;
 	int ret;
@@ -517,8 +519,8 @@ static int usb_hub_handle_data(USBDevice* dev, int pid,
 }
 
 static int usb_hub_broadcast_packet(USBHubState* s, int pid,
-									uint8_t devaddr, uint8_t devep,
-									uint8_t* data, int len)
+	uint8_t devaddr, uint8_t devep,
+	uint8_t* data, int len)
 {
 	USBHubPort* port;
 	USBDevice* dev;
@@ -531,8 +533,8 @@ static int usb_hub_broadcast_packet(USBHubState* s, int pid,
 		if (dev && (port->wPortStatus & PORT_STAT_ENABLE))
 		{
 			ret = dev->handle_packet(dev, pid,
-									 devaddr, devep,
-									 data, len);
+				devaddr, devep,
+				data, len);
 			if (ret != USB_RET_NODEV)
 			{
 				return ret;
@@ -543,17 +545,17 @@ static int usb_hub_broadcast_packet(USBHubState* s, int pid,
 }
 
 static int usb_hub_handle_packet(USBDevice* dev, int pid,
-								 uint8_t devaddr, uint8_t devep,
-								 uint8_t* data, int len)
+	uint8_t devaddr, uint8_t devep,
+	uint8_t* data, int len)
 {
 	USBHubState* s = (USBHubState*)dev;
 
 	if (dev->state == USB_STATE_DEFAULT &&
-		dev->addr != 0 &&
-		devaddr != dev->addr &&
-		(pid == USB_TOKEN_SETUP ||
-		 pid == USB_TOKEN_OUT ||
-		 pid == USB_TOKEN_IN))
+	    dev->addr != 0 &&
+	    devaddr != dev->addr &&
+	    (pid == USB_TOKEN_SETUP ||
+	     pid == USB_TOKEN_OUT ||
+	     pid == USB_TOKEN_IN))
 	{
 		/* broadcast the packet to the devices */
 		return usb_hub_broadcast_packet(s, pid, devaddr, devep, data, len);

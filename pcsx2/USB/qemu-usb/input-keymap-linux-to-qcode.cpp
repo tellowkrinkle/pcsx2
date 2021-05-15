@@ -13,8 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// clang-format off
+
 #include "input-keymap-linux-to-qcode.h"
-const QKeyCode qemu_input_map_linux_to_qcode[] = {
+const QKeyCode qemu_input_map_linux_to_qcode[] =
+{
 	Q_KEY_CODE_UNMAPPED,         /* linux:0 (KEY_RESERVED) -> linux:0 (KEY_RESERVED) -> qcode:Q_KEY_CODE_UNMAPPED (unmapped) */
 	Q_KEY_CODE_ESC,              /* linux:1 (KEY_ESC) -> linux:1 (KEY_ESC) -> qcode:Q_KEY_CODE_ESC (esc) */
 	Q_KEY_CODE_1,                /* linux:2 (KEY_1) -> linux:2 (KEY_1) -> qcode:Q_KEY_CODE_1 (1) */

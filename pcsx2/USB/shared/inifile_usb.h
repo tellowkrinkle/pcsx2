@@ -63,7 +63,7 @@
 
 #define INI_TOKEN_A_ANSI "\a" // I.E. Item1;Item2;Item3 - '\a' used in place of ';'
 #define INI_TOKEN_B_ANSI "\b" // I.E. Item1,Item1b;Item2,Item2b;Item3,Item3b - '\b' used in place of ','
-#define INI_EMPTY_ANSI "*"    // Used to indicate empty value in token string. I.E. *;Item2;*;Item3;
+#define INI_EMPTY_ANSI "*" // Used to indicate empty value in token string. I.E. *;Item2;*;Item3;
 
 class CIniFileA
 {
@@ -139,7 +139,7 @@ public:
 #endif
 		private: // CIniFileA acts as a class factory for CIniSectionA Objects
 			CIniKeyA(CIniSectionA* pSection, const std::string& sKeyName);
-			CIniKeyA(const CIniKeyA&);            // No Copy
+			CIniKeyA(const CIniKeyA&); // No Copy
 			CIniKeyA& operator=(const CIniKeyA&); // No Copy
 			~CIniKeyA();
 
@@ -185,7 +185,7 @@ public:
 #endif
 	private: // CIniSectionA acts as a class factory for CIniKeyA Objects
 		CIniSectionA(CIniFileA* pIniFile, const std::string& sSectionName);
-		CIniSectionA(const CIniSectionA&);            // No Copy
+		CIniSectionA(const CIniSectionA&); // No Copy
 		CIniSectionA& operator=(const CIniSectionA&); // No Copy
 		~CIniSectionA();
 
@@ -272,7 +272,7 @@ private:
 	SecIndexA::iterator _find_sec(const std::string& sSection);
 
 private:
-	CIniFileA(const CIniFileA&);            // No Copy
+	CIniFileA(const CIniFileA&); // No Copy
 	CIniFileA& operator=(const CIniFileA&); // No Copy
 	// List of CIniSectionA pointers ( List of sections in the class )
 	SecIndexA m_sections;
@@ -300,7 +300,7 @@ std::istream& operator>>(std::istream& input, CIniMergeA merger);
 
 #define INI_TOKEN_A_UNICODE L"\a" // I.E. Item1;Item2;Item3 - '\a' used in place of ';'
 #define INI_TOKEN_B_UNICODE L"\b" // I.E. Item1,Item1b;Item2,Item2b;Item3,Item3b - '\b' used in place of ','
-#define INI_EMPTY_UNICODE L"*"    // Used to indicate empty value in token string. I.E. *;Item2;*;Item3;
+#define INI_EMPTY_UNICODE L"*" // Used to indicate empty value in token string. I.E. *;Item2;*;Item3;
 
 class CIniFileW
 {
@@ -375,7 +375,7 @@ public:
 #endif
 		private: // CIniFileW acts as a class factory for CIniSectionW Objects
 			CIniKeyW(CIniSectionW* pSection, const std::wstring& sKeyName);
-			CIniKeyW(const CIniKeyW&);            // No Copy
+			CIniKeyW(const CIniKeyW&); // No Copy
 			CIniKeyW& operator=(const CIniKeyW&); // No Copy
 			~CIniKeyW();
 
@@ -421,7 +421,7 @@ public:
 #endif
 	private: // CIniSectionW acts as a class factory for CIniKeyW Objects
 		CIniSectionW(CIniFileW* pIniFile, const std::wstring& sSectionName);
-		CIniSectionW(const CIniSectionW&);            // No Copy
+		CIniSectionW(const CIniSectionW&); // No Copy
 		CIniSectionW& operator=(const CIniSectionW&); // No Copy
 		~CIniSectionW();
 
@@ -508,7 +508,7 @@ private:
 	SecIndexW::iterator _find_sec(const std::wstring& sSection);
 
 private:
-	CIniFileW(const CIniFileW&);            // No Copy
+	CIniFileW(const CIniFileW&); // No Copy
 	CIniFileW& operator=(const CIniFileW&); // No Copy
 	// List of CIniSectionW pointers ( List of sections in the class )
 	SecIndexW m_sections;

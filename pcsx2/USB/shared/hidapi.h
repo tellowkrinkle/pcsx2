@@ -433,7 +433,7 @@ typedef struct _HIDP_DATA
 	union
 	{
 		ULONG RawValue; // for values
-		BOOLEAN On;     // for buttons MUST BE TRUE for buttons.
+		BOOLEAN On; // for buttons MUST BE TRUE for buttons.
 	};
 } HIDP_DATA, *PHIDP_DATA;
 

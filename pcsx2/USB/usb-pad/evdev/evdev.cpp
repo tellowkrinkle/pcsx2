@@ -154,9 +154,9 @@ namespace usb_pad
 					std::string path = str.str();
 
 					auto it = std::find_if(list_cache.begin(), list_cache.end(),
-										   [&path](evdev_device& dev) {
-											   return dev.path == path;
-										   });
+						[&path](evdev_device& dev) {
+							return dev.path == path;
+						});
 					if (it != list_cache.end())
 						continue;
 
@@ -587,8 +587,8 @@ namespace usb_pad
 
 						// For safety, only allow Logitech (classic ffb) devices
 						if (vid != 0x046D /* Logitech */ /*|| info.bustype != BUS_USB*/
-							|| pid == 0xc262             /* G920 hid mode */
-							|| pid == 0xc261             /* G920 xbox mode */
+							|| pid == 0xc262 /* G920 hid mode */
+							|| pid == 0xc261 /* G920 xbox mode */
 						)
 						{
 							mUseRawFF = 0;
