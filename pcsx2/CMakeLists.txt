@@ -1331,6 +1331,13 @@ if (APPLE)
 	set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/gui/Resources/PCSX2.icns" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 	set_source_files_properties("${CMAKE_SOURCE_DIR}/bin/GameIndex.yaml" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 
+	file(GLOB_RECURSE OBJCPP_SRCS *.mm)
+	foreach(file IN LISTS OBJCPP_SRCS)
+		# CMake makefile and ninja generators will attempt to share one PCH for both cpp and mm files
+		# That's not actually OK
+		set_source_files_properties("${file}" PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+	endforeach()
+
 	# If they say to skip postprocess bundle, leave the target in but make it so they have
 	# to manually run it
 	if (SKIP_POSTPROCESS_BUNDLE)
