@@ -2,27 +2,7 @@ name: 🐧 Linux Builds
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
-on:
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - .gitignore
-      - "**/*.md"
-      - .clang-format
-      - debian-packager/
-      - bin/PCSX2_keys.ini.default
-      - "pcsx2/PAD/Windows/**"
-  pull_request:
-    branches:
-      - master
-    paths-ignore:
-      - .gitignore
-      - "**/*.md"
-      - .clang-format
-      - debian-packager/
-      - bin/PCSX2_keys.ini.default
-      - "pcsx2/PAD/Windows/**"
+on: [push, pull_request]
 
 jobs:
   build:
@@ -114,3 +94,16 @@ jobs:
       - name: Build PCSX2
         working-directory: ./build
         run: ../.github/workflows/scripts/linux/compile.sh
+
+      - name: Compress Logs
+        run: find build -name "*.ccache-*" > files.txt && tar cvJf ccache-debug.tar.xz --files-from files.txt
+        if: ${{ matrix.compiler == 'clang' }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        if: ${{ matrix.compiler == 'clang' }}
+        with:
+          name: CCache Log
+          path: ccache-debug.tar.xz
+          retention-days: 30 # https://docs.github.com/en/free-pro-team@latest/actions/reference/usage-limits-billing-and-administration#artifact-and-log-retention-policy

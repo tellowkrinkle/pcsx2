@@ -2,6 +2,7 @@
 
 set -e
 
+export CCACHE_DEBUG=1
 export CCACHE_BASEDIR=${GITHUB_WORKSPACE}
 export CCACHE_DIR=${GITHUB_WORKSPACE}/.ccache
 export CCACHE_COMPRESS="true"
